@@ -1,0 +1,39 @@
+{
+  "name": "pikari-gutenberg-modals",
+  "version": "1.0.0",
+  "description": "Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.",
+  "scripts": {
+    "build": "wp-scripts build",
+    "start": "wp-scripts start",
+    "lint:js": "wp-scripts lint-js src",
+    "lint:css": "wp-scripts lint-style src/**/*.scss",
+    "packages-update": "wp-scripts packages-update",
+    "plugin-zip": "wp-scripts plugin-zip"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-org/pikari-gutenberg-modals.git"
+  },
+  "author": "Pikari Inc.",
+  "license": "GPL-2.0-or-later",
+  "devDependencies": {
+    "@wordpress/scripts": "^30.19.0"
+  },
+  "dependencies": {
+    "@wordpress/block-editor": "^14.21.0",
+    "@wordpress/components": "^29.12.0",
+    "@wordpress/data": "^10.26.0",
+    "@wordpress/dom-ready": "^4.26.0",
+    "@wordpress/element": "^6.26.0",
+    "@wordpress/i18n": "^5.26.0",
+    "@wordpress/icons": "^10.26.0",
+    "@wordpress/rich-text": "^7.26.0",
+    "@wordpress/url": "^4.26.0"
+  },
+  "wp-scripts": {
+    "entry": {
+      "editor/index": "./src/editor/index.js",
+      "frontend/index": "./src/frontend/index.js"
+    }
+  }
+}
