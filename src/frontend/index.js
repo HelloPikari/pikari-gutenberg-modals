@@ -64,29 +64,31 @@ function handleTriggerClick(event) {
     
     event.preventDefault();
     
-    const modalId = modalTrigger.dataset[CONFIG.attributes.modalId];
+    // Get content data from trigger element
+    const contentType = modalTrigger.dataset.modalContentType;
+    const contentId = modalTrigger.dataset.modalContentId;
     
-    if (!modalId) {
-        console.warn('Modal trigger missing data-modal-id attribute:', modalTrigger);
+    if (!contentType || !contentId) {
+        console.warn('Modal trigger missing content data:', modalTrigger);
         return;
     }
     
-    openModal(modalId);
+    openModal({ contentType, contentId });
 }
 
 /**
- * Open a modal by ID.
+ * Open a modal with content.
  * 
  * Attempts to use Alpine.js if available, falls back to vanilla JS.
  * 
- * @param {string} modalId - The modal element ID
+ * @param {Object} modalData - The modal data (contentType and contentId)
  */
-function openModal(modalId) {
+function openModal(modalData) {
     // Check if Alpine.js is available
     if (isAlpineAvailable()) {
-        openModalWithAlpine(modalId);
+        openModalWithAlpine(modalData);
     } else {
-        openModalFallback(modalId);
+        openModalFallback(modalData);
     }
 }
 
@@ -102,11 +104,11 @@ function isAlpineAvailable() {
 /**
  * Open modal using Alpine.js event system.
  * 
- * @param {string} modalId - The modal element ID
+ * @param {Object} modalData - The modal data
  */
-function openModalWithAlpine(modalId) {
+function openModalWithAlpine(modalData) {
     window.dispatchEvent(new CustomEvent(CONFIG.events.openModal, {
-        detail: { id: modalId }
+        detail: modalData
     }));
 }
 /**
@@ -144,18 +146,52 @@ function handleKeyboardNavigation(event) {
 /**
  * Fallback modal implementation for non-Alpine environments.
  * 
- * @param {string} modalId - The modal element ID
+ * @param {Object} modalData - The modal data
  */
-function openModalFallback(modalId) {
-    const modal = document.getElementById(modalId);
+async function openModalFallback(modalData) {
+    // Get or create the single modal container
+    let modal = document.getElementById('pikari-modal');
     
     if (!modal) {
-        console.error(`Modal with ID "${modalId}" not found`);
-        return;
+        // Create modal if it doesn't exist
+        modal = createModalContainer();
+        document.body.appendChild(modal);
     }
+    
+    // Show loading state
+    const modalBody = modal.querySelector('.modal-body');
+    modalBody.innerHTML = '<div class="modal-loading">Loading...</div>';
     
     // Show the modal
     showModal(modal);
+    
+    try {
+        // Fetch content via AJAX
+        const apiUrl = window.pikariModalsData?.apiUrl || '/wp-json/pikari-gutenberg-modals/v1/modal-content/';
+        const response = await fetch(`${apiUrl}${modalData.contentId}`);
+        const data = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to load content');
+        }
+        
+        // Update modal content with inline styles
+        modalBody.innerHTML = `
+            ${data.styles ? `<style>${data.styles}</style>` : ''}
+            <article class="modal-post-content">
+                <header class="modal-post-header">
+                    <h2>${escapeHtml(data.title)}</h2>
+                </header>
+                <div class="modal-post-body">
+                    ${data.content}
+                </div>
+            </article>
+        `;
+        
+    } catch (error) {
+        console.error('Error loading modal content:', error);
+        modalBody.innerHTML = '<div class="modal-error">Error loading content. Please try again.</div>';
+    }
     
     // Set up event listeners if not already done
     if (!modal.dataset[CONFIG.attributes.listenersAdded]) {
@@ -239,6 +275,12 @@ function closeModalFallback(modal) {
         delete modal._escapeHandler;
     }
     
+    // Clear content
+    const modalBody = modal.querySelector('.modal-body');
+    if (modalBody) {
+        modalBody.innerHTML = '';
+    }
+    
     // Return focus to the trigger element
     returnFocusToTrigger(modal);
 }
@@ -249,10 +291,46 @@ function closeModalFallback(modal) {
  * @param {HTMLElement} modal - The modal element
  */
 function returnFocusToTrigger(modal) {
-    const triggerId = modal.id;
-    const trigger = document.querySelector(`[data-modal-id="${triggerId}"]`);
+    // Find the last clicked trigger
+    const triggers = document.querySelectorAll(CONFIG.selectors.trigger);
+    const lastTrigger = Array.from(triggers).find(el => el === document.activeElement);
     
-    if (trigger) {
-        trigger.focus();
+    if (lastTrigger) {
+        lastTrigger.focus();
     }
+}
+
+/**
+ * Create the modal container for fallback mode.
+ * 
+ * @returns {HTMLElement} The modal element
+ */
+function createModalContainer() {
+    const modal = document.createElement('div');
+    modal.id = 'pikari-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" aria-label="Close modal">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <div class="modal-body">
+                <!-- Content will be loaded here -->
+            </div>
+        </div>
+    `;
+    
+    return modal;
+}
+
+/**
+ * Escape HTML to prevent XSS.
+ * 
+ * @param {string} text - The text to escape
+ * @returns {string} Escaped text
+ */
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }

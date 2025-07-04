@@ -112,6 +112,28 @@ add_action(
         ),
       )
     );
+
+    // Register modal content endpoint
+    register_rest_route(
+      'pikari-gutenberg-modals/v1',
+      '/modal-content/(?P<id>\d+)',
+      array(
+        'methods'             => 'GET',
+        'callback'            => __NAMESPACE__ . '\\get_modal_content',
+        'permission_callback' => '__return_true', // Public endpoint for frontend use
+        'args'                => array(
+          'id' => array(
+            'required'          => true,
+            'type'              => 'integer',
+            'sanitize_callback' => 'absint',
+            'validate_callback' => function( $param ) {
+              return is_numeric( $param );
+            },
+            'description'       => __( 'Post ID to retrieve content for.', 'pikari-gutenberg-modals' ),
+          ),
+        ),
+      )
+    );
   }
 );
 
@@ -201,4 +223,62 @@ function search_modal_content( $request ) {
   }
 
   return $response;
+}
+
+/**
+ * Get modal content with styles via REST API.
+ *
+ * Returns both the rendered content and associated block support styles
+ * for proper display in modal windows.
+ *
+ * @param \WP_REST_Request $request The REST request object.
+ * @return \WP_REST_Response|WP_Error The modal content or error.
+ */
+function get_modal_content( $request ) {
+  $post_id = $request->get_param( 'id' );
+  
+  // Get the post
+  $post = get_post( $post_id );
+  
+  if ( ! $post || $post->post_status !== 'publish' ) {
+    return new \WP_Error(
+      'post_not_found',
+      __( 'Post not found or not published.', 'pikari-gutenberg-modals' ),
+      array( 'status' => 404 )
+    );
+  }
+  
+  // Use the Block_Support class method to get content with properly captured styles
+  $block_support = new Block_Support();
+  
+  // Get content and styles using the working method
+  $content_data = $block_support->get_post_content_with_styles( $post );
+  
+  // Extract CSS from style tag if present
+  $styles = '';
+  if ( ! empty( $content_data['styles'] ) ) {
+    // Extract content between style tags
+    if ( preg_match( '/<style[^>]*>(.*?)<\/style>/s', $content_data['styles'], $matches ) ) {
+      $styles = $matches[1];
+    }
+  }
+  
+  // Prepare response data
+  $response_data = array(
+    'id'      => $post->ID,
+    'title'   => get_the_title( $post ),
+    'content' => $content_data['content'],
+    'styles'  => $styles,
+    'type'    => $post->post_type,
+  );
+  
+  /**
+   * Filter the modal content response.
+   *
+   * @param array $response_data The response data
+   * @param WP_Post $post The post object
+   */
+  $response_data = apply_filters( 'pikari_gutenberg_modals_content_response', $response_data, $post );
+  
+  return rest_ensure_response( $response_data );
 }
