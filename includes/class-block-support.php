@@ -286,18 +286,23 @@ class Block_Support {
      * (gaps, spacing, typography, etc.) that are normally injected via
      * wp_add_inline_style() during block rendering.
      *
-     * @param WP_Post $post The post object
+     * @param WP_Post $post_object The post object
      * @return array Array with 'content' and 'styles' keys
      */
-    public function get_post_content_with_styles(\WP_Post $post): array {
-        // Set up post data
+    public function get_post_content_with_styles(\WP_Post $post_object): array {
+        // Store current global post
+        global $post;
+        $original_post = $post;
+        
+        // Set up post data - this sets the global $post variable
+        $post = $post_object;
         setup_postdata($post);
         
         // Array to collect all styles
         $captured_styles = [];
         
         // Hook into render_block to capture dynamically generated styles
-        add_filter('render_block', function($block_content, $parsed_block) use (&$captured_styles) {
+        $style_capture_filter = function($block_content, $parsed_block) use (&$captured_styles) {
             // Check if block has layout support
             if (!empty($parsed_block['attrs']['style']) || strpos($block_content, 'wp-container-') !== false) {
                 // Extract container ID from rendered content
@@ -312,19 +317,32 @@ class Block_Support {
                 }
             }
             return $block_content;
-        }, 10, 2);
+        };
+        add_filter('render_block', $style_capture_filter, 10, 2);
+        
+        // Add block context filter to provide post data to dynamic blocks
+        $filter_block_context = function($context) use ($post_object) {
+            $context['postId'] = $post_object->ID;
+            $context['postType'] = $post_object->post_type;
+            return $context;
+        };
+        add_filter('render_block_context', $filter_block_context, 1);
         
         // Process blocks
-        $content = do_blocks($post->post_content);
+        $content = do_blocks($post_object->post_content);
         
         // Apply content filters
         $content = apply_filters('the_content', $content);
         
-        // Remove our filter
-        remove_filter('render_block', '__return_false', 10);
+        // Remove our filters
+        remove_filter('render_block', $style_capture_filter, 10);
+        remove_filter('render_block_context', $filter_block_context, 1);
         
         // Reset post data
         wp_reset_postdata();
+        
+        // Restore original post
+        $post = $original_post;
         
         // Combine all captured styles
         $all_styles = '';
@@ -332,7 +350,7 @@ class Block_Support {
             $captured_styles = array_filter(array_unique($captured_styles));
             $all_styles = sprintf(
                 '<style id="modal-%s-block-supports">%s</style>',
-                esc_attr($post->ID),
+                esc_attr($post_object->ID),
                 implode("\n", $captured_styles)
             );
         }

@@ -38,6 +38,16 @@ class Frontend_Renderer {
             true
         );
         
+        // Localize script with REST API data
+        wp_localize_script(
+            'pikari-gutenberg-modals-frontend',
+            'pikariModalsData',
+            [
+                'apiUrl' => rest_url('pikari-gutenberg-modals/v1/modal-content/'),
+                'nonce' => wp_create_nonce('wp_rest'),
+            ]
+        );
+        
         // Enqueue frontend styles
         if (file_exists(PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/frontend/style-index.css')) {
             wp_enqueue_style(

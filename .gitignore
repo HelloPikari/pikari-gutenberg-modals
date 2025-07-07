@@ -29,3 +29,11 @@ build/
 *.tmp
 *.temp
 .cache/
+
+# Claude AI files
+.claude/
+
+# Testing and development files
+test-*.md
+test-*.sh
+issues/

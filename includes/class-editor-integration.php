@@ -25,17 +25,17 @@ class Editor_Integration {
      * Constructor
      */
     public function __construct() {
-        // Hook into editor asset loading
-        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_assets']);
+        // Hook into editor asset loading for scripts
+        add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_scripts']);
         
-        // Add editor styles for iframe editor
-        add_action('after_setup_theme', [$this, 'add_editor_styles']);
+        // Hook into block assets for styles (works with iframe editor)
+        add_action('enqueue_block_assets', [$this, 'enqueue_block_styles']);
     }
     
     /**
-     * Enqueue editor assets
+     * Enqueue editor scripts
      */
-    public function enqueue_editor_assets(): void {
+    public function enqueue_editor_scripts(): void {
         $editor_asset_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/index.asset.php';
         
         // Check if build exists
@@ -73,23 +73,37 @@ class Editor_Integration {
                 'overlayOpacity' => 0.8,
             ],
         ]);
+    }
+    
+    /**
+     * Enqueue block styles
+     * 
+     * Uses enqueue_block_assets hook which properly handles styles
+     * for both the editor iframe and frontend contexts.
+     */
+    public function enqueue_block_styles(): void {
+        // Only enqueue in editor context
+        if (!is_admin()) {
+            return;
+        }
         
-        // Enqueue editor styles
-        if (file_exists(PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/style-index.css')) {
+        $style_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/style-index.css';
+        
+        if (file_exists($style_file)) {
+            // Get version from asset file if available
+            $version = PIKARI_GUTENBERG_MODALS_VERSION;
+            $asset_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/index.asset.php';
+            if (file_exists($asset_file)) {
+                $assets = include $asset_file;
+                $version = $assets['version'] ?? PIKARI_GUTENBERG_MODALS_VERSION;
+            }
+            
             wp_enqueue_style(
                 'pikari-gutenberg-modals-editor',
                 PIKARI_GUTENBERG_MODALS_PLUGIN_URL . 'build/editor/style-index.css',
                 [],
-                $editor_assets['version']
+                $version
             );
         }
-    }
-    
-    /**
-     * Add editor styles for iframe editor
-     */
-    public function add_editor_styles(): void {
-        // Add styles to the iframe editor
-        add_editor_style(PIKARI_GUTENBERG_MODALS_PLUGIN_URL . 'build/editor/style-index.css');
     }
 }
