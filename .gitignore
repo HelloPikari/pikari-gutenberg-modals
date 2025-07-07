@@ -36,4 +36,5 @@ build/
 # Testing and development files
 test-*.md
 test-*.sh
+test-*.html
 issues/

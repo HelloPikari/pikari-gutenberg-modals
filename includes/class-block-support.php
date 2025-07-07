@@ -254,17 +254,25 @@ class Block_Support {
         // Get content with captured styles
         $content_with_styles = $this->get_post_content_with_styles($post);
 
+        // Build CSS classes for the article element
+        $article_classes = array(
+            'modal-entry',
+            'type-' . $post->post_type,
+            'post-' . $post->ID
+        );
+        
         // Build the complete modal content
         $modal_content = sprintf(
-            '<article class="modal-post-content">
-                <header class="modal-post-header">
+            '<article class="%s">
+                <header class="modal-entry-header">
                     <h2>%s</h2>
                 </header>
-                <div class="modal-post-body">
+                <div class="modal-entry-content">
                     %s
                     %s
                 </div>
             </article>',
+                esc_attr(implode(' ', $article_classes)),
                 esc_html(get_the_title($post)),
                 $content_with_styles['styles'], // Include captured styles
                 $content_with_styles['content']
@@ -517,14 +525,21 @@ class Block_Support {
                         const response = await fetch(`${apiUrl}${detail.contentId}`);
                         const data = await response.json();
                         
+                        // Build article CSS classes
+                        const articleClasses = [
+                            'modal-entry',
+                            `type-${data.type}`,
+                            `post-${data.id}`
+                        ].join(' ');
+                        
                         // Set content with inline styles
                         this.content = `
                             ${data.styles ? `<style>${data.styles}</style>` : ''}
-                            <article class="modal-post-content">
-                                <header class="modal-post-header">
+                            <article class="${articleClasses}">
+                                <header class="modal-entry-header">
                                     <h2>${data.title}</h2>
                                 </header>
-                                <div class="modal-post-body">
+                                <div class="modal-entry-content">
                                     ${data.content}
                                 </div>
                             </article>
