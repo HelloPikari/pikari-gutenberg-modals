@@ -288,6 +288,145 @@ class Block_Support {
     }
 
     /**
+     * Modified version of WordPress's wp_render_layout_support_flag function.
+     * 
+     * This captures and returns layout styles inline instead of enqueuing them
+     * to the footer, which is necessary for content loaded via REST API/AJAX.
+     *
+     * Based on WordPress core's wp_render_layout_support_flag from
+     * wp-includes/block-supports/layout.php
+     *
+     * @param string $block_content The block content
+     * @param array $block The block data
+     * @return array Array with 'content' and 'styles' keys
+     */
+    private function render_layout_support_inline(string $block_content, array $block): array {
+        $block_type = \WP_Block_Type_Registry::get_instance()->get_registered($block['blockName']);
+        $block_supports_layout = block_has_support($block_type, 'layout', false) || block_has_support($block_type, '__experimentalLayout', false);
+        
+        if (!$block_supports_layout) {
+            return ['content' => $block_content, 'styles' => ''];
+        }
+        
+        $default_layout = isset($block_type->supports['layout']['default']) 
+            ? $block_type->supports['layout']['default'] 
+            : array();
+            
+        if (empty($default_layout)) {
+            $default_layout = isset($block_type->supports['__experimentalLayout']['default'])
+                ? $block_type->supports['__experimentalLayout']['default']
+                : array();
+        }
+        
+        $used_layout = isset($block['attrs']['layout']) ? $block['attrs']['layout'] : $default_layout;
+        
+        // Set the correct layout type for blocks using legacy content width
+        if (isset($used_layout['inherit']) && $used_layout['inherit'] || isset($used_layout['contentSize']) && $used_layout['contentSize']) {
+            $used_layout['type'] = 'constrained';
+        }
+        
+        $class_names = [];
+        $layout_definitions = wp_get_layout_definitions();
+        
+        // Get layout type classname
+        if (isset($used_layout['type'])) {
+            $layout_classname = isset($layout_definitions[$used_layout['type']]['className'])
+                ? $layout_definitions[$used_layout['type']]['className']
+                : '';
+        } else {
+            $layout_classname = isset($layout_definitions['default']['className'])
+                ? $layout_definitions['default']['className']
+                : '';
+        }
+        
+        if ($layout_classname && is_string($layout_classname)) {
+            $class_names[] = sanitize_title($layout_classname);
+        }
+        
+        // Add orientation class
+        if (!empty($block['attrs']['layout']['orientation'])) {
+            $class_names[] = 'is-' . sanitize_title($block['attrs']['layout']['orientation']);
+        }
+        
+        // Add content justification class
+        if (!empty($block['attrs']['layout']['justifyContent'])) {
+            $class_names[] = 'is-content-justification-' . sanitize_title($block['attrs']['layout']['justifyContent']);
+        }
+        
+        // Add nowrap class
+        if (!empty($block['attrs']['layout']['flexWrap']) && 'nowrap' === $block['attrs']['layout']['flexWrap']) {
+            $class_names[] = 'is-nowrap';
+        }
+        
+        // Handle vertical alignment for columns block
+        if ('core/columns' === $block['blockName'] && isset($block['attrs']['verticalAlignment'])) {
+            $class_names[] = 'are-vertically-aligned-' . $block['attrs']['verticalAlignment'];
+        }
+        
+        $gap_value = isset($block['attrs']['style']['spacing']['blockGap'])
+            ? $block['attrs']['style']['spacing']['blockGap']
+            : null;
+            
+        // Skip if gap value contains unsupported characters
+        if (is_array($gap_value)) {
+            foreach ($gap_value as $key => $value) {
+                $gap_value[$key] = $value && preg_match('%[\\\(&=}]|/\*%', $value) ? null : $value;
+            }
+        } else {
+            $gap_value = $gap_value && preg_match('%[\\\(&=}]|/\*%', $gap_value) ? null : $gap_value;
+        }
+        
+        $should_skip_gap_serialization = wp_should_skip_block_supports_serialization($block_type, 'spacing', 'blockGap');
+        $block_spacing = isset($block['attrs']['style']['spacing']) ? $block['attrs']['style']['spacing'] : null;
+        
+        $fallback_gap_value = isset($block_type->supports['spacing']['blockGap']['__experimentalDefault'])
+            ? $block_type->supports['spacing']['blockGap']['__experimentalDefault']
+            : '0.5em';
+            
+        $has_block_gap_support = isset(wp_get_global_settings()['spacing']['blockGap']);
+        
+        // Generate unique container class
+        $unique_id = wp_unique_id('is-layout-');
+        $container_class = 'wp-container-' . sanitize_title($block['blockName']) . '-' . $unique_id;
+        
+        // Get layout styles using WordPress core function
+        $layout_styles = wp_get_layout_style(
+            ".$container_class",
+            $used_layout,
+            $has_block_gap_support,
+            $gap_value,
+            $should_skip_gap_serialization,
+            $fallback_gap_value,
+            $block_spacing
+        );
+        
+        // Only add container class if we have styles
+        if (!empty($layout_styles)) {
+            $class_names[] = $container_class;
+        }
+        
+        // Add combined layout and block classname
+        $block_name = explode('/', $block['blockName']);
+        $class_names[] = 'wp-block-' . end($block_name) . '-' . $layout_classname;
+        
+        // Apply classes to block content
+        if (!empty($class_names)) {
+            $processor = new \WP_HTML_Tag_Processor($block_content);
+            if ($processor->next_tag()) {
+                foreach ($class_names as $class_name) {
+                    $processor->add_class($class_name);
+                }
+                $block_content = $processor->get_updated_html();
+            }
+        }
+        
+        return [
+            'content' => $block_content,
+            'styles' => $layout_styles
+        ];
+    }
+    
+    /**
      * Get post content with captured block support styles.
      *
      * This method captures the dynamically generated CSS for block supports
@@ -309,22 +448,18 @@ class Block_Support {
         // Array to collect all styles
         $captured_styles = [];
         
-        // Hook into render_block to capture dynamically generated styles
+        // Hook into render_block to use our modified layout support function
         $style_capture_filter = function($block_content, $parsed_block) use (&$captured_styles) {
-            // Check if block has layout support
-            if (!empty($parsed_block['attrs']['style']) || strpos($block_content, 'wp-container-') !== false) {
-                // Extract container ID from rendered content
-                if (preg_match('/class="[^"]*?(wp-container-[^"\s]+)/', $block_content, $matches)) {
-                    $container_id = $matches[1];
-                    
-                    // Get layout styles for this specific block
-                    $layout_styles = $this->generate_layout_styles($container_id, $parsed_block);
-                    if ($layout_styles) {
-                        $captured_styles[] = $layout_styles;
-                    }
-                }
+            // Use our modified layout support function that returns styles inline
+            $result = $this->render_layout_support_inline($block_content, $parsed_block);
+            
+            // Capture any generated styles
+            if (!empty($result['styles'])) {
+                $captured_styles[] = $result['styles'];
             }
-            return $block_content;
+            
+            // Return the modified content
+            return $result['content'];
         };
         add_filter('render_block', $style_capture_filter, 10, 2);
         
@@ -368,104 +503,6 @@ class Block_Support {
             'styles' => $all_styles
         ];
     }
-    
-    /**
-     * Generate layout styles for a specific container.
-     *
-     * @param string $container_id The container ID (e.g., wp-container-xxx)
-     * @param array $parsed_block The parsed block data
-     * @return string Generated CSS styles
-     */
-    private function generate_layout_styles(string $container_id, array $parsed_block): string {
-        $styles = [];
-        
-        // Check if this is a flex or grid layout
-        $is_flex = isset($parsed_block['attrs']['layout']['type']) && $parsed_block['attrs']['layout']['type'] === 'flex';
-        $is_default = !isset($parsed_block['attrs']['layout']['type']) || $parsed_block['attrs']['layout']['type'] === 'default';
-        
-        // For columns and group blocks with flex layout
-        if ($is_flex || strpos($parsed_block['blockName'], 'core/columns') !== false) {
-            $styles[] = ".{$container_id} { display: flex; }";
-            
-            // Handle flex wrap
-            if (!empty($parsed_block['attrs']['layout']['flexWrap'])) {
-                $styles[] = ".{$container_id} { flex-wrap: {$parsed_block['attrs']['layout']['flexWrap']}; }";
-            } else {
-                $styles[] = ".{$container_id} { flex-wrap: wrap; }";
-            }
-            
-            // Handle vertical alignment
-            if (!empty($parsed_block['attrs']['layout']['verticalAlignment'])) {
-                $align_map = [
-                    'top' => 'flex-start',
-                    'center' => 'center',
-                    'bottom' => 'flex-end',
-                ];
-                $align_value = $align_map[$parsed_block['attrs']['layout']['verticalAlignment']] ?? 'center';
-                $styles[] = ".{$container_id} { align-items: {$align_value}; }";
-            } else {
-                $styles[] = ".{$container_id} { align-items: center; }";
-            }
-        }
-        
-        // Handle gap/spacing
-        if (!empty($parsed_block['attrs']['style']['spacing']['blockGap'])) {
-            $gap = $parsed_block['attrs']['style']['spacing']['blockGap'];
-            
-            // Handle different gap formats
-            if (is_string($gap)) {
-                $gap_value = $this->convert_value_to_css($gap);
-                $styles[] = ".{$container_id} { gap: {$gap_value}; }";
-            } elseif (is_array($gap)) {
-                // Handle directional gaps
-                if (isset($gap['top']) || isset($gap['left'])) {
-                    $row_gap = isset($gap['top']) ? $this->convert_value_to_css($gap['top']) : '0';
-                    $column_gap = isset($gap['left']) ? $this->convert_value_to_css($gap['left']) : '0';
-                    $styles[] = ".{$container_id} { row-gap: {$row_gap}; column-gap: {$column_gap}; }";
-                }
-            }
-        } elseif ($is_flex || strpos($parsed_block['blockName'], 'core/columns') !== false) {
-            // Default gap for flex layouts
-            $styles[] = ".{$container_id} { gap: var(--wp--style--block-gap, 2em); }";
-        }
-        
-        // Handle padding
-        if (!empty($parsed_block['attrs']['style']['spacing']['padding'])) {
-            $padding = $parsed_block['attrs']['style']['spacing']['padding'];
-            $padding_styles = [];
-            
-            foreach (['top', 'right', 'bottom', 'left'] as $side) {
-                if (!empty($padding[$side])) {
-                    $value = $this->convert_value_to_css($padding[$side]);
-                    $padding_styles[] = "padding-{$side}: {$value}";
-                }
-            }
-            
-            if (!empty($padding_styles)) {
-                $styles[] = ".{$container_id} { " . implode('; ', $padding_styles) . "; }";
-            }
-        }
-        
-        return implode("\n", $styles);
-    }
-    
-    /**
-     * Convert WordPress preset values to CSS.
-     *
-     * @param string $value The value to convert
-     * @return string CSS value
-     */
-    private function convert_value_to_css(string $value): string {
-        // Handle preset values (e.g., var:preset|spacing|xl)
-        if (strpos($value, 'var:') === 0) {
-            $preset_path = substr($value, 4);
-            $css_var_path = str_replace('|', '--', $preset_path);
-            return "var(--wp--{$css_var_path})";
-        }
-        
-        return $value;
-    }
-    
     /**
      * Render a single modal container in the footer.
      * 

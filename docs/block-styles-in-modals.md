@@ -16,12 +16,13 @@ When content is loaded via REST API for modal display, these dynamically generat
 
 ## Solution Architecture
 
-### 1. Style Capture During Rendering
+### 1. Style Capture Using WordPress Core Functions
 
-The `Block_Support` class includes a `get_post_content_with_styles()` method that:
-- Hooks into the `render_block` filter during content processing
-- Captures container IDs (e.g., `wp-container-core-group-xxx`)
-- Generates appropriate CSS for each container based on block attributes
+The `Block_Support` class includes a modified version of WordPress's `wp_render_layout_support_flag()` function that:
+- Uses WordPress's built-in `wp_get_layout_style()` function to generate proper CSS
+- Returns styles inline instead of enqueuing them to the footer
+- Maintains compatibility with WordPress core updates
+- Handles all block layout types (default, constrained, flex, grid)
 
 ### 2. Theme Value Preservation
 
@@ -65,20 +66,25 @@ modalBody.innerHTML = `
 
 ### Style Generation Method
 
-The `generate_layout_styles()` method handles:
-- **Layout detection**: Identifies flex/grid layouts
-- **Gap calculation**: Converts block gap attributes to CSS
-- **Alignment**: Maps WordPress alignment values to flexbox properties
-- **Spacing**: Processes padding/margin with theme presets
+The `render_layout_support_inline()` method:
+- **Leverages WordPress Core**: Uses `wp_get_layout_style()` to ensure accurate style generation
+- **Handles Block Context**: Properly processes block attributes and layout settings
+- **Returns Inline Styles**: Captures styles that would normally be enqueued to the footer
+- **Maintains Compatibility**: Follows WordPress core patterns for future-proof implementation
 
-### Supported Block Attributes
+### Block-Specific Styles
 
-The following block attributes are processed:
-- `layout.type` (flex, grid, default)
-- `layout.flexWrap`
-- `layout.verticalAlignment`
-- `style.spacing.blockGap` (string or array)
-- `style.spacing.padding` (directional values)
+Some block styles (like columns vertical alignment) are provided by block library CSS files. The plugin includes these essential styles in the modal CSS:
+- Columns vertical alignment (`are-vertically-aligned-top/center/bottom`)
+- Column self-alignment (`is-vertically-aligned-top/center/bottom/stretch`)
+
+### Supported Layout Types
+
+The implementation supports all WordPress layout types:
+- **Default (Flow)**: Standard block spacing and alignment
+- **Constrained**: Content width constraints with wide/full alignments
+- **Flex**: Flexible layouts with gap, alignment, and wrap settings
+- **Grid**: CSS Grid layouts (when available)
 
 ### CSS Custom Property Mapping
 
@@ -103,24 +109,35 @@ Examples:
 1. Check that the post content contains blocks with layout support
 2. Verify the REST endpoint is returning styles in the response
 3. Ensure frontend code is properly injecting the `<style>` tag
+4. Confirm WordPress core functions (`wp_get_layout_style`, `wp_get_layout_definitions`) are available
 
-### Generic Fallback Values
+### Column Alignment Issues
 
-If you see values like `var(--wp--style--block-gap, 1.5rem)`, the theme preset conversion may not be working. Check:
-- Block attributes contain preset values
-- The `convert_value_to_css()` method is properly detecting preset format
+If columns are not aligning properly:
+- The plugin includes fallback CSS for vertical alignment classes
+- Check that the modal CSS file is loaded and includes `.are-vertically-aligned-*` styles
+- Verify the columns block has the correct classes in the HTML
 
 ### Missing Container Styles
 
-Some blocks may not have container IDs. This typically happens with:
+Some blocks may not generate layout styles. This typically happens with:
 - Simple text blocks without layout settings
 - Blocks that don't support layout features
 - Classic content without block markup
 
-## Future Improvements
+## Implementation Notes
 
-Potential enhancements:
-- Cache generated styles for performance
-- Support for additional block supports (colors, typography)
-- Integration with block style variations
-- Support for responsive spacing values
+### Why Not Use WordPress's Original Function?
+
+WordPress's `wp_render_layout_support_flag()` function enqueues styles to the page footer, which doesn't work for content loaded via AJAX/REST API. Our modified version:
+- Returns styles inline for immediate use
+- Maintains the same logic as WordPress core
+- Ensures compatibility with block editor updates
+
+### Maintainability
+
+By using WordPress core functions like `wp_get_layout_style()`, the plugin:
+- Stays synchronized with WordPress updates
+- Supports new layout features automatically
+- Reduces maintenance burden
+- Ensures consistent behavior with the block editor
