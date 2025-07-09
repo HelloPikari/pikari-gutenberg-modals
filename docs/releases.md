@@ -8,9 +8,11 @@ Releases are automatically created by GitHub Actions when you push a tag startin
 
 ## Prerequisites
 
-- All code changes merged to main branch
+- **All code changes must be merged to the main branch** - Releases are only created from main
 - Clean working directory (no uncommitted changes)
 - Node.js and Composer dependencies installed locally for testing
+
+> **Important**: Never create release tags from feature branches. Always merge to main first.
 
 ## Step-by-Step Release Process
 

@@ -124,9 +124,11 @@ See [docs/development.md](docs/development.md) for detailed information about th
 
 ### Automated Release Process
 
-The plugin uses GitHub Actions to automatically create releases when you push a version tag. Here's the streamlined process:
+The plugin uses GitHub Actions to automatically create releases when you push a version tag from the main branch. Here's the streamlined process:
 
-1. **Update version numbers** in three files:
+1. **Ensure all changes are merged to main branch** (releases are only created from main)
+
+2. **Update version numbers** in three files:
    - `pikari-gutenberg-modals.php` (plugin header)
    - `package.json`
    - `CHANGELOG.md` (move items from "Unreleased" to new version section with date)
