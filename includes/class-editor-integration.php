@@ -1,22 +1,23 @@
 <?php
 /**
  * Editor Integration
- * 
+ *
  * IMPORTANT: WordPress 5.8+ uses an iframe-based editor for better isolation.
  * Styles must use !important declarations and include .editor-styles-wrapper
  * selectors to ensure they apply within the iframe context.
- * 
+ *
  * @see https://make.wordpress.org/core/2021/06/29/blocks-in-an-iframed-template-editor/
- * 
+ *
  * @package PikariGutenbergModals
  */
 
 namespace Pikari\GutenbergModals;
 
-class Editor_Integration {
+class Editor_Integration
+{
     /**
      * Block support instance
-     * 
+     *
      * @var Block_Support
      */
     private Block_Support $block_support;
@@ -24,7 +25,8 @@ class Editor_Integration {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         // Hook into editor asset loading for scripts
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_scripts']);
         
@@ -35,7 +37,8 @@ class Editor_Integration {
     /**
      * Enqueue editor scripts
      */
-    public function enqueue_editor_scripts(): void {
+    public function enqueue_editor_scripts(): void
+    {
         $editor_asset_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/index.asset.php';
         
         // Check if build exists
@@ -77,11 +80,12 @@ class Editor_Integration {
     
     /**
      * Enqueue block styles
-     * 
+     *
      * Uses enqueue_block_assets hook which properly handles styles
      * for both the editor iframe and frontend contexts.
      */
-    public function enqueue_block_styles(): void {
+    public function enqueue_block_styles(): void
+    {
         // Only enqueue in editor context
         if (!is_admin()) {
             return;

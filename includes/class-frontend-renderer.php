@@ -1,17 +1,19 @@
 <?php
 /**
  * Frontend Renderer
- * 
+ *
  * @package PikariGutenbergModals
  */
 
 namespace Pikari\GutenbergModals;
 
-class Frontend_Renderer {
+class Frontend_Renderer
+{
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         // Enqueue frontend assets
         add_action('wp_enqueue_scripts', [$this, 'enqueue_frontend_assets']);
     }
@@ -19,7 +21,8 @@ class Frontend_Renderer {
     /**
      * Enqueue frontend assets
      */
-    public function enqueue_frontend_assets(): void {
+    public function enqueue_frontend_assets(): void
+    {
         $frontend_asset_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/frontend/index.asset.php';
         
         // Check if build exists

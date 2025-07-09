@@ -1,7 +1,7 @@
 <?php
 /**
  * Uninstall Pikari Gutenberg Modals
- * 
+ *
  * @package PikariGutenbergModals
  */
 

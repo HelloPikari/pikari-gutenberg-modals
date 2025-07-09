@@ -1,11 +1,11 @@
 /**
  * Editor styles for modal links
- * 
+ *
  * IMPORTANT: WordPress 5.8+ uses an iframe-based editor. To ensure styles work:
  * 1. Include .editor-styles-wrapper selectors for iframe context
  * 2. Use !important declarations to override default styles
  * 3. Test in both classic and iframe editor modes
- * 
+ *
  * The iframe editor isolates styles for better theme compatibility but requires
  * specific targeting to apply custom format styles.
  */
@@ -14,50 +14,52 @@ span[data-modal-link],
 span.modal-link-trigger,
 .editor-styles-wrapper span[data-modal-link],
 .editor-styles-wrapper span.modal-link-trigger {
-    cursor: pointer !important;
-    text-decoration: underline !important;
-    text-decoration-style: dashed !important;
-    text-decoration-color: #8b5cf6 !important;
-    background-color: rgba(139, 92, 246, 0.1) !important;
-    padding: 0 4px !important;
-    border-radius: 3px !important;
-    position: relative;
-    
-    &:hover {
-        text-decoration-style: solid !important;
-        background-color: rgba(139, 92, 246, 0.2) !important;
-    }
-    
-    // Add icon indicator
-    &::after {
-        content: "⧉";
-        font-size: 0.8em;
-        vertical-align: super;
-        margin-left: 2px;
-        color: #8b5cf6;
-    }
+	cursor: pointer !important;
+	text-decoration: underline !important;
+	text-decoration-style: dashed !important;
+	text-decoration-color: #8b5cf6 !important;
+	background-color: rgba(139, 92, 246, 0.1) !important;
+	padding: 0 4px !important;
+	border-radius: 3px !important;
+	position: relative;
+
+	&:hover {
+		text-decoration-style: solid !important;
+		background-color: rgba(139, 92, 246, 0.2) !important;
+	}
+
+	// Add icon indicator
+	&::after {
+		content: "⧉";
+		font-size: 0.8em;
+		vertical-align: super;
+		margin-left: 2px;
+		color: #8b5cf6;
+	}
 }
 
 // Modal toolbar button
 .modal-toolbar-button {
-    svg {
-        width: 20px;
-        height: 20px;
-    }
+
+	svg {
+		width: 20px;
+		height: 20px;
+	}
 }
 
 // Modal link popover
 .modal-link-popover {
-    .components-popover__content {
-        min-width: 300px;
-        padding: 16px;
-        max-height: none !important; // Override inline max-height
-        overflow: visible !important;
-    }
-    
-    // Ensure search results are visible
-    .block-editor-link-control__search-results {
-        max-height: 300px;
-        overflow-y: auto;
-    }
+
+	.components-popover__content {
+		min-width: 300px;
+		padding: 16px;
+		max-height: none !important; // Override inline max-height
+		overflow: visible !important;
+	}
+
+	// Ensure search results are visible
+	.block-editor-link-control__search-results {
+		max-height: 300px;
+		overflow-y: auto;
+	}
 }

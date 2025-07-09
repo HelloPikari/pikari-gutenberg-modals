@@ -7,7 +7,8 @@
 
 namespace Pikari\GutenbergModals;
 
-class Block_Support {
+class Block_Support
+{
     /**
      * List of blocks that support modal links
      *
@@ -18,7 +19,8 @@ class Block_Support {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         $this->supported_blocks = $this->get_supported_blocks();
         $this->register_block_filters();
         
@@ -31,7 +33,8 @@ class Block_Support {
      *
      * @return array
      */
-    private function get_supported_blocks(): array {
+    private function get_supported_blocks(): array
+    {
         $default_blocks = [
             'core/paragraph',
             'core/heading',
@@ -67,14 +70,16 @@ class Block_Support {
      *
      * @return array
      */
-    public function get_supported_blocks_for_js(): array {
+    public function get_supported_blocks_for_js(): array
+    {
         return $this->supported_blocks;
     }
 
     /**
      * Register block filters
      */
-    private function register_block_filters(): void {
+    private function register_block_filters(): void
+    {
         foreach ($this->supported_blocks as $block_name) {
             add_filter("render_block_{$block_name}", [$this, 'filter_block'], 10, 2);
         }
@@ -93,7 +98,8 @@ class Block_Support {
      * @param array $block The block data array
      * @return string Modified block content with modal triggers
      */
-    public function filter_block(string $block_content, array $block): string {
+    public function filter_block(string $block_content, array $block): string
+    {
         // Early return if no modal links detected
         if (!str_contains($block_content, 'data-modal-link')) {
             return $block_content;
@@ -121,7 +127,8 @@ class Block_Support {
      * @param array $matches Regex matches array
      * @return string Processed span HTML
      */
-    private function process_modal_span(array $matches): string {
+    private function process_modal_span(array $matches): string
+    {
         $full_tag = $matches[0];
         $inner_html = $matches[1];
 
@@ -147,7 +154,8 @@ class Block_Support {
      * @param string $tag_html The full span tag HTML
      * @return array|null Modal configuration or null if invalid
      */
-    private function extract_modal_config(string $tag_html): ?array {
+    private function extract_modal_config(string $tag_html): ?array
+    {
         // Extract each required attribute
         preg_match('/data-modal-link="([^"]*)"/', $tag_html, $link_match);
         preg_match('/data-modal-content-type="([^"]*)"/', $tag_html, $type_match);
@@ -176,7 +184,8 @@ class Block_Support {
      * @param string $inner_html Original span content
      * @return string Trigger span HTML
      */
-    private function create_trigger_span(string $content_type, string $content_id, string $inner_html): string {
+    private function create_trigger_span(string $content_type, string $content_id, string $inner_html): string
+    {
         return sprintf(
             '<span class="has-modal-link modal-link-trigger" data-modal-content-type="%s" data-modal-content-id="%s" role="button" tabindex="0" style="cursor: pointer; text-decoration: underline; text-decoration-style: dashed;">%s</span>',
             esc_attr($content_type),
@@ -198,7 +207,8 @@ class Block_Support {
      * @param string $content_id The content ID (post ID) or URL
      * @return string|null The content HTML or null on failure
      */
-    private function get_modal_content(string $content_type, string $content_id): ?string {
+    private function get_modal_content(string $content_type, string $content_id): ?string
+    {
         // Handle external URLs
         if ($content_type === 'url') {
             return $this->get_url_content($content_id);
@@ -214,7 +224,8 @@ class Block_Support {
      * @param string $url The external URL
      * @return string Iframe HTML
      */
-    private function get_url_content(string $url): string {
+    private function get_url_content(string $url): string
+    {
         // Validate URL
         if (!filter_var($url, FILTER_VALIDATE_URL)) {
             error_log('Modal Toolbar Button: Invalid URL provided: ' . $url);
@@ -242,7 +253,8 @@ class Block_Support {
      * @param string $post_id The post ID
      * @return string|null Post content HTML or null if not found
      */
-    private function get_post_content(string $post_id): ?string {
+    private function get_post_content(string $post_id): ?string
+    {
         // Get the post
         $post = get_post((int) $post_id);
 
@@ -272,11 +284,11 @@ class Block_Support {
                     %s
                 </div>
             </article>',
-                esc_attr(implode(' ', $article_classes)),
-                esc_html(get_the_title($post)),
-                $content_with_styles['styles'], // Include captured styles
-                $content_with_styles['content']
-            );
+            esc_attr(implode(' ', $article_classes)),
+            esc_html(get_the_title($post)),
+            $content_with_styles['styles'], // Include captured styles
+            $content_with_styles['content']
+        );
 
         /**
          * Filter the modal post content.
@@ -289,7 +301,7 @@ class Block_Support {
 
     /**
      * Modified version of WordPress's wp_render_layout_support_flag function.
-     * 
+     *
      * This captures and returns layout styles inline instead of enqueuing them
      * to the footer, which is necessary for content loaded via REST API/AJAX.
      *
@@ -300,7 +312,8 @@ class Block_Support {
      * @param array $block The block data
      * @return array Array with 'content' and 'styles' keys
      */
-    private function render_layout_support_inline(string $block_content, array $block): array {
+    private function render_layout_support_inline(string $block_content, array $block): array
+    {
         $block_type = \WP_Block_Type_Registry::get_instance()->get_registered($block['blockName']);
         $block_supports_layout = block_has_support($block_type, 'layout', false) || block_has_support($block_type, '__experimentalLayout', false);
         
@@ -308,8 +321,8 @@ class Block_Support {
             return ['content' => $block_content, 'styles' => ''];
         }
         
-        $default_layout = isset($block_type->supports['layout']['default']) 
-            ? $block_type->supports['layout']['default'] 
+        $default_layout = isset($block_type->supports['layout']['default'])
+            ? $block_type->supports['layout']['default']
             : array();
             
         if (empty($default_layout)) {
@@ -436,7 +449,8 @@ class Block_Support {
      * @param WP_Post $post_object The post object
      * @return array Array with 'content' and 'styles' keys
      */
-    public function get_post_content_with_styles(\WP_Post $post_object): array {
+    public function get_post_content_with_styles(\WP_Post $post_object): array
+    {
         // Store current global post
         global $post;
         $original_post = $post;
@@ -449,7 +463,7 @@ class Block_Support {
         $captured_styles = [];
         
         // Hook into render_block to use our modified layout support function
-        $style_capture_filter = function($block_content, $parsed_block) use (&$captured_styles) {
+        $style_capture_filter = function ($block_content, $parsed_block) use (&$captured_styles) {
             // Use our modified layout support function that returns styles inline
             $result = $this->render_layout_support_inline($block_content, $parsed_block);
             
@@ -464,7 +478,7 @@ class Block_Support {
         add_filter('render_block', $style_capture_filter, 10, 2);
         
         // Add block context filter to provide post data to dynamic blocks
-        $filter_block_context = function($context) use ($post_object) {
+        $filter_block_context = function ($context) use ($post_object) {
             $context['postId'] = $post_object->ID;
             $context['postType'] = $post_object->post_type;
             return $context;
@@ -505,10 +519,11 @@ class Block_Support {
     }
     /**
      * Render a single modal container in the footer.
-     * 
+     *
      * This container will be populated dynamically via AJAX when triggers are clicked.
      */
-    public function render_single_modal_container(): void {
+    public function render_single_modal_container(): void
+    {
         ?>
         <div 
             id="pikari-modal"

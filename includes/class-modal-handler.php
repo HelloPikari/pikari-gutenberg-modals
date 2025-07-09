@@ -1,19 +1,20 @@
 <?php
 /**
  * Modal Handler
- * 
+ *
  * Manages modal content processing, caching, and security validation.
  * Provides extensibility points for developers to customize modal behavior.
- * 
+ *
  * @package PikariGutenbergModals
  */
 
 namespace Pikari\GutenbergModals;
 
-class Modal_Handler {
+class Modal_Handler
+{
     /**
      * Cache group for modal content.
-     * 
+     *
      * @var string
      */
     private const CACHE_GROUP = 'pikari_gutenberg_modals';
@@ -21,7 +22,8 @@ class Modal_Handler {
     /**
      * Constructor
      */
-    public function __construct() {
+    public function __construct()
+    {
         // Add hooks for modal content processing
         add_filter('pikari_gutenberg_modals_content', [$this, 'process_modal_content'], 10, 3);
         add_filter('pikari_gutenberg_modals_cache_duration', [$this, 'get_cache_duration']);
@@ -33,22 +35,23 @@ class Modal_Handler {
     
     /**
      * Process modal content before rendering.
-     * 
+     *
      * This method provides a central processing point for all modal content.
      * Developers can hook into this to modify content before display.
-     * 
+     *
      * Examples of processing:
      * - Strip unwanted HTML tags
      * - Add wrapper elements
      * - Inject custom styles
      * - Transform content based on type
-     * 
+     *
      * @param string $content The content HTML
      * @param string $content_type The content type (post/page/url)
      * @param mixed $content_id The content ID or URL
      * @return string Processed content
      */
-    public function process_modal_content(string $content, string $content_type, $content_id): string {
+    public function process_modal_content(string $content, string $content_type, $content_id): string
+    {
         // Add loading indicator for external content
         if ($content_type === 'url') {
             $content = $this->add_loading_indicator($content);
@@ -73,11 +76,12 @@ class Modal_Handler {
     
     /**
      * Add loading indicator for iframe content.
-     * 
+     *
      * @param string $content The iframe HTML
      * @return string Content with loading indicator
      */
-    private function add_loading_indicator(string $content): string {
+    private function add_loading_indicator(string $content): string
+    {
         $loading_text = esc_html__('Loading content...', 'pikari-gutenberg-modals');
         
         return sprintf(
@@ -92,10 +96,11 @@ class Modal_Handler {
     
     /**
      * Get cache duration for external content.
-     * 
+     *
      * @return int Cache duration in seconds (default: 1 hour)
      */
-    public function get_cache_duration(): int {
+    public function get_cache_duration(): int
+    {
         // Allow customization via constant
         if (defined('PIKARI_GUTENBERG_MODALS_CACHE_DURATION')) {
             return (int) PIKARI_GUTENBERG_MODALS_CACHE_DURATION;
@@ -106,10 +111,11 @@ class Modal_Handler {
     
     /**
      * Get allowed domains for external content.
-     * 
+     *
      * @return array List of allowed domains
      */
-    public function get_allowed_domains(): array {
+    public function get_allowed_domains(): array
+    {
         $allowed = [
             // Add commonly trusted domains
             parse_url(home_url(), PHP_URL_HOST),
@@ -120,10 +126,11 @@ class Modal_Handler {
     
     /**
      * Get blocked domains for security.
-     * 
+     *
      * @return array List of blocked domains
      */
-    public function get_blocked_domains(): array {
+    public function get_blocked_domains(): array
+    {
         $blocked = [
             // Add known malicious domains if needed
         ];
@@ -133,17 +140,18 @@ class Modal_Handler {
     
     /**
      * Validate URL for security.
-     * 
+     *
      * Performs comprehensive URL validation including:
      * - Scheme validation (HTTP/HTTPS only)
      * - Domain allowlist/blocklist checking
      * - Local URL detection
      * - Malformed URL detection
-     * 
+     *
      * @param string $url The URL to validate
      * @return bool Whether the URL is valid and safe
      */
-    public static function validate_url(string $url): bool {
+    public static function validate_url(string $url): bool
+    {
         // Basic validation
         if (empty($url) || !is_string($url)) {
             return false;
@@ -201,11 +209,12 @@ class Modal_Handler {
     
     /**
      * Check if URL points to local/private network.
-     * 
+     *
      * @param string $host The hostname to check
      * @return bool Whether the host is local/private
      */
-    private static function is_local_url(string $host): bool {
+    private static function is_local_url(string $host): bool
+    {
         // Check for localhost variations
         $local_hosts = ['localhost', '127.0.0.1', '::1'];
         if (in_array($host, $local_hosts, true)) {
