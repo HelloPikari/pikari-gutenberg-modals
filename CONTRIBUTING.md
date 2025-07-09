@@ -55,9 +55,21 @@ By participating in this project, you agree to maintain a respectful and inclusi
 2. **Testing**
    - Add tests for new features
    - Ensure existing tests pass
+   - Run the test suite:
+     ```bash
+     # JavaScript unit tests
+     npm test
+     
+     # PHP unit tests (requires WordPress test suite)
+     composer test
+     
+     # E2E tests
+     npm run test:e2e
+     ```
    - Test in multiple browsers
    - Test with keyboard navigation
    - Verify screen reader compatibility
+   - See [Testing Guide](tests/README.md) for detailed testing documentation
 
 3. **Documentation**
    - Update README.md for user-facing changes
@@ -84,7 +96,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 - [ ] Code follows project standards
 - [ ] Tests added/updated and passing
 - [ ] Documentation updated
-- [ ] Linting passes
+- [ ] Linting passes (`npm run lint:js`, `npm run lint:css`, `composer lint`)
+- [ ] Unit tests pass (`npm test`)
 - [ ] Compatible with WordPress 6.8+
 - [ ] Compatible with PHP 8.3+
 - [ ] Tested accessibility
@@ -142,6 +155,9 @@ The plugin uses GitHub Actions to automatically create releases when you push a 
    npm run lint:js
    npm run lint:css
    composer lint
+   
+   # Run tests
+   npm test
    
    # Build and test locally
    npm run build

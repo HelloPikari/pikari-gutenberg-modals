@@ -4,7 +4,7 @@
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
     "keywords": ["wordpress", "plugin", "gutenberg", "block-editor", "modal", "popup"],
-    "homepage": "https://github.com/your-org/pikari-gutenberg-modals",
+    "homepage": "https://github.com/HelloPikari/pikari-gutenberg-modals",
     "authors": [
         {
             "name": "Pikari",
@@ -12,8 +12,8 @@
         }
     ],
     "support": {
-        "issues": "https://github.com/your-org/pikari-gutenberg-modals/issues",
-        "source": "https://github.com/your-org/pikari-gutenberg-modals"
+        "issues": "https://github.com/HelloPikari/pikari-gutenberg-modals/issues",
+        "source": "https://github.com/HelloPikari/pikari-gutenberg-modals"
     },
     "require": {
         "php": ">=8.3"

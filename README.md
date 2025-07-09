@@ -54,6 +54,7 @@ The plugin does **not** support the core/button block to maintain HTML standards
 - [Refactoring History](docs/refactoring-history.md) - Historical changes and decisions
 - [Contributing Guidelines](CONTRIBUTING.md) - How to contribute to the project
 - [Changelog](CHANGELOG.md) - Version history and changes
+- [Testing Guide](tests/README.md) - Comprehensive test suite documentation
 
 ## Developer Documentation
 
@@ -153,7 +154,7 @@ WordPress 5.8+ uses an iframe-based editor. This plugin includes special handlin
 
 - Styles use `.editor-styles-wrapper` selectors
 - `!important` declarations ensure visibility
-- See `DEVELOPER-NOTES.md` for details
+- See [Development Guide](docs/development.md) for details
 
 ## Requirements
 
@@ -161,7 +162,32 @@ WordPress 5.8+ uses an iframe-based editor. This plugin includes special handlin
 - PHP 8.3+
 - Modern browser with JavaScript enabled
 
+## Testing
+
+This plugin includes a comprehensive test suite:
+
+- **Unit Tests** - JavaScript and PHP unit tests
+- **Integration Tests** - REST API endpoint testing
+- **E2E Tests** - Browser automation with Playwright
+
+Run tests with:
+```bash
+npm test           # JavaScript unit tests
+composer test      # PHP unit tests (requires setup)
+npm run test:e2e   # End-to-end tests
+```
+
+See [Testing Guide](tests/README.md) for detailed testing documentation.
+
 ## Changelog
+
+### 0.2.0
+
+- Add comprehensive test suite with unit, integration, and e2e tests
+- Fix all linting issues for JavaScript, CSS, and PHP
+- Update dependencies to latest versions
+- Improve code organization and documentation
+- Add automated CI/CD with GitHub Actions
 
 ### 0.1.0-alpha
 

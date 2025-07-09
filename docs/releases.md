@@ -86,9 +86,9 @@ git push origin v0.2.0
 
 ### 5. Monitor the Release
 
-1. Go to the [Actions tab](https://github.com/your-org/pikari-gutenberg-modals/actions) on GitHub
+1. Go to the [Actions tab](https://github.com/HelloPikari/pikari-gutenberg-modals/actions) on GitHub
 2. Watch the "CI" workflow run
-3. Once complete, check the [Releases page](https://github.com/your-org/pikari-gutenberg-modals/releases)
+3. Once complete, check the [Releases page](https://github.com/HelloPikari/pikari-gutenberg-modals/releases)
 4. The new release should appear with:
    - Release notes extracted from CHANGELOG.md
    - ZIP file attached for download
