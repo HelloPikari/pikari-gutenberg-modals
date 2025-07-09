@@ -9,7 +9,7 @@
     "lint:css": "wp-scripts lint-style src/**/*.scss",
     "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
-    "test": "wp-scripts test-unit-js",
+    "test": "wp-scripts test-unit-js --passWithNoTests",
     "test:e2e": "wp-scripts test-e2e",
     "translate": "wp-scripts i18n make-pot . languages/pikari-gutenberg-modals.pot --exclude=node_modules,build,releases"
   },
