@@ -33,11 +33,13 @@ build/
 # Claude AI files
 .claude/
 
-# Testing and development files
-test-*.md
-test-*.sh
-test-*.html
-issues/
+# Testing artifacts
+tests/coverage/
+tests/results/
+.phpunit.result.cache
 
-# Future development notes (not for version control)
-Future Notes/
+# Translation files (generated)
+languages/*.pot
+
+# Plugin distribution files
+pikari-gutenberg-modals.zip

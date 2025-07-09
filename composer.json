@@ -1,0 +1,50 @@
+{
+    "name": "pikari/gutenberg-modals",
+    "description": "A WordPress plugin that adds modal window functionality to the block editor",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "keywords": ["wordpress", "plugin", "gutenberg", "block-editor", "modal", "popup"],
+    "homepage": "https://github.com/your-org/pikari-gutenberg-modals",
+    "authors": [
+        {
+            "name": "Pikari",
+            "homepage": "https://pikari.io"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/your-org/pikari-gutenberg-modals/issues",
+        "source": "https://github.com/your-org/pikari-gutenberg-modals"
+    },
+    "require": {
+        "php": ">=8.3"
+    },
+    "require-dev": {
+        "squizlabs/php_codesniffer": "^3.7",
+        "wp-coding-standards/wpcs": "^3.0",
+        "phpcompatibility/phpcompatibility-wp": "^2.1",
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        }
+    },
+    "scripts": {
+        "lint": "phpcs",
+        "lint:fix": "phpcbf",
+        "post-install-cmd": [
+            "@php ./vendor/bin/phpcs --config-set installed_paths vendor/wp-coding-standards/wpcs,vendor/phpcompatibility/phpcompatibility-wp"
+        ],
+        "post-update-cmd": [
+            "@php ./vendor/bin/phpcs --config-set installed_paths vendor/wp-coding-standards/wpcs,vendor/phpcompatibility/phpcompatibility-wp"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "Pikari\\GutenbergModals\\": "includes/"
+        },
+        "files": [
+            "includes/plugin.php"
+        ]
+    }
+}

@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Modal Classes</title>
+    <style>
+        .test-result {
+            font-family: monospace;
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .pass { color: green; }
+        .fail { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Modal Classes Test</h1>
+    
+    <h2>Test API Response</h2>
+    <div id="api-test" class="test-result">Loading...</div>
+    
+    <h2>Test Article Classes</h2>
+    <div id="class-test" class="test-result">Loading...</div>
+    
+    <script>
+        // Test API endpoint
+        fetch('https://childrensliteracy.ddev.site/wp-json/pikari-gutenberg-modals/v1/modal-content/331')
+            .then(response => response.json())
+            .then(data => {
+                const apiTest = document.getElementById('api-test');
+                apiTest.innerHTML = `
+                    <div>Post ID: ${data.id}</div>
+                    <div>Post Type: ${data.type}</div>
+                    <div>Title: ${data.title}</div>
+                    <div class="${data.id && data.type ? 'pass' : 'fail'}">
+                        ${data.id && data.type ? '✓ API returns required data' : '✗ API missing data'}
+                    </div>
+                `;
+                
+                // Test class generation
+                const articleClasses = [
+                    'modal-entry',
+                    `type-${data.type}`,
+                    `post-${data.id}`
+                ].join(' ');
+                
+                const classTest = document.getElementById('class-test');
+                classTest.innerHTML = `
+                    <div>Generated classes: <code>${articleClasses}</code></div>
+                    <div class="${articleClasses === 'modal-entry type-team post-331' ? 'pass' : 'fail'}">
+                        ${articleClasses === 'modal-entry type-team post-331' ? '✓ Classes match expected format' : '✗ Classes do not match'}
+                    </div>
+                `;
+            })
+            .catch(error => {
+                document.getElementById('api-test').innerHTML = `<span class="fail">Error: ${error.message}</span>`;
+            });
+    </script>
+</body>
+</html>

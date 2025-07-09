@@ -1,6 +1,6 @@
 {
   "name": "pikari-gutenberg-modals",
-  "version": "1.0.0",
+  "version": "0.2.0",
   "description": "Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.",
   "scripts": {
     "build": "wp-scripts build",
@@ -8,7 +8,10 @@
     "lint:js": "wp-scripts lint-js src",
     "lint:css": "wp-scripts lint-style src/**/*.scss",
     "packages-update": "wp-scripts packages-update",
-    "plugin-zip": "wp-scripts plugin-zip"
+    "plugin-zip": "wp-scripts plugin-zip",
+    "test": "wp-scripts test-unit-js",
+    "test:e2e": "wp-scripts test-e2e",
+    "translate": "wp-scripts i18n make-pot . languages/pikari-gutenberg-modals.pot --exclude=node_modules,build,releases"
   },
   "repository": {
     "type": "git",
@@ -30,10 +33,23 @@
     "@wordpress/rich-text": "^7.26.0",
     "@wordpress/url": "^4.26.0"
   },
-  "wp-scripts": {
-    "entry": {
-      "editor/index": "./src/editor/index.js",
-      "frontend/index": "./src/frontend/index.js"
-    }
+  "jest": {
+    "preset": "@wordpress/jest-preset-default",
+    "testEnvironment": "jsdom",
+    "testMatch": [
+      "**/tests/unit/**/*.test.js",
+      "**/tests/integration/**/*.test.js"
+    ],
+    "moduleNameMapper": {
+      "\\.(css|scss)$": "<rootDir>/tests/mocks/styleMock.js"
+    },
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setupTests.js"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/**/*.test.js"
+    ],
+    "coverageDirectory": "tests/coverage"
   }
 }

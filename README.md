@@ -29,6 +29,7 @@
 ## Supported Blocks
 
 By default, modal links work in:
+
 - Paragraphs
 - Headings
 - Lists
@@ -40,15 +41,26 @@ By default, modal links work in:
 The plugin does **not** support the core/button block to maintain HTML standards and accessibility. Button blocks render as `<button>` or `<a>` elements, and adding modal format would create nested interactive elements, which is invalid HTML.
 
 **Alternatives for modal-triggering buttons:**
+
 1. Use a regular button block and set the link URL directly
 2. Use a paragraph block with custom CSS to style it as a button
 3. Consider creating a custom "Modal Button" block (see Developer Documentation)
+
+## Documentation
+
+- [Development Guide](docs/development.md) - Architecture and implementation details
+- [Block Styles in Modals](docs/block-styles-in-modals.md) - How block styles are preserved in modal content
+- [Release Process](docs/releases.md) - How to create new releases
+- [Refactoring History](docs/refactoring-history.md) - Historical changes and decisions
+- [Contributing Guidelines](CONTRIBUTING.md) - How to contribute to the project
+- [Changelog](CHANGELOG.md) - Version history and changes
 
 ## Developer Documentation
 
 ### Hooks & Filters
 
 #### Customize Supported Blocks
+
 ```php
 add_filter('pikari_gutenberg_modals_supported_blocks', function($blocks) {
     $blocks[] = 'my-plugin/custom-block';
@@ -57,6 +69,7 @@ add_filter('pikari_gutenberg_modals_supported_blocks', function($blocks) {
 ```
 
 #### Process Modal Content
+
 ```php
 add_filter('pikari_gutenberg_modals_content', function($content, $type, $id) {
     // Modify content before display
@@ -65,6 +78,7 @@ add_filter('pikari_gutenberg_modals_content', function($content, $type, $id) {
 ```
 
 #### Security Filters
+
 ```php
 // Allow specific domains
 add_filter('pikari_gutenberg_modals_allowed_domains', function($domains) {
@@ -80,6 +94,7 @@ add_filter('pikari_gutenberg_modals_blocked_domains', function($domains) {
 ```
 
 #### Customize Search
+
 ```php
 add_filter('pikari_gutenberg_modals_search_args', function($args, $search) {
     // Modify WP_Query arguments
@@ -91,11 +106,13 @@ add_filter('pikari_gutenberg_modals_search_args', function($args, $search) {
 ### REST API
 
 #### Search Endpoint
+
 ```
 GET /wp-json/pikari-gutenberg-modals/v1/search
 ```
 
 Parameters:
+
 - `search` (required) - Search term
 - `per_page` - Results per page (default: 20)
 - `page` - Page number for pagination
@@ -103,22 +120,26 @@ Parameters:
 ### JavaScript Events
 
 #### Alpine.js Integration
+
 ```javascript
 // Open a modal programmatically
-window.dispatchEvent(new CustomEvent('open-modal', {
-    detail: { id: 'modal-id' }
-}));
+window.dispatchEvent(
+  new CustomEvent('open-modal', {
+    detail: { id: 'modal-id' },
+  })
+)
 ```
 
 ### CSS Custom Properties
 
 Customize modal appearance:
+
 ```css
 :root {
-    --modal-overlay-bg: rgba(0, 0, 0, 0.8);
-    --modal-content-bg: #ffffff;
-    --modal-max-width: 800px;
-    --modal-border-radius: 8px;
+  --modal-overlay-bg: rgba(0, 0, 0, 0.8);
+  --modal-content-bg: #ffffff;
+  --modal-max-width: 800px;
+  --modal-border-radius: 8px;
 }
 ```
 
@@ -129,6 +150,7 @@ Customize modal appearance:
 ## Iframe Editor Compatibility
 
 WordPress 5.8+ uses an iframe-based editor. This plugin includes special handling:
+
 - Styles use `.editor-styles-wrapper` selectors
 - `!important` declarations ensure visibility
 - See `DEVELOPER-NOTES.md` for details
@@ -141,8 +163,9 @@ WordPress 5.8+ uses an iframe-based editor. This plugin includes special handlin
 
 ## Changelog
 
-### 1.0.0
-- Initial release
+### 0.1.0-alpha
+
+- Prelease
 - Core modal functionality
 - Alpine.js integration
 - REST API search

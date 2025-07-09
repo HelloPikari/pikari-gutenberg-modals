@@ -1,0 +1,69 @@
+# Exclude files from release archives (git archive)
+# This keeps the distributed package lean when installing via Composer
+
+# Development files
+/.github export-ignore
+/tests export-ignore
+/src export-ignore
+/node_modules export-ignore
+/docs export-ignore
+/issues export-ignore
+/releases export-ignore
+
+# Build and config files
+/.editorconfig export-ignore
+/.gitattributes export-ignore
+/.gitignore export-ignore
+/composer.json export-ignore
+/composer.lock export-ignore
+/package.json export-ignore
+/package-lock.json export-ignore
+/phpcs.xml export-ignore
+/phpunit.xml.dist export-ignore
+/webpack.config.js export-ignore
+
+# Documentation (keep README.md for users)
+/CONTRIBUTING.md export-ignore
+/CLAUDE.md export-ignore
+
+# Build artifacts (these should be built before tagging)
+# Note: The /build directory should be committed for releases
+# so end users don't need to build assets
+
+# Temporary and cache files
+*.log export-ignore
+*.cache export-ignore
+.DS_Store export-ignore
+
+# Line ending normalization
+* text=auto eol=lf
+
+# Binary files
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.gif binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.eot binary
+*.pdf binary
+*.zip binary
+
+# Ensure consistent line endings for text files
+*.php text eol=lf
+*.js text eol=lf
+*.jsx text eol=lf
+*.json text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.md text eol=lf
+*.txt text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.sh text eol=lf
+*.pot text eol=lf
+*.po text eol=lf
+*.mo binary

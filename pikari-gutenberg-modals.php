@@ -3,7 +3,7 @@
  * Plugin Name: Pikari Gutenberg Modals
  * Plugin URI: https://github.com/your-org/pikari-gutenberg-modals
  * Description: Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.
- * Version: 0.1.0-alpha
+ * Version: 0.2.0
  * Author: Pikari Inc.
  * Text Domain: pikari-gutenberg-modals
  * Domain Path: /languages
