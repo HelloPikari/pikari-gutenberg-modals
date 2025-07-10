@@ -69,10 +69,34 @@ jobs:
         # Create or checkout build branch
         git checkout -B build
         
-        # Remove .gitignore to include build files
-        rm -f .gitignore
+        # Create a custom .gitignore for the build branch
+        cat > .gitignore << 'EOF'
+# Keep node_modules out of the build branch
+node_modules/
+vendor/
+
+# Development files
+.DS_Store
+*.log
+.env
+.env.*
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Testing artifacts
+tests/coverage/
+tests/results/
+.phpunit.result.cache
+
+# Husky hooks (not needed in build)
+.husky/
+EOF
         
-        # Add all files including build directory
+        # Add all files except those in .gitignore
         git add -A
         
         # Check if there are changes
