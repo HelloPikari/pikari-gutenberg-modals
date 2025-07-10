@@ -20,7 +20,7 @@
             "step": "installPlugin",
             "pluginData": {
                 "resource": "url",
-                "url": "https://github-proxy.com/proxy/?repo=HelloPikari/pikari-gutenberg-modals&branch=main"
+                "url": "https://github-proxy.com/proxy/?repo=HelloPikari/pikari-gutenberg-modals&branch=build"
             },
             "options": {
                 "activate": true
