@@ -4,7 +4,7 @@
         "php": "8.2",
         "wp": "latest"
     },
-    "landingPage": "/wp-admin/post-new.php",
+    "landingPage": "/wp-admin/post.php?post=1&action=edit",
     "login": true,
     "features": {
         "networking": true
@@ -32,6 +32,10 @@
                 "resource": "wordpress.org/themes",
                 "slug": "twentytwentyfour"
             }
+        },
+        {
+            "step": "runPHP",
+            "code": "<?php\nrequire '/wordpress/wp-load.php';\n\n// Update the default Hello World post with demo content\nwp_update_post(array(\n    'ID' => 1,\n    'post_title' => 'Pikari Gutenberg Modals - Interactive Demo',\n    'post_content' => '<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">Welcome to Pikari Gutenberg Modals!</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>This plugin transforms your content into engaging interactive experiences. Click on any of the purple-highlighted modal links below to see them in action!</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">Try These Examples:</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>🔗 <span class=\"modal-link-trigger\" data-modal-url=\"/sample-page/\" data-modal-type=\"internal\" data-modal-id=\"demo-1\">Click here to view the Sample Page</span> in a beautiful modal window.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>📝 Want to <span class=\"modal-link-trigger\" data-modal-url=\"/wp-admin/post.php?post=1&action=edit\" data-modal-type=\"internal\" data-modal-id=\"demo-2\">see this very post</span> in a modal? Give it a try!</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>🌐 External content works too! <span class=\"modal-link-trigger\" data-modal-url=\"https://wordpress.org/plugins/\" data-modal-type=\"external\" data-modal-id=\"demo-3\">Browse WordPress plugins</span> without leaving this page.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:heading {\"level\":3} -->\n<h3 class=\"wp-block-heading\">Create Your Own Modal</h3>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>Ready to create your own modal link? It\\'s easy:</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:list {\"ordered\":true} -->\n<ol class=\"wp-block-list\">\n<!-- wp:list-item -->\n<li>Select any text in this editor</li>\n<!-- /wp:list-item -->\n\n<!-- wp:list-item -->\n<li>Click the purple modal icon in the toolbar</li>\n<!-- /wp:list-item -->\n\n<!-- wp:list-item -->\n<li>Enter a URL (internal or external)</li>\n<!-- /wp:list-item -->\n\n<!-- wp:list-item -->\n<li>Save and preview your modal!</li>\n<!-- /wp:list-item -->\n</ol>\n<!-- /wp:list -->\n\n<!-- wp:paragraph -->\n<p><strong>Pro tip:</strong> Try editing this text and adding your own modal links. The purple highlighting shows you exactly which text will trigger the modal.</p>\n<!-- /wp:paragraph -->',\n    'post_status' => 'publish'\n));\n\n// Create a sample page for demo purposes\nwp_insert_post(array(\n    'post_title' => 'Sample Page for Modal Demo',\n    'post_content' => '<!-- wp:heading -->\n<h2 class=\"wp-block-heading\">This is a Sample Page</h2>\n<!-- /wp:heading -->\n\n<!-- wp:paragraph -->\n<p>This page was loaded inside a modal window using Pikari Gutenberg Modals!</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>Notice how you can interact with the content, scroll through it, and close the modal using the X button or by clicking outside.</p>\n<!-- /wp:paragraph -->\n\n<!-- wp:paragraph -->\n<p>The modal is fully responsive and works great on all devices. Try resizing your browser window to see it adapt!</p>\n<!-- /wp:paragraph -->',\n    'post_type' => 'page',\n    'post_status' => 'publish',\n    'post_name' => 'sample-page'\n));\n?>"
         }
     ]
 }

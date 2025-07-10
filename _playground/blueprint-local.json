@@ -9,7 +9,7 @@
         {
             "step": "setSiteOptions",
             "options": {
-                "blogname": "Pikari Gutenberg Modals Demo"
+                "blogname": "Pikari Gutenberg Modals Demo - Local Development"
             }
         },
         {
