@@ -129,6 +129,32 @@ Key points:
 - Styles are returned via REST API and inlined within modal content
 - This ensures proper layout and spacing using theme-defined values
 
+## Release Process - Version Updates
+
+When creating a new release, update the version number in these files:
+
+1. **pikari-gutenberg-modals.php** (line ~6)
+   - Update the `Version:` header in the plugin file header comment
+
+2. **includes/plugin.php** (line ~16)
+   - Update `PIKARI_GUTENBERG_MODALS_VERSION` constant
+
+3. **package.json** (line ~3)
+   - Update the `"version"` field
+
+4. **CHANGELOG.md**
+   - Add new version section under `## [Unreleased]`
+   - Update version comparison links at the bottom
+
+5. **composer.json** (if changing requirements)
+   - Update PHP version requirement if changed
+   - Currently requires PHP 8.2+
+
+Additional version-related updates:
+- If PHP version requirement changes, also update:
+  - `pikari-gutenberg-modals.php` (line ~11) - `Requires PHP:` header
+  - `includes/plugin.php` (line ~71) - PHP version check in activation hook
+
 ## Important Note
 
 This CLAUDE.md file is specific to the Pikari Gutenberg Modals plugin directory. When working in this plugin, use this file for guidance rather than any parent directory CLAUDE.md files.

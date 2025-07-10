@@ -53,9 +53,6 @@
     "autoload": {
         "psr-4": {
             "Pikari\\GutenbergModals\\": "includes/"
-        },
-        "files": [
-            "includes/plugin.php"
-        ]
+        }
     }
 }
