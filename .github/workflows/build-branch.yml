@@ -7,6 +7,9 @@ on:
       - '.github/workflows/build-branch.yml'
       - '**.md'
 
+permissions:
+  contents: write
+
 jobs:
   update-build:
     runs-on: ubuntu-latest
@@ -16,7 +19,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-        token: ${{ secrets.GITHUB_TOKEN }}
     
     - name: Setup Node.js
       uses: actions/setup-node@v4
@@ -52,14 +54,23 @@ jobs:
       run: |
         # Save current commit info
         COMMIT_MSG=$(git log -1 --pretty=%B)
-        COMMIT_AUTHOR=$(git log -1 --pretty="%an <%ae>")
+        COMMIT_AUTHOR_NAME=$(git log -1 --pretty="%an")
+        COMMIT_AUTHOR_EMAIL=$(git log -1 --pretty="%ae")
         COMMIT_SHA=$(git rev-parse HEAD)
+        
+        # Check if build branch exists on remote
+        if git ls-remote --heads origin build | grep -q build; then
+          echo "Build branch exists, fetching it"
+          git fetch origin build:build
+        else
+          echo "Build branch doesn't exist, will create it"
+        fi
         
         # Create or checkout build branch
         git checkout -B build
         
         # Remove .gitignore to include build files
-        rm .gitignore
+        rm -f .gitignore
         
         # Add all files including build directory
         git add -A
@@ -69,12 +80,12 @@ jobs:
           echo "No changes to commit"
         else
           # Commit with original author info
-          git -c "user.name=$COMMIT_AUTHOR" -c "user.email=$COMMIT_AUTHOR" \
+          git -c "user.name=$COMMIT_AUTHOR_NAME" -c "user.email=$COMMIT_AUTHOR_EMAIL" \
             commit -m "$COMMIT_MSG" -m "Built from commit: $COMMIT_SHA"
         fi
         
         # Force push to build branch
-        git push origin build --force
+        git push --force-with-lease origin build
     
     - name: Add build branch protection comment
       if: success()
