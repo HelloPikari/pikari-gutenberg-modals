@@ -1,0 +1,33 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "landingPage": "/wp-admin/post-new.php",
+    "login": true,
+    "features": {
+        "networking": true
+    },
+    "steps": [
+        {
+            "step": "setSiteOptions",
+            "options": {
+                "blogname": "Pikari Gutenberg Modals Demo"
+            }
+        },
+        {
+            "step": "installPlugin",
+            "pluginZipFile": {
+                "resource": "url",
+                "url": "https://github-proxy.com/proxy/?repo=HelloPikari/pikari-gutenberg-modals&branch=main"
+            },
+            "options": {
+                "activate": true
+            }
+        },
+        {
+            "step": "installTheme",
+            "themeZipFile": {
+                "resource": "wordpress.org/themes",
+                "slug": "twentytwentyfour"
+            }
+        }
+    ]
+}
