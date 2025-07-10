@@ -71,28 +71,19 @@ jobs:
         
         # Create a custom .gitignore for the build branch
         cat > .gitignore << 'EOF'
-# Keep node_modules out of the build branch
 node_modules/
 vendor/
-
-# Development files
 .DS_Store
 *.log
 .env
 .env.*
-
-# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Testing artifacts
 tests/coverage/
 tests/results/
 .phpunit.result.cache
-
-# Husky hooks (not needed in build)
 .husky/
 EOF
         
