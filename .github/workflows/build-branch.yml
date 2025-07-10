@@ -35,7 +35,10 @@ jobs:
       run: npm ci
     
     - name: Install Composer dependencies
-      run: composer install --no-dev --optimize-autoloader
+      run: |
+        # For the build branch, we don't need composer dependencies
+        # The autoloader is only used for development
+        echo "Skipping composer install for build branch"
     
     - name: Build plugin
       run: npm run build
