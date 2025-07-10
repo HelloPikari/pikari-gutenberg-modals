@@ -75,4 +75,3 @@ register_activation_hook(
         }
     }
 );
-
