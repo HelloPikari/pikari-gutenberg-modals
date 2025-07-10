@@ -123,3 +123,38 @@ register_block_type('pikari-gutenberg-modals/modal-button', [
 2. **Preserve Accessibility**: Ensure keyboard navigation works properly
 3. **Follow ARIA Guidelines**: Use appropriate roles and attributes
 4. **Test Thoroughly**: Verify with screen readers and keyboard-only navigation
+
+## WordPress Playground Testing
+
+### Quick Demo
+Click the Playground Demo button in the README to instantly test the plugin in a browser-based WordPress environment.
+
+### Local Development with wp-now
+For local development and testing, use WordPress Playground's wp-now tool:
+
+```bash
+# Run from plugin root directory
+npm run playground
+```
+
+This starts a local WordPress instance at http://localhost:8881 with the plugin automatically installed and activated.
+
+### Creating Custom Test Scenarios
+The `_playground/blueprint.json` file configures the WordPress Playground environment. You can customize it to:
+- Pre-install specific themes or plugins
+- Import test content
+- Configure WordPress settings
+- Set specific landing pages
+
+### Sharing Plugin Demos
+Share your plugin with others using the Playground URL:
+```
+https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/HelloPikari/pikari-gutenberg-modals/main/_playground/blueprint.json
+```
+
+### Benefits of WordPress Playground
+- No server setup required
+- Instant, disposable WordPress environments
+- Perfect for testing, demos, and development
+- Works directly in the browser
+- Consistent testing environment across devices

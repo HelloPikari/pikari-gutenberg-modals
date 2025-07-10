@@ -11,7 +11,8 @@
     "plugin-zip": "wp-scripts plugin-zip",
     "test": "wp-scripts test-unit-js --passWithNoTests",
     "test:e2e": "wp-scripts test-e2e",
-    "translate": "wp-scripts i18n make-pot . languages/pikari-gutenberg-modals.pot --exclude=node_modules,build,releases"
+    "translate": "wp-scripts i18n make-pot . languages/pikari-gutenberg-modals.pot --exclude=node_modules,build,releases",
+    "playground": "npx @wp-now/wp-now start"
   },
   "repository": {
     "type": "git",

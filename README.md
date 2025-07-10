@@ -2,6 +2,8 @@
 
 ✨ Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs that captivate your audience.
 
+[![Playground Demo Link](https://img.shields.io/wordpress/plugin/v/pikari-gutenberg-modals?logo=wordpress&logoColor=%23fff&label=Playground%20Demo&labelColor=%233858e9&color=%233858e9)](https://playground.wordpress.net/?blueprint-url=https://raw.githubusercontent.com/HelloPikari/pikari-gutenberg-modals/main/_playground/blueprint.json)
+
 ## Features
 
 - 🎨 **Visual Format in Editor** - Modal links are clearly highlighted with purple styling and a modal icon
