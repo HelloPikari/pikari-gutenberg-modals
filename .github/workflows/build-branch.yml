@@ -70,22 +70,20 @@ jobs:
         git checkout -B build
         
         # Create a custom .gitignore for the build branch
-        cat > .gitignore << 'EOF'
-node_modules/
-vendor/
-.DS_Store
-*.log
-.env
-.env.*
-.vscode/
-.idea/
-*.swp
-*.swo
-tests/coverage/
-tests/results/
-.phpunit.result.cache
-.husky/
-EOF
+        echo "node_modules/" > .gitignore
+        echo "vendor/" >> .gitignore
+        echo ".DS_Store" >> .gitignore
+        echo "*.log" >> .gitignore
+        echo ".env" >> .gitignore
+        echo ".env.*" >> .gitignore
+        echo ".vscode/" >> .gitignore
+        echo ".idea/" >> .gitignore
+        echo "*.swp" >> .gitignore
+        echo "*.swo" >> .gitignore
+        echo "tests/coverage/" >> .gitignore
+        echo "tests/results/" >> .gitignore
+        echo ".phpunit.result.cache" >> .gitignore
+        echo ".husky/" >> .gitignore
         
         # Add all files except those in .gitignore
         git add -A
