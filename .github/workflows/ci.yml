@@ -147,9 +147,6 @@ jobs:
     - name: Install dependencies
       run: npm ci
     
-    - name: Install PHP dependencies (no dev)
-      run: composer install --no-dev --optimize-autoloader
-    
     - name: Build plugin
       run: npm run build
     
