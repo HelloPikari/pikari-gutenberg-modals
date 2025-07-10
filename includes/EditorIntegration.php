@@ -21,7 +21,7 @@ class EditorIntegration
      * @var BlockSupport
      */
     private BlockSupport $block_support;
-    
+
     /**
      * Constructor
      */
@@ -29,26 +29,26 @@ class EditorIntegration
     {
         // Hook into editor asset loading for scripts
         add_action('enqueue_block_editor_assets', [$this, 'enqueue_editor_scripts']);
-        
+
         // Hook into block assets for styles (works with iframe editor)
         add_action('enqueue_block_assets', [$this, 'enqueue_block_styles']);
     }
-    
+
     /**
      * Enqueue editor scripts
      */
     public function enqueue_editor_scripts(): void
     {
         $editor_asset_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/index.asset.php';
-        
+
         // Check if build exists
         if (!file_exists($editor_asset_file)) {
             error_log('Pikari Gutenberg Modals: Editor asset file not found at ' . $editor_asset_file);
             return;
         }
-        
+
         $editor_assets = include $editor_asset_file;
-        
+
         // Enqueue editor script
         wp_enqueue_script(
             'pikari-gutenberg-modals-editor',
@@ -57,12 +57,12 @@ class EditorIntegration
             $editor_assets['version'],
             true
         );
-        
+
         // Get block support instance
         if (!isset($this->block_support)) {
-            $this->block_support = new Block_Support();
+            $this->block_support = new BlockSupport();
         }
-        
+
         // Localize script with data
         wp_localize_script('pikari-gutenberg-modals-editor', 'pikariGutenbergModals', [
             'supportedBlocks' => $this->block_support->get_supported_blocks_for_js(),
@@ -77,7 +77,7 @@ class EditorIntegration
             ],
         ]);
     }
-    
+
     /**
      * Enqueue block styles
      *
@@ -90,9 +90,9 @@ class EditorIntegration
         if (!is_admin()) {
             return;
         }
-        
+
         $style_file = PIKARI_GUTENBERG_MODALS_PLUGIN_DIR . 'build/editor/style-index.css';
-        
+
         if (file_exists($style_file)) {
             // Get version from asset file if available
             $version = PIKARI_GUTENBERG_MODALS_VERSION;
@@ -101,7 +101,7 @@ class EditorIntegration
                 $assets = include $asset_file;
                 $version = $assets['version'] ?? PIKARI_GUTENBERG_MODALS_VERSION;
             }
-            
+
             wp_enqueue_style(
                 'pikari-gutenberg-modals-editor',
                 PIKARI_GUTENBERG_MODALS_PLUGIN_URL . 'build/editor/style-index.css',
