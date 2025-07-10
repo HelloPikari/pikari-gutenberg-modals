@@ -8,6 +8,7 @@
     "lint:js": "wp-scripts lint-js",
     "lint:css": "wp-scripts lint-style",
     "lint:php": "composer run lint",
+    "lint:all": "npm run lint:js && npm run lint:css && npm run lint:php",
     "packages-update": "wp-scripts packages-update",
     "plugin-zip": "wp-scripts plugin-zip",
     "test": "wp-scripts test-unit-js --passWithNoTests",
