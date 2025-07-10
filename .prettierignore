@@ -1,0 +1,19 @@
+# Build files
+build/
+*.min.js
+*.min.css
+
+# Dependencies
+node_modules/
+vendor/
+
+# WordPress
+*.pot
+
+# Playground
+_playground/
+
+# Other
+*.md
+*.lock
+*.log
