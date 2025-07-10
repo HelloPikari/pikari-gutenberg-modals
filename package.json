@@ -12,7 +12,7 @@
     "test": "wp-scripts test-unit-js --passWithNoTests",
     "test:e2e": "wp-scripts test-e2e",
     "translate": "wp-scripts i18n make-pot . languages/pikari-gutenberg-modals.pot --exclude=node_modules,build,releases",
-    "playground": "npx @wp-now/wp-now start"
+    "playground": "npx @wp-now/wp-now start --php=8.2 --blueprint=_playground/blueprint-local.json"
   },
   "repository": {
     "type": "git",

@@ -1,0 +1,27 @@
+{
+    "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "landingPage": "/wp-admin/post-new.php",
+    "login": true,
+    "features": {
+        "networking": true
+    },
+    "steps": [
+        {
+            "step": "setSiteOptions",
+            "options": {
+                "blogname": "Pikari Gutenberg Modals Demo"
+            }
+        },
+        {
+            "step": "activatePlugin",
+            "pluginPath": "pikari-gutenberg-modals/pikari-gutenberg-modals.php"
+        },
+        {
+            "step": "installTheme",
+            "themeZipFile": {
+                "resource": "wordpress.org/themes",
+                "slug": "twentytwentyfour"
+            }
+        }
+    ]
+}
