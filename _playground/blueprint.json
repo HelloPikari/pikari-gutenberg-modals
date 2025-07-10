@@ -1,5 +1,9 @@
 {
     "$schema": "https://playground.wordpress.net/blueprint-schema.json",
+    "preferredVersions": {
+        "php": "8.2",
+        "wp": "latest"
+    },
     "landingPage": "/wp-admin/post-new.php",
     "login": true,
     "features": {
@@ -14,7 +18,7 @@
         },
         {
             "step": "installPlugin",
-            "pluginZipFile": {
+            "pluginData": {
                 "resource": "url",
                 "url": "https://github-proxy.com/proxy/?repo=HelloPikari/pikari-gutenberg-modals&branch=main"
             },
@@ -24,7 +28,7 @@
         },
         {
             "step": "installTheme",
-            "themeZipFile": {
+            "themeData": {
                 "resource": "wordpress.org/themes",
                 "slug": "twentytwentyfour"
             }
