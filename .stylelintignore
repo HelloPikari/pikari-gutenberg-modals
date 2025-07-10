@@ -1,0 +1,17 @@
+# Dependencies
+node_modules/
+vendor/
+
+# Build files
+build/
+
+# Coverage reports
+tests/coverage/
+coverage/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Minified files
+*.min.css
