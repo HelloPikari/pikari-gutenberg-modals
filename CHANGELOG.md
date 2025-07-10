@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-01-10
+
+### Fixed
+- PSR-4 autoloading compliance for composer installations
+  - Renamed class files from hyphenated to standard format
+  - Updated class names to match filenames
+  - Fixed composer autoloading warnings
+  - No functional changes for end users
+
 ## [0.3.0] - 2025-01-10
 
 ### Added
@@ -90,7 +99,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Button blocks not supported (maintains HTML standards and accessibility)
 - Alpha release - testing in development environment recommended
 
-[Unreleased]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.1.0-alpha...v0.2.0
 [0.1.0-alpha]: https://github.com/HelloPikari/pikari-gutenberg-modals/releases/tag/v0.1.0-alpha
