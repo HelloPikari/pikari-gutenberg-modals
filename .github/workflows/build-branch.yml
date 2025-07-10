@@ -92,9 +92,9 @@ jobs:
         if git diff --staged --quiet; then
           echo "No changes to commit"
         else
-          # Commit with original author info
+          # Commit with original author info (skip hooks)
           git -c "user.name=$COMMIT_AUTHOR_NAME" -c "user.email=$COMMIT_AUTHOR_EMAIL" \
-            commit -m "$COMMIT_MSG" -m "Built from commit: $COMMIT_SHA"
+            commit --no-verify -m "$COMMIT_MSG" -m "Built from commit: $COMMIT_SHA"
         fi
         
         # Force push to build branch
