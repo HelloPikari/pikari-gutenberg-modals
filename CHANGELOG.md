@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2025-01-10
+
+### Added
+- WordPress Playground integration for instant plugin demos
+  - Public demo accessible via badge in README
+  - Local development support with wp-now
+  - Separate blueprint configurations for public and local environments
+- GitHub Actions workflow for automated build branch management
+  - Automatically builds and deploys compiled assets to build branch
+  - Enables WordPress Playground to work with GitHub source
+- Interactive demo content showcasing modal functionality
+  - Three working examples: internal page, self-referential post, and external URL
+  - Step-by-step instructions for creating new modals
+- Composer.lock file for consistent development dependencies
+
+### Changed
+- Lowered PHP requirement from 8.3 to 8.2 for broader compatibility
+- Updated composer package name to pikari/pikari-gutenberg-modals
+- WordPress Playground demo now lands on frontend view instead of editor
+- Fixed modal span attributes in demo content to match plugin format
+
+### Fixed
+- Build workflow permissions and git handling
+- Modal frontend functionality in WordPress Playground
+- Composer install issues in build workflow
+
+### Developer Notes
+- Build files remain gitignored in main branch
+- Composer installation from main branch provides source-only distribution
+- Build branch contains compiled assets for WordPress Playground compatibility
+
 ## [0.2.0] - 2025-01-09
 
 ### Added
@@ -59,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Button blocks not supported (maintains HTML standards and accessibility)
 - Alpha release - testing in development environment recommended
 
-[Unreleased]: https://github.com/yourusername/pikari-gutenberg-modals/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/yourusername/pikari-gutenberg-modals/compare/v0.1.0-alpha...v0.2.0
-[0.1.0-alpha]: https://github.com/yourusername/pikari-gutenberg-modals/releases/tag/v0.1.0-alpha
+[Unreleased]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.2.0...v0.3.0
+[0.2.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v0.1.0-alpha...v0.2.0
+[0.1.0-alpha]: https://github.com/HelloPikari/pikari-gutenberg-modals/releases/tag/v0.1.0-alpha
