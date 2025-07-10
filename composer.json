@@ -1,9 +1,16 @@
 {
-    "name": "pikari/gutenberg-modals",
+    "name": "pikari/pikari-gutenberg-modals",
     "description": "A WordPress plugin that adds modal window functionality to the block editor",
     "type": "wordpress-plugin",
     "license": "GPL-2.0-or-later",
-    "keywords": ["wordpress", "plugin", "gutenberg", "block-editor", "modal", "popup"],
+    "keywords": [
+        "wordpress",
+        "plugin",
+        "gutenberg",
+        "block-editor",
+        "modal",
+        "popup"
+    ],
     "homepage": "https://github.com/HelloPikari/pikari-gutenberg-modals",
     "authors": [
         {
