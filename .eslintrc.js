@@ -1,24 +1,24 @@
 module.exports = {
 	root: true,
-	extends: ["plugin:@wordpress/eslint-plugin/recommended"],
+	extends: [ 'plugin:@wordpress/eslint-plugin/recommended' ],
 	overrides: [
 		{
-			files: ["tests/**/*.js", "playwright.config.js"],
+			files: [ 'tests/**/*.js', 'playwright.config.js' ],
 			env: {
 				jest: true,
 				node: true,
 			},
 			rules: {
-				"import/no-extraneous-dependencies": "off",
+				'import/no-extraneous-dependencies': 'off',
 			},
 		},
 		{
-			files: ["tests/unit/**/*.js"],
+			files: [ 'tests/unit/**/*.js' ],
 			globals: {
-				KeyboardEvent: "readonly",
+				KeyboardEvent: 'readonly',
 			},
 			rules: {
-				"jest/no-conditional-expect": "off",
+				'jest/no-conditional-expect': 'off',
 			},
 		},
 	],

@@ -7,12 +7,12 @@
 // Mock WordPress globals
 global.wp = {
 	i18n: {
-		__: (text) => text,
-		_x: (text) => text,
-		_n: (single, plural, count) => (count === 1 ? single : plural),
-		sprintf: (format, ...args) => {
+		__: ( text ) => text,
+		_x: ( text ) => text,
+		_n: ( single, plural, count ) => ( count === 1 ? single : plural ),
+		sprintf: ( format, ...args ) => {
 			let i = 0;
-			return format.replace(/%s/g, () => args[i++]);
+			return format.replace( /%s/g, () => args[ i++ ] );
 		},
 	},
 	data: {
