@@ -7,7 +7,7 @@
 
 namespace Pikari\GutenbergModals;
 
-class Block_Support
+class BlockSupport
 {
     /**
      * List of blocks that support modal links

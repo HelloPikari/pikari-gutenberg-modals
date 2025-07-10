@@ -7,7 +7,7 @@
 
 namespace Pikari\GutenbergModals;
 
-class Frontend_Renderer
+class FrontendRenderer
 {
     /**
      * Constructor

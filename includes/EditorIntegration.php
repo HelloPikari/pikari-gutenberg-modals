@@ -13,14 +13,14 @@
 
 namespace Pikari\GutenbergModals;
 
-class Editor_Integration
+class EditorIntegration
 {
     /**
      * Block support instance
      *
-     * @var Block_Support
+     * @var BlockSupport
      */
-    private Block_Support $block_support;
+    private BlockSupport $block_support;
     
     /**
      * Constructor

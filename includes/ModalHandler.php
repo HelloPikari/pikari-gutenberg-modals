@@ -10,7 +10,7 @@
 
 namespace Pikari\GutenbergModals;
 
-class Modal_Handler
+class ModalHandler
 {
     /**
      * Cache group for modal content.

@@ -1,26 +1,26 @@
 <?php
 /**
- * Tests for Modal_Handler class
+ * Tests for ModalHandler class
  *
  * @package Pikari_Gutenberg_Modals
  */
 
 namespace Pikari\GutenbergModals\Tests;
 
-use Pikari\GutenbergModals\Modal_Handler;
+use Pikari\GutenbergModals\ModalHandler;
 
 require_once __DIR__ . '/class-test-case.php';
-require_once dirname(dirname(__DIR__)) . '/includes/class-modal-handler.php';
+require_once dirname(dirname(__DIR__)) . '/includes/ModalHandler.php';
 
 /**
  * Modal Handler test class
  */
-class Test_Modal_Handler extends Test_Case
+class Test_ModalHandler extends Test_Case
 {
     /**
-     * Instance of Modal_Handler
+     * Instance of ModalHandler
      *
-     * @var Modal_Handler
+     * @var ModalHandler
      */
     private $handler;
     
@@ -35,7 +35,7 @@ class Test_Modal_Handler extends Test_Case
         $this->createMockFilters();
         
         // Create instance
-        $this->handler = new Modal_Handler();
+        $this->handler = new ModalHandler();
     }
     
     /**

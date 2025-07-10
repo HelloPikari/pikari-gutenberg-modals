@@ -29,7 +29,7 @@ spl_autoload_register(
         }
 
         $relative_class = substr($class, $len);
-        $file           = $base_dir . 'class-' . str_replace('\\', '-', str_replace('_', '-', strtolower($relative_class))) . '.php';
+        $file           = $base_dir . str_replace('\\', '/', $relative_class) . '.php';
 
         if (file_exists($file)) {
             require $file;
@@ -49,10 +49,10 @@ add_action(
         );
 
       // Initialize main components.
-        new Modal_Handler();
-        new Editor_Integration();
-        new Frontend_Renderer();
-        new Block_Support();
+        new ModalHandler();
+        new EditorIntegration();
+        new FrontendRenderer();
+        new BlockSupport();
     }
 );
 
@@ -251,7 +251,7 @@ function get_modal_content($request)
     }
   
   // Use the Block_Support class method to get content with properly captured styles
-    $block_support = new Block_Support();
+    $block_support = new BlockSupport();
   
   // Get content and styles using the working method
     $content_data = $block_support->get_post_content_with_styles($post);

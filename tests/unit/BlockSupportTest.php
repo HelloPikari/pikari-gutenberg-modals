@@ -1,26 +1,26 @@
 <?php
 /**
- * Tests for Block_Support class
+ * Tests for BlockSupport class
  *
  * @package Pikari_Gutenberg_Modals
  */
 
 namespace Pikari\GutenbergModals\Tests;
 
-use Pikari\GutenbergModals\Block_Support;
+use Pikari\GutenbergModals\BlockSupport;
 
 require_once __DIR__ . '/class-test-case.php';
-require_once dirname(dirname(__DIR__)) . '/includes/class-block-support.php';
+require_once dirname(dirname(__DIR__)) . '/includes/BlockSupport.php';
 
 /**
  * Block Support test class
  */
-class Test_Block_Support extends Test_Case
+class Test_BlockSupport extends Test_Case
 {
     /**
-     * Instance of Block_Support
+     * Instance of BlockSupport
      *
-     * @var Block_Support
+     * @var BlockSupport
      */
     private $block_support;
     
@@ -43,7 +43,7 @@ class Test_Block_Support extends Test_Case
         }
         
         // Create instance
-        $this->block_support = new Block_Support();
+        $this->block_support = new BlockSupport();
     }
     
     /**
