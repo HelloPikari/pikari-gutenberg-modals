@@ -7,15 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-10
+
+### Added
+- Pre-commit hooks for code quality enforcement
+- Comprehensive test suite with unit and fixtures
+- Prettier configuration aligned with WordPress standards
+- `lint:all` npm script for running all linters
+
 ### Fixed
 - Resolved fatal error when installing via Composer due to namespace in plugin.php
   - Removed namespace declaration from plugin.php to prevent WordPress function resolution issues
   - Moved REST API functionality to dedicated RestApi class for better separation of concerns
   - WordPress functions now properly resolve in global namespace when loaded via Composer
-- Fixed build branch to exclude unnecessary vendor directory
-  - Removed plugin.php from composer.json files array to eliminate composer dependency in production
-  - Build branch now contains only necessary files for WordPress Playground and direct downloads
-  - Plugin works without composer autoloader for production use
+- Fixed build branch workflow to exclude node_modules directory
+  - Custom .gitignore prevents committing development dependencies
+  - Pre-commit hooks are skipped in CI environment
+  - Build branch now contains only necessary production files
+
+### Changed
+- Applied WordPress coding standards to all JavaScript files
+- Updated lint-staged configuration to use ESLint only
 
 ## [0.3.1] - 2025-01-10
 
