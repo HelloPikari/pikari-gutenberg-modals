@@ -1,45 +1,14 @@
-# Dependencies
 node_modules/
 vendor/
-
-# Build files
-build/
-
-# Development files
 .DS_Store
 *.log
 .env
 .env.*
-
-# Editor files
 .vscode/
 .idea/
 *.swp
 *.swo
-
-# Package lock files (optional, depending on team preference)
-# package-lock.json
-
-# WordPress
-*.sql
-*.tar.gz
-*.zip
-
-# Temporary files
-*.tmp
-*.temp
-.cache/
-
-# Claude AI files
-.claude/
-
-# Testing artifacts
 tests/coverage/
 tests/results/
 .phpunit.result.cache
-
-# Translation files (generated)
-languages/*.pot
-
-# Plugin distribution files
-pikari-gutenberg-modals.zip
+.husky/
