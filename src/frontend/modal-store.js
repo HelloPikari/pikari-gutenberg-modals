@@ -2,7 +2,12 @@
  * WordPress Interactivity API store for Pikari Modal functionality.
  */
 
-import { store, getContext, withSyncEvent } from '@wordpress/interactivity';
+import {
+	store,
+	getContext,
+	withScope,
+	withSyncEvent,
+} from '@wordpress/interactivity';
 import { escapeHTML, escapeAttribute } from '@wordpress/escape-html';
 import {
 	setupFocusTrap,
@@ -11,6 +16,9 @@ import {
 	focusFirstElement,
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
+
+// Prefetch delay in milliseconds - filters out accidental mouse movements
+const PREFETCH_DELAY_MS = 200;
 
 const { state, actions } = store( 'pikari-modal', {
 	state: {
@@ -22,6 +30,7 @@ const { state, actions } = store( 'pikari-modal', {
 		activeTriggerId: null,
 		activeModalId: null, // Tracks which modal is open for aria-expanded binding
 		hasAnimated: false,
+		prefetchedPosts: {}, // Tracks prefetch status: { [postId]: 'pending' | 'complete' }
 	},
 
 	actions: {
@@ -230,6 +239,95 @@ const { state, actions } = store( 'pikari-modal', {
 
 		stopPropagation: withSyncEvent( ( event ) => {
 			event.stopPropagation();
+		} ),
+
+		/**
+		 * Prefetch modal content for the current context.
+		 *
+		 * Fetches the modal content API endpoint with low priority to warm the
+		 * browser's HTTP cache. The response is not processed - we rely on the
+		 * browser cache to serve it when openModal() is called.
+		 */
+		*prefetchModal() {
+			const context = getContext();
+			const { postId } = context;
+
+			// Skip if no postId or already prefetched/prefetching
+			if ( ! postId || state.prefetchedPosts[ postId ] ) {
+				return;
+			}
+
+			// Mark as pending (prevents duplicate requests during fetch)
+			state.prefetchedPosts[ postId ] = 'pending';
+
+			try {
+				const response = yield fetch(
+					`/wp-json/pikari-gutenberg-modals/v1/modal-content/${ postId }`,
+					{
+						priority: 'low',
+						credentials: 'same-origin',
+					}
+				);
+
+				if ( response.ok ) {
+					// Success - mark as complete
+					// Browser's HTTP cache stores response based on Cache-Control/ETag headers
+					state.prefetchedPosts[ postId ] = 'complete';
+				} else {
+					// Failed - remove from tracking so it can be retried
+					delete state.prefetchedPosts[ postId ];
+				}
+			} catch ( error ) {
+				// Network error - remove from tracking so it can be retried
+				delete state.prefetchedPosts[ postId ];
+			}
+		},
+
+		/**
+		 * Handle mouse enter on modal triggers.
+		 *
+		 * Starts a debounced prefetch - if the mouse leaves before the delay,
+		 * the prefetch is cancelled.
+		 */
+		handlePrefetchHover: withSyncEvent( ( event ) => {
+			const context = getContext();
+			const { postId } = context;
+
+			// Skip if no postId or already prefetched
+			if ( ! postId || state.prefetchedPosts[ postId ] ) {
+				return;
+			}
+
+			const element = event.currentTarget;
+
+			// Clear any existing timeout for this element
+			if ( element._pikariPrefetchTimeout ) {
+				clearTimeout( element._pikariPrefetchTimeout );
+			}
+
+			// Set debounced prefetch - use withScope to preserve Interactivity API context
+			element._pikariPrefetchTimeout = setTimeout(
+				withScope( () => {
+					actions.prefetchModal();
+					delete element._pikariPrefetchTimeout;
+				} ),
+				PREFETCH_DELAY_MS
+			);
+		} ),
+
+		/**
+		 * Handle mouse leave on modal triggers.
+		 *
+		 * Cancels any pending prefetch if the mouse leaves before the delay completes.
+		 */
+		handlePrefetchLeave: withSyncEvent( ( event ) => {
+			const element = event.currentTarget;
+
+			// Cancel pending prefetch
+			if ( element._pikariPrefetchTimeout ) {
+				clearTimeout( element._pikariPrefetchTimeout );
+				delete element._pikariPrefetchTimeout;
+			}
 		} ),
 	},
 } );

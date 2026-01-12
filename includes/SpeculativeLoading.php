@@ -30,16 +30,36 @@ class SpeculativeLoading
     /**
      * Constructor - registers prefetch hints for modal content.
      *
-     * Uses <link rel="prefetch"> for REST API content, which works in all browsers.
-     * WordPress 6.8's default Speculation Rules will handle prefetching the
-     * page permalinks (the anchor href), while we prefetch the REST API content
-     * that the modal actually loads.
+     * Hover-based prefetch is now handled via JavaScript Interactivity API
+     * in modal-store.js. This provides intelligent prefetching that only
+     * triggers when users show intent (hovering for 200ms).
+     *
+     * The automatic <link rel="prefetch"> output is disabled by default but
+     * can be re-enabled via filter for backwards compatibility or specific use cases.
      */
     public function __construct()
     {
-        // Add prefetch hints via link rel="prefetch" in the document head
-        // This works in all browsers and prefetches the REST API content
-        add_action('wp_head', [$this, 'add_prefetch_link_hints'], 99);
+        // Hover-based prefetch now handled via JavaScript Interactivity API.
+        // Keep automatic prefetch as opt-in via filter for backwards compatibility.
+        add_action(
+            'wp_head',
+            function () {
+                /**
+                 * Filter to re-enable automatic prefetch hints on page load.
+                 *
+                 * By default, prefetching is now hover-based (via JavaScript) to avoid
+                 * wasting resources on modals users may never click. Enable this filter
+                 * to restore the previous behavior of prefetching all modal content.
+                 *
+                 * @since 1.0.0
+                 * @param bool $enable Whether to output prefetch link hints. Default false.
+                 */
+                if ( apply_filters('pikari_gutenberg_modals_enable_prefetch_hints', false) ) {
+                    $this->add_prefetch_link_hints();
+                }
+            },
+            99
+        );
     }
 
     /**
@@ -80,10 +100,11 @@ class SpeculativeLoading
      * Outputs <link rel="prefetch"> elements in the document head for each
      * modal content REST API URL. Works in all modern browsers.
      *
-     * Note: WordPress 6.8's default Speculation Rules will also prefetch the
-     * page permalinks (anchor href) when users hover over modal trigger links.
+     * Note: This method is now opt-in via the 'pikari_gutenberg_modals_enable_prefetch_hints'
+     * filter. By default, hover-based prefetch in JavaScript handles this more efficiently.
      *
-     * TODO - Switch to using the Speculation Rules API directly with the wp_load_speculation_rules filter
+     * WordPress Speculation Rules API cannot be used for REST API endpoints as it only
+     * supports page navigations (prefetch/prerender of HTML pages).
      */
     public function add_prefetch_link_hints(): void
     {

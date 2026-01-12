@@ -218,6 +218,8 @@ class GroupModalTriggerSupport
                 )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
+            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
 
             // Add role="group" and aria-labelledby for screen reader context
             $processor->set_attribute( 'role', 'group' );
@@ -313,6 +315,8 @@ class GroupModalTriggerSupport
                 )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
+            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
             $processor->set_attribute( 'role', 'group' );
             $processor->set_attribute( 'aria-labelledby', $trigger_id );
         }

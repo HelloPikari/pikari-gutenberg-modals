@@ -224,6 +224,8 @@ class BlockSupport
                 )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
+            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isOpen' );
@@ -333,6 +335,8 @@ class BlockSupport
                 data-wp-interactive="pikari-modal"
                 data-wp-context=\'{"postId":"%s","modalId":"%s"}\'
                 data-wp-on--click="actions.handleTriggerClick"
+                data-wp-on--mouseenter="actions.handlePrefetchHover"
+                data-wp-on--mouseleave="actions.handlePrefetchLeave"
                 aria-haspopup="dialog"
             >%s</a>',
             esc_attr( $trigger_id ),
