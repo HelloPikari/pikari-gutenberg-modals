@@ -6,6 +6,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 pikari-gutenberg-modals is a WordPress plugin that Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.
 
+## Claude Code Agent Instructions
+
+**IMPORTANT**: Always use the following agents proactively when working on this project:
+
+### WordPress Core Expert Agent (`wordpress-core-expert`)
+
+- Use this agent to review all PHP and JavaScript code changes
+- Ensures WordPress Core APIs are used instead of custom implementations
+- Verifies that WordPress functions and patterns are being used correctly
+- Address any recommendations from the agent before considering the task complete
+
+### Accessibility Expert Agent (`accessibility-expert`)
+
+- Use this agent when working on modals, dialogs, dropdowns, or any interactive UI components
+- Reviews keyboard navigation, ARIA attributes, focus management, and screen reader support
+- Essential for this project since it provides modal functionality
+- Should be used proactively when adding or modifying interactive elements
+
 ## Development Commands
 
 ### Build and Development
@@ -79,6 +97,86 @@ npm run playground
 - Space indentation as configured in .eslintrc.cjs
 - Meaningful variable names in camelCase
 - Use `wp` global for WordPress JavaScript APIs
+- Prefer template literals over string concatenation for building strings
+
+### WordPress Interactivity API
+
+This plugin uses the WordPress Interactivity API for frontend modal functionality:
+
+- **Store-based State Management**: Modal state is managed through `@wordpress/interactivity` store
+- **Declarative Templates**: HTML uses `data-wp-*` attributes for interactivity
+- **Server-Side Rendering Support**: Compatible with WordPress block rendering
+- **No External Dependencies**: Uses only WordPress core APIs
+- **Progressive Enhancement**: Works with JavaScript disabled (fallback behavior)
+
+**Key Implementation Files:**
+
+- `src/frontend/modal-store.js` - Interactivity API store definition
+- `includes/BlockSupport.php` - Server-side modal container with data attributes
+- Frontend modal triggers use `data-wp-on--click` and `data-wp-context` attributes
+
+**State Management Pattern:**
+
+```javascript
+// State is reactive and shared across components
+state: {
+    isOpen: false,
+    content: '',
+    loading: false,
+    hasError: false
+}
+
+// Actions modify state and trigger updates
+actions: {
+    openModal() { /* Fetch content and update state */ },
+    closeModal() { /* Reset state and clean up */ }
+}
+```
+
+### Webpack Configuration for Script Modules
+
+The `webpack.config.js` contains custom configuration to handle a limitation with WordPress Script Modules.
+
+**Background:**
+WordPress Script Modules (introduced in 6.5) only expose a limited set of `@wordpress/*` packages:
+
+- `@wordpress/interactivity`
+- `@wordpress/interactivity-router`
+- `@wordpress/a11y` (added in 6.7)
+
+Other `@wordpress/*` packages (like `@wordpress/escape-html`) are NOT available as script modules. The default `@wordpress/dependency-extraction-webpack-plugin` will throw an error if you try to import them in a script module.
+
+**Our Solution:**
+We configure webpack to **bundle** `@wordpress/escape-html` into our frontend module instead of treating it as an external. This allows us to use the official WordPress Core escaping functions while working within the script module system.
+
+```javascript
+// webpack.config.js - Key configuration
+new DependencyExtractionWebpackPlugin({
+    useDefaults: false,  // Disable default behavior that throws errors
+    requestToExternalModule(request) {
+        // Only these packages are externalized (loaded from WordPress)
+        if (request === '@wordpress/interactivity') {
+            return `module ${request}`;
+        }
+        if (request === '@wordpress/interactivity-router' || request === '@wordpress/a11y') {
+            return `import ${request}`;
+        }
+        // Everything else (including @wordpress/escape-html) gets bundled
+        return undefined;
+    },
+}),
+```
+
+**Why This Matters:**
+
+- We use `@wordpress/escape-html` for proper XSS protection in the frontend modal
+- Bundling adds ~1.2KB to the frontend module (acceptable trade-off)
+- When WordPress eventually adds `@wordpress/escape-html` as a script module, we can simplify this config
+
+**References:**
+
+- [Script Modules in WordPress 6.5](https://make.wordpress.org/core/2024/03/04/script-modules-in-6-5/)
+- [Updates to Script Modules in 6.7](https://make.wordpress.org/core/2024/10/14/updates-to-script-modules-in-6-7/)
 
 ### CSS/SCSS Standards
 
@@ -168,7 +266,7 @@ Note: Prettier is configured to ignore JavaScript files. ESLint handles all Java
 
 ### Dependencies
 
-- WordPress 6.0
+- WordPress 6.8+ (required for Interactivity API)
 - PHP 8.2
 - Node.js for build tools
 - Composer for PHP dependencies
@@ -182,6 +280,18 @@ Note: Prettier is configured to ignore JavaScript files. ESLint handles all Java
   - Types: feat, fix, docs, style, refactor, test, chore
 - Pre-commit hooks run linting automatically via Husky
 - All commits must pass linting
+
+### Commit Message Format
+
+When creating commits, use this format:
+
+```text
+type: Brief description
+
+Optional longer description of changes.
+```
+
+**Important**: Do NOT include `Co-Authored-By` lines or "Generated with Claude Code" attribution in commit messages.
 
 ## Testing
 
@@ -276,7 +386,7 @@ Note: Prettier is configured to ignore JavaScript files. ESLint handles all Java
 - All PRs must pass CI checks (linting, tests, build)
 - The `build/` folder is gitignored but required for the plugin to function
 - Releases are created from the `build` branch which includes compiled assets
-- Compatible with WordPress 6.0+
+- Compatible with WordPress 6.8+
 - Requires PHP 8.2+
 - Uses `@wordpress/scripts` for build tooling
 - Follow WordPress plugin/theme guidelines for wordpress.org submission

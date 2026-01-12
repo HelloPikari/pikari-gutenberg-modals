@@ -17,6 +17,13 @@ class BlockSupport
     private array $supported_blocks;
 
     /**
+     * Whether modal triggers were found during block rendering
+     *
+     * @var bool
+     */
+    private static bool $has_modal_triggers = false;
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -24,7 +31,10 @@ class BlockSupport
         $this->supported_blocks = $this->get_supported_blocks();
         $this->register_block_filters();
 
-        // Add single modal container to footer
+        // Add filter for button blocks with modal attribute
+        add_filter('render_block_core/button', [$this, 'filter_button_block'], 10, 2);
+
+        // Add single modal container to footer (only renders if triggers were found)
         add_action('wp_footer', [$this, 'render_single_modal_container'], 999);
     }
 
@@ -76,6 +86,17 @@ class BlockSupport
     }
 
     /**
+     * Mark that modal triggers exist on this page.
+     *
+     * Called by other classes (e.g., GroupModalTriggerSupport) to ensure
+     * the modal container is rendered in the footer.
+     */
+    public static function set_has_modal_triggers(): void
+    {
+        self::$has_modal_triggers = true;
+    }
+
+    /**
      * Register block filters
      */
     private function register_block_filters(): void
@@ -105,6 +126,11 @@ class BlockSupport
             return $block_content;
         }
 
+        // Enqueue frontend assets when modal trigger is detected
+        self::$has_modal_triggers = true;
+        wp_enqueue_script_module('pikari-gutenberg-modals-frontend');
+        wp_enqueue_style('pikari-gutenberg-modals-frontend');
+
         // Process modal links using regex with callback
         // Pattern breakdown:
         // - <span[^>]* - Match opening span tag
@@ -119,6 +145,92 @@ class BlockSupport
         );
 
         return $block_content;
+    }
+
+    /**
+     * Filter button block to add modal trigger functionality.
+     *
+     * When a button has the pikariOpenInModal attribute set to true,
+     * this method transforms the button's anchor tag to work with the
+     * Interactivity API modal system.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @return string Modified block content.
+     */
+    public function filter_button_block( string $block_content, array $block ): string
+    {
+        // Check if modal is enabled for this button
+        $open_in_modal = $block['attrs']['pikariOpenInModal'] ?? false;
+
+        if ( ! $open_in_modal ) {
+            return $block_content;
+        }
+
+        // Get the URL - first try block attributes, then extract from HTML
+        $url = $block['attrs']['url'] ?? '';
+
+        // If URL not in attributes, extract from the anchor href
+        if ( empty( $url ) ) {
+            $processor = new \WP_HTML_Tag_Processor( $block_content );
+            if ( $processor->next_tag( 'a' ) ) {
+                $url = $processor->get_attribute( 'href' ) ?? '';
+            }
+        }
+
+        if ( empty( $url ) ) {
+            return $block_content;
+        }
+
+        // Mark that we have modal triggers on this page
+        self::$has_modal_triggers = true;
+        wp_enqueue_script_module( 'pikari-gutenberg-modals-frontend' );
+        wp_enqueue_style( 'pikari-gutenberg-modals-frontend' );
+
+        // Determine content type and ID
+        $content_type = 'url';
+        $content_id   = $url;
+
+        // Check if URL is internal WordPress content
+        $post_id = url_to_postid( $url );
+        if ( $post_id > 0 ) {
+            $post = get_post( $post_id );
+            if ( $post ) {
+                $content_type = $post->post_type;
+                $content_id   = (string) $post_id;
+
+                // Register for speculative loading
+                SpeculativeLoading::register_modal_post_id( $post_id );
+            }
+        }
+
+        // Generate unique trigger ID
+        $trigger_id = 'modal-trigger-' . wp_unique_id();
+
+        // Use WP_HTML_Tag_Processor to modify the anchor tag
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        // Find the anchor tag (button link)
+        if ( $processor->next_tag( 'a' ) ) {
+            $processor->set_attribute( 'id', $trigger_id );
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute(
+                'data-wp-context',
+                wp_json_encode(
+                    [
+                        'postId'  => $content_id,
+                        'modalId' => $content_type . '-' . $content_id,
+                    ]
+                )
+            );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
+            $processor->set_attribute( 'aria-haspopup', 'dialog' );
+            $processor->set_attribute( 'aria-expanded', 'false' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isOpen' );
+            $processor->add_class( 'has-pikari-modal' );
+        }
+
+        return $processor->get_updated_html();
     }
 
     /**
@@ -140,8 +252,14 @@ class BlockSupport
             return $full_tag;
         }
 
-        // Return interactive trigger span with content data
-        return $this->create_trigger_span(
+        // Register post ID for speculative loading (prefetch)
+        $content_id = $modal_config['content_id'];
+        if ( is_numeric( $content_id ) ) {
+            SpeculativeLoading::register_modal_post_id( (int) $content_id );
+        }
+
+        // Return interactive trigger link with content data
+        return $this->create_trigger_link(
             $modal_config['content_type'],
             $modal_config['content_id'],
             $inner_html
@@ -177,19 +295,50 @@ class BlockSupport
     }
 
     /**
-     * Create the trigger span element.
+     * Create the trigger anchor element.
+     *
+     * Uses a real anchor tag for progressive enhancement:
+     * - With JS: Opens modal via Interactivity API
+     * - Without JS: Navigates to the actual content
+     * - Enables native browser prefetching via Speculation Rules API
      *
      * @param string $content_type Content type (post/page/url)
      * @param string $content_id Content ID or URL
      * @param string $inner_html Original span content
-     * @return string Trigger span HTML
+     * @return string Trigger anchor HTML
      */
-    private function create_trigger_span( string $content_type, string $content_id, string $inner_html ): string
+    private function create_trigger_link( string $content_type, string $content_id, string $inner_html ): string
     {
+        // Generate unique ID for focus management
+        $trigger_id = 'modal-trigger-' . wp_unique_id();
+
+        // Determine the href based on content type
+        if ( $content_type === 'url' ) {
+            // External URL - use as-is
+            $href = $content_id;
+        } else {
+            // Post/page - get the permalink for progressive enhancement
+            $href = get_permalink( (int) $content_id );
+            if ( ! $href ) {
+                // Fallback to # if permalink not found
+                $href = '#';
+            }
+        }
+
         return sprintf(
-            '<span class="has-modal-link modal-link-trigger" data-modal-content-type="%s" data-modal-content-id="%s" role="button" tabindex="0" style="cursor: pointer; text-decoration: underline; text-decoration-style: dashed;">%s</span>',
-            esc_attr($content_type),
-            esc_attr($content_id),
+            '<a
+                id="%s"
+                href="%s"
+                class="has-modal-link modal-link-trigger"
+                data-wp-interactive="pikari-modal"
+                data-wp-context=\'{"postId":"%s","modalId":"%s"}\'
+                data-wp-on--click="actions.handleTriggerClick"
+                aria-haspopup="dialog"
+            >%s</a>',
+            esc_attr( $trigger_id ),
+            esc_url( $href ),
+            esc_attr( $content_id ),
+            esc_attr( $content_type . '-' . $content_id ),
             $inner_html
         );
     }
@@ -228,8 +377,8 @@ class BlockSupport
     {
         // Validate URL
         if ( ! filter_var($url, FILTER_VALIDATE_URL) ) {
-            error_log('Modal Toolbar Button: Invalid URL provided: ' . $url);
-            return '<p>' . esc_html__('Invalid URL provided.', 'modal-toolbar-button') . '</p>';
+            error_log('Pikari Gutenberg Modals: Invalid URL provided: ' . $url);
+            return '<p>' . esc_html__('Invalid URL provided.', 'pikari-gutenberg-modals') . '</p>';
         }
 
         /**
@@ -241,10 +390,10 @@ class BlockSupport
         $content = sprintf(
             '<iframe src="%s" style="width: 100%%; height: 80vh; border: none;" title="%s"></iframe>',
             esc_url($url),
-            esc_attr__('External content', 'modal-toolbar-button')
+            esc_attr__('External content', 'pikari-gutenberg-modals')
         );
 
-        return apply_filters('modal_toolbar_url_content', $content, $url);
+        return apply_filters('pikari_gutenberg_modals_url_content', $content, $url);
     }
 
     /**
@@ -296,7 +445,7 @@ class BlockSupport
          * @param string $modal_content The complete modal content HTML
          * @param WP_Post $post The post object
          */
-        return apply_filters('modal_toolbar_post_content', $modal_content, $post);
+        return apply_filters('pikari_gutenberg_modals_post_content', $modal_content, $post);
     }
 
     /**
@@ -524,197 +673,71 @@ class BlockSupport
      * Render a single modal container in the footer.
      *
      * This container will be populated dynamically via AJAX when triggers are clicked.
+     * Only renders if modal triggers were found during block rendering.
      */
     public function render_single_modal_container(): void
     {
+        // Only render if modal triggers were found on this page
+        if ( ! self::$has_modal_triggers ) {
+            return;
+        }
         ?>
-        <div 
+        <div
             id="pikari-modal"
             class="modal-overlay"
-            x-data="pikariModal"
-            x-show="open"
-            x-on:open-modal.window="openModal($event.detail)"
-            x-on:click.self="closeModal"
-            x-on:keydown.escape.window="closeModal"
+            data-wp-interactive="pikari-modal"
+            data-wp-on--click="actions.closeModalOnBackdrop"
+            data-wp-on-window--keydown="actions.handleKeydown"
             style="display: none;"
-            x-transition:enter="transition ease-out duration-300"
-            x-transition:enter-start="opacity-0"
-            x-transition:enter-end="opacity-100"
-            x-transition:leave="transition ease-in duration-200"
-            x-transition:leave-start="opacity-100"
-            x-transition:leave-end="opacity-0"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-title"
+            aria-describedby="modal-content"
         >
-            <div class="modal-content" x-on:click.stop>
-                <button 
-                    class="modal-close" 
-                    x-on:click="closeModal"
+            <div class="modal-content" data-wp-on--click="actions.stopPropagation">
+                <button
+                    class="modal-close"
+                    data-wp-on--click="actions.closeModal"
                     aria-label="<?php esc_attr_e('Close modal', 'pikari-gutenberg-modals'); ?>"
                 >
                     <span aria-hidden="true">&times;</span>
                 </button>
-                <div class="modal-body" x-html="content">
-                    <!-- Content will be loaded here -->
+
+                <!-- Screen reader announcements - always in DOM -->
+                <div class="sr-only" aria-live="polite" aria-atomic="true">
+                    <span data-wp-text="state.loading ? '<?php echo esc_js(__('Loading content...', 'pikari-gutenberg-modals')); ?>' : ''"></span>
                 </div>
+                <div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
+                    <span data-wp-text="state.hasError ? state.errorMessage : ''"></span>
+                </div>
+
+                <!-- Loading state (visual) -->
+                <div
+                    class="modal-loading"
+                    data-wp-class--hidden="!state.loading"
+                    aria-hidden="true"
+                >
+                    <div class="loading-spinner"></div>
+                    <p><?php esc_html_e('Loading...', 'pikari-gutenberg-modals'); ?></p>
+                </div>
+
+                <!-- Error state (visual) -->
+                <div
+                    class="modal-error"
+                    data-wp-class--hidden="!state.hasError"
+                    aria-hidden="true"
+                >
+                    <p data-wp-text="state.errorMessage"></p>
+                </div>
+
+                <!-- Content - innerHTML set directly via JS since data-wp-html doesn't exist -->
+                <div
+                    id="modal-content"
+                    class="modal-body"
+                    data-wp-class--hidden="state.loading || state.hasError"
+                ></div>
             </div>
         </div>
-        
-        <script>
-        // Define Alpine component before Alpine initializes
-        if (typeof Alpine !== 'undefined') {
-            // Check Alpine version (require v3.14+)
-            const checkAlpineVersion = () => {
-                if (Alpine.version) {
-                    const version = Alpine.version.split('.').map(n => parseInt(n, 10));
-                    const major = version[0] || 0;
-                    const minor = version[1] || 0;
-                    
-                    if (major < 3 || (major === 3 && minor < 14)) {
-                        console.warn('Pikari Gutenberg Modals: Alpine.js v3.14 or higher is required. Current version:', Alpine.version);
-                        return false;
-                    }
-                }
-                return true;
-            };
-            
-            // If Alpine is already loaded, define the component immediately
-            if (Alpine.data && checkAlpineVersion()) {
-                Alpine.data('pikariModal', () => ({
-                    open: false,
-                    content: '',
-                    loading: false,
-                    
-                    init() {
-                        // Ensure open is properly initialized
-                        this.open = false;
-                    },
-                    
-                    async openModal(detail) {
-                        if (!detail.contentType || !detail.contentId) {
-                            console.error('Missing content type or ID', detail);
-                            return;
-                        }
-                        
-                        this.loading = true;
-                        this.open = true;
-                        this.content = '<div class="modal-loading">Loading...</div>';
-                        
-                        try {
-                            const apiUrl = window.pikariModalsData?.apiUrl || '/wp-json/pikari-gutenberg-modals/v1/modal-content/';
-                            const response = await fetch(`${apiUrl}${detail.contentId}`);
-                            const data = await response.json();
-                            
-                            // Build article CSS classes
-                            const articleClasses = [
-                                'modal-entry',
-                                `type-${data.type}`,
-                                `post-${data.id}`
-                            ].join(' ');
-                            
-                            // Set content with inline styles
-                            this.content = `
-                                ${data.styles ? `<style>${data.styles}</style>` : ''}
-                                <article class="${articleClasses}">
-                                    <header class="modal-entry-header">
-                                        <h2>${this.escapeHtml(data.title)}</h2>
-                                    </header>
-                                    <div class="modal-entry-content">
-                                        ${data.content}
-                                    </div>
-                                </article>
-                            `;
-                        } catch (error) {
-                            console.error('Error loading modal content:', error);
-                            this.content = '<div class="modal-error">Error loading content. Please try again.</div>';
-                        } finally {
-                            this.loading = false;
-                        }
-                    },
-                    
-                    closeModal() {
-                        this.open = false;
-                        this.content = '';
-                    },
-                    
-                    escapeHtml(text) {
-                        const div = document.createElement('div');
-                        div.textContent = text;
-                        return div.innerHTML;
-                    }
-                }));
-            } else {
-                // If Alpine is loaded but not initialized, wait for alpine:init
-                document.addEventListener('alpine:init', () => {
-                    // Check version again after initialization
-                    if (!checkAlpineVersion()) {
-                        return;
-                    }
-                    Alpine.data('pikariModal', () => ({
-                        open: false,
-                        content: '',
-                        loading: false,
-                        
-                        init() {
-                            // Ensure open is properly initialized
-                            this.open = false;
-                        },
-                        
-                        async openModal(detail) {
-                            if (!detail.contentType || !detail.contentId) {
-                                console.error('Missing content type or ID', detail);
-                                return;
-                            }
-                            
-                            this.loading = true;
-                            this.open = true;
-                            this.content = '<div class="modal-loading">Loading...</div>';
-                            
-                            try {
-                                const apiUrl = window.pikariModalsData?.apiUrl || '/wp-json/pikari-gutenberg-modals/v1/modal-content/';
-                                const response = await fetch(`${apiUrl}${detail.contentId}`);
-                                const data = await response.json();
-                                
-                                // Build article CSS classes
-                                const articleClasses = [
-                                    'modal-entry',
-                                    `type-${data.type}`,
-                                    `post-${data.id}`
-                                ].join(' ');
-                                
-                                // Set content with inline styles
-                                this.content = `
-                                    ${data.styles ? `<style>${data.styles}</style>` : ''}
-                                    <article class="${articleClasses}">
-                                        <header class="modal-entry-header">
-                                            <h2>${this.escapeHtml(data.title)}</h2>
-                                        </header>
-                                        <div class="modal-entry-content">
-                                            ${data.content}
-                                        </div>
-                                    </article>
-                                `;
-                            } catch (error) {
-                                console.error('Error loading modal content:', error);
-                                this.content = '<div class="modal-error">Error loading content. Please try again.</div>';
-                            } finally {
-                                this.loading = false;
-                            }
-                        },
-                        
-                        closeModal() {
-                            this.open = false;
-                            this.content = '';
-                        },
-                        
-                        escapeHtml(text) {
-                            const div = document.createElement('div');
-                            div.textContent = text;
-                            return div.innerHTML;
-                        }
-                    }));
-                });
-            }
-        }
-        </script>
         <?php
     }
 }
