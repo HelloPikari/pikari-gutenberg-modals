@@ -3,13 +3,26 @@
  */
 import { Popover } from '@wordpress/components';
 import { LinkControl, RichTextToolbarButton } from '@wordpress/block-editor';
-import { useState, useEffect, useRef } from '@wordpress/element';
+import {
+	useState,
+	useEffect,
+	useCallback,
+	useLayoutEffect,
+	useMemo,
+} from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { __ } from '@wordpress/i18n';
 import { external } from '@wordpress/icons';
-import { applyFormat, removeFormat } from '@wordpress/rich-text';
+import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 
 const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
+
+// Format settings for useAnchor hook
+const modalLinkFormatSettings = {
+	name: MODAL_FORMAT_NAME,
+	tagName: 'span',
+	className: 'modal-link-trigger',
+};
 
 /**
  * Modal Link Edit Component
@@ -26,9 +39,18 @@ const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
  * @return {JSX.Element} The modal link edit UI
  */
 const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
-	const [ isOpen, setIsOpen ] = useState( false );
-	const [ linkValue, setLinkValue ] = useState( null );
-	const buttonRef = useRef();
+	const [ addingLink, setAddingLink ] = useState( false );
+	// Track what opened the popover: 'toolbar' or 'click'
+	const [ openedBy, setOpenedBy ] = useState( null );
+
+	// Use useAnchor to position popover at the text selection/formatted element
+	const popoverAnchor = useAnchor( {
+		editableContentElement: contentRef.current,
+		settings: {
+			...modalLinkFormatSettings,
+			isActive,
+		},
+	} );
 
 	// Get the currently selected block to check if we should show the button
 	const selectedBlock = useSelect( ( select ) => {
@@ -52,12 +74,32 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		selectedBlock && supportedBlocks.includes( selectedBlock.name );
 
 	/**
-	 * Extract existing modal link data when the format becomes active.
-	 * This allows editing of previously created modal links.
+	 * Stop adding/editing the link and close the popover.
+	 * Handles focus return based on what opened the popover.
+	 */
+	const stopAddingLink = useCallback( () => {
+		setAddingLink( false );
+		setOpenedBy( null );
+	}, [] );
+
+	/**
+	 * Reset popover state when the format becomes inactive.
+	 * This handles the case where user clicks away from a modal trigger.
 	 */
 	useEffect( () => {
+		if ( ! isActive && openedBy === 'click' ) {
+			stopAddingLink();
+		}
+	}, [ isActive, openedBy, stopAddingLink ] );
+
+	/**
+	 * Compute existing modal link data synchronously during render.
+	 * Uses useMemo instead of useEffect to ensure the value is available
+	 * immediately when the popover first renders.
+	 */
+	const linkValue = useMemo( () => {
 		if ( ! isActive || ! value.activeFormats ) {
-			return;
+			return null;
 		}
 
 		const activeFormat = value.activeFormats.find(
@@ -65,39 +107,75 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		);
 
 		if ( ! activeFormat?.attributes ) {
-			return;
+			return null;
 		}
 
 		try {
 			// Try to parse the JSON data stored in the format
-			const modalData = JSON.parse(
+			return JSON.parse(
 				activeFormat.attributes[ 'data-modal-link' ] || '{}'
 			);
-			setLinkValue( modalData );
 		} catch ( error ) {
 			// Fallback for legacy format or corrupted data
 			// eslint-disable-next-line no-console
 			console.warn( 'Failed to parse modal link data:', error );
-			setLinkValue( {
+			return {
 				url: activeFormat.attributes[ 'data-modal-content-id' ] || '',
 				type:
 					activeFormat.attributes[ 'data-modal-content-type' ] ||
 					'post',
-			} );
+			};
 		}
 	}, [ isActive, value.activeFormats ] );
+
+	/**
+	 * Click detection for existing modal triggers.
+	 * When user clicks on a modal trigger in the editor, show the popover.
+	 */
+	useLayoutEffect( () => {
+		const element = contentRef.current;
+		if ( ! element ) {
+			return;
+		}
+
+		function handleClick( event ) {
+			// Find if the click target is within a modal trigger
+			const modalTrigger = event.target.closest( '.modal-link-trigger' );
+
+			if ( ! modalTrigger ) {
+				return;
+			}
+
+			// Prevent default behavior and show the popover
+			setAddingLink( true );
+			setOpenedBy( 'click' );
+		}
+
+		element.addEventListener( 'click', handleClick );
+		return () => {
+			element.removeEventListener( 'click', handleClick );
+		};
+	}, [ contentRef, stopAddingLink ] );
 
 	// Don't render anything if the block doesn't support modal links
 	if ( ! isBlockSupported ) {
 		return null;
 	}
 
-	const openModal = () => {
-		setIsOpen( true );
+	/**
+	 * Open the link popover from the toolbar button.
+	 */
+	const openFromToolbar = () => {
+		setAddingLink( true );
+		setOpenedBy( 'toolbar' );
 	};
 
-	const closeModal = () => {
-		setIsOpen( false );
+	/**
+	 * Handle focus moving outside the popover.
+	 * Close the popover when focus moves elsewhere.
+	 */
+	const onFocusOutside = () => {
+		stopAddingLink();
 	};
 
 	/**
@@ -113,7 +191,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		// If no URL provided, remove the format entirely
 		if ( ! newValue || ! newValue.url ) {
 			onChange( removeFormat( value, MODAL_FORMAT_NAME ) );
-			closeModal();
+			stopAddingLink();
 			return;
 		}
 
@@ -146,33 +224,41 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		};
 
 		onChange( applyFormat( value, format ) );
-		closeModal();
+		stopAddingLink();
 	};
 
 	const onRemove = () => {
 		onChange( removeFormat( value, MODAL_FORMAT_NAME ) );
-		closeModal();
+		stopAddingLink();
 	};
+
+	// Determine if we should show the popover
+	// Show when explicitly adding a link (from toolbar or click on existing trigger)
+	const showPopover = addingLink;
 
 	return (
 		<>
 			<RichTextToolbarButton
-				ref={ buttonRef }
 				icon={ external }
 				title={ __( 'Modal Link', 'pikari-gutenberg-modals' ) }
-				onClick={ openModal }
+				onClick={ openFromToolbar }
 				isActive={ isActive }
 				className="modal-toolbar-button"
 				shortcutType="primary"
 				shortcutCharacter="m"
 			/>
-			{ isOpen && (
+			{ showPopover && (
 				<Popover
-					onClose={ closeModal }
-					position="bottom center"
+					anchor={ popoverAnchor }
+					animate={ false }
+					onClose={ stopAddingLink }
+					onFocusOutside={ onFocusOutside }
+					placement="bottom"
+					offset={ 8 }
+					shift
+					focusOnMount={ openedBy === 'toolbar' ? 'firstElement' : false }
+					constrainTabbing
 					className="modal-link-popover"
-					anchorRef={ contentRef }
-					focusOnMount="firstElement"
 				>
 					<LinkControl
 						searchInputPlaceholder={ __(
@@ -181,9 +267,9 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 						) }
 						value={ linkValue }
 						onChange={ onSubmit }
-						onRemove={ onRemove }
-						showInitialSuggestions={ true }
-						showSuggestions={ true }
+						onRemove={ isActive ? onRemove : undefined }
+						showInitialSuggestions={ ! isActive }
+						showSuggestions
 						settings={ [] }
 					/>
 				</Popover>
