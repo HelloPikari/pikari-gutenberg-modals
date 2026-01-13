@@ -1,7 +1,8 @@
 /**
  * WordPress dependencies
  */
-import { Popover } from '@wordpress/components';
+// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
+import { Popover, __experimentalHeading as Heading } from '@wordpress/components';
 import { LinkControl, RichTextToolbarButton } from '@wordpress/block-editor';
 import {
 	useState,
@@ -260,6 +261,11 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 					constrainTabbing
 					className="modal-link-popover"
 				>
+					<Heading level={ 4 }>
+						{ ! linkValue || ! linkValue.url
+							? __( 'Add Modal Link', 'pikari-gutenberg-modals' )
+							: __( 'Edit Modal Link', 'pikari-gutenberg-modals' ) }
+					</Heading>
 					<LinkControl
 						searchInputPlaceholder={ __(
 							'Search or enter URL',
