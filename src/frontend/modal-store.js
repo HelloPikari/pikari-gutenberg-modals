@@ -104,7 +104,7 @@ const { state, actions } = store( 'pikari-modal', {
 					const htmlContent = `
 						${ data.styles ? `<style>${ data.styles }</style>` : '' }
 						<article class="modal-entry type-${ escapeAttribute( String( data.type ) ) } post-${ escapeAttribute( String( data.id ) ) }">
-							<header class="modal-entry-header">
+							<header class="modal-entry-header sr-only">
 								<h2 id="modal-title">${ escapeHTML( data.title ) }</h2>
 							</header>
 							<div class="modal-entry-content">
