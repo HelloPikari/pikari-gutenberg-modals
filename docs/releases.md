@@ -63,7 +63,7 @@ This is the standard workflow for most releases:
    - Click "Publish release"
    - GitHub Actions will automatically:
      - Build the production plugin
-     - Create `pikari-gutenberg-modals.zip`
+     - Create versioned ZIP (e.g., `pikari-gutenberg-modals-v1.0.0.zip`)
      - Generate checksums
      - Attach files to the release
 
