@@ -32,12 +32,15 @@ jobs:
       
       - name: Create distribution ZIP
         run: |
-          # Plugin slug
+          # Extract version from tag (removes 'v' prefix if present)
+          VERSION="${GITHUB_REF_NAME#v}"
           SLUG="pikari-gutenberg-modals"
-          
+
+          echo "Building release for version: $VERSION"
+
           # Create temp directory for clean distribution
           mkdir -p /tmp/dist/$SLUG
-          
+
           # Copy production files only (exclude dev files)
           echo "Creating production distribution..."
           rsync -av \
@@ -61,42 +64,46 @@ jobs:
             --exclude='phpcs.xml' \
             --exclude='*.config.*' \
             . /tmp/dist/$SLUG/
-          
+
           # Ensure build directory is included
           if [ ! -d "/tmp/dist/$SLUG/build" ]; then
             echo "❌ Build directory missing from distribution"
             exit 1
           fi
-          
-          # Create ZIP
+
+          # Create versioned ZIP
           cd /tmp/dist
-          zip -r "$SLUG.zip" $SLUG
-          mv "$SLUG.zip" $GITHUB_WORKSPACE/
-          
-          echo "✅ Created distribution ZIP: pikari-gutenberg-modals.zip"
-          
-          # Generate checksums
+          zip -r "${SLUG}-v${VERSION}.zip" $SLUG
+          mv "${SLUG}-v${VERSION}.zip" $GITHUB_WORKSPACE/
+
+          echo "✅ Created distribution ZIP: ${SLUG}-v${VERSION}.zip"
+
+          # Generate versioned checksums
           cd $GITHUB_WORKSPACE
-          sha256sum $SLUG.zip > checksums.txt
-          md5sum $SLUG.zip >> checksums.txt
+          sha256sum "${SLUG}-v${VERSION}.zip" > "${SLUG}-v${VERSION}-checksums.txt"
+          md5sum "${SLUG}-v${VERSION}.zip" >> "${SLUG}-v${VERSION}-checksums.txt"
+
+          # Export for later steps
+          echo "ZIP_FILE=${SLUG}-v${VERSION}.zip" >> $GITHUB_ENV
+          echo "CHECKSUMS_FILE=${SLUG}-v${VERSION}-checksums.txt" >> $GITHUB_ENV
       
       - name: Verify distribution
         run: |
           echo "Distribution contents:"
-          unzip -l pikari-gutenberg-modals.zip | head -20
-          
+          unzip -l "${{ env.ZIP_FILE }}" | head -20
+
           echo -e "\nChecksums:"
-          cat checksums.txt
-          
+          cat "${{ env.CHECKSUMS_FILE }}"
+
           echo -e "\nZIP size:"
-          ls -lh pikari-gutenberg-modals.zip
-      
+          ls -lh "${{ env.ZIP_FILE }}"
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            pikari-gutenberg-modals.zip
-            checksums.txt
+            ${{ env.ZIP_FILE }}
+            ${{ env.CHECKSUMS_FILE }}
           tag_name: ${{ github.event.release.tag_name }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
