@@ -1,42 +1,12 @@
 {
-	"name": "pikari-inc/pikari-gutenberg-modals",
-	"description": "Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs",
-	"version": "0.1.0",
-	"type": "wordpress-plugin",
-	"license": "GPL-2.0-or-later",
-	"authors": [
-		{
-			"name": "Pikari Inc.",
-			"email": "development@pikari.io"
-		}
-	],
-	"homepage": "https://pikari.io",
-	"require": {
-		"php": ">=8.4"
-	},
-	"require-dev": {
-		"squizlabs/php_codesniffer": "^3.10",
-		"wp-coding-standards/wpcs": "^3.1",
-		"dealerdirect/phpcodesniffer-composer-installer": "^1.0",
-		"phpcsstandards/phpcsutils": "^1.0.12",
-		"phpunit/phpunit": "^9.5",
-		"php-stubs/wordpress-stubs": "^6.6"
-	},
-	"config": {
-		"allow-plugins": {
-			"dealerdirect/phpcodesniffer-composer-installer": true
-		}
-	},
-	"scripts": {
-		"lint": "phpcs",
-		"lint:fix": "phpcbf",
-		"lint:file": "phpcs --standard=phpcs.xml",
-		"test": "phpunit",
-		"test:coverage": "phpunit --coverage-html tests/coverage"
-	},
-	"autoload": {
-		"psr-4": {
-			"Pikari\\GutenbergModals\\": "includes/"
-		}
-	}
+  "name": "pikari-inc/pikari-gutenberg-modals",
+  "description": "Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs",
+  "type": "wordpress-plugin",
+  "license": "GPL-2.0-or-later",
+  "require": {
+    "php": ">=8.2"
+  },
+  "extra": {
+    "installer-name": "pikari-gutenberg-modals"
+  }
 }
