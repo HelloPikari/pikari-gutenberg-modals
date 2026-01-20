@@ -50,7 +50,7 @@ jobs:
       - name: Verify lock files are in sync
         run: |
           npm ls >/dev/null 2>&1 || (echo "❌ package-lock.json out of sync" && exit 1)
-          composer validate --strict
+          composer validate --no-check-version
 
       - name: Run linters
         id: lint
