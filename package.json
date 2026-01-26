@@ -38,7 +38,7 @@
 		"@wordpress/env": "latest",
 		"@wordpress/escape-html": "^3.37.0",
 		"@wordpress/icons": "latest",
-		"@wordpress/interactivity": "^6.37.0",
+		"@wordpress/interactivity": "^6.38.0",
 		"@wordpress/scripts": "latest",
 		"husky": "latest",
 		"lint-staged": "latest"
