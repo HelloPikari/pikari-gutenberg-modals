@@ -1,7 +1,7 @@
 {
 	"name": "pikari-inc/pikari-gutenberg-modals",
 	"description": "Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs",
-	"version": "0.1.0",
+	"version": "0.1.4",
 	"type": "wordpress-plugin",
 	"license": "GPL-2.0-or-later",
 	"authors": [
