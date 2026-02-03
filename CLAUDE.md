@@ -92,12 +92,19 @@ npm run playground
 
 ### JavaScript Standards
 
-- Use WordPress ESLint configuration
+- Use WordPress ESLint configuration (`plugin:@wordpress/eslint-plugin/recommended-with-formatting`)
+- **Tab indentation (NOT spaces)** - WordPress JS coding standards use tabs
 - Single quotes for strings
-- Space indentation as configured in .eslintrc.cjs
 - Meaningful variable names in camelCase
 - Use `wp` global for WordPress JavaScript APIs
 - Prefer template literals over string concatenation for building strings
+
+**Important for AI/LLM editing:** JavaScript files in this project use **tabs for indentation**. When editing JS files, ensure the `old_string` in edit operations preserves the exact tab characters. The nesting depth in `modal-store.js` follows this pattern:
+
+- Store object properties: 1 tab
+- Action methods: 2 tabs
+- Code inside actions: 3 tabs
+- Nested blocks (try/catch, if): 4+ tabs
 
 ### WordPress Interactivity API
 
