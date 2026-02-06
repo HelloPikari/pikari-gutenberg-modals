@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version.
  */
-define( 'PIKARI_GUTENBERG_MODALS_VERSION', '0.1.0' );
+define( 'PIKARI_GUTENBERG_MODALS_VERSION', '0.1.5' );
 
 /**
  * Plugin directory path.

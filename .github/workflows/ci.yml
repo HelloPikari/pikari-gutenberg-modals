@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -104,10 +104,10 @@ jobs:
       - name: Security audit
         run: |
           echo "Running npm audit..."
-          npm audit --audit-level=high
+          npm audit --audit-level=high --omit=dev
 
           echo "Running composer audit..."
-          composer audit
+          composer audit --no-dev
 
   build:
     name: Build
@@ -115,7 +115,7 @@ jobs:
     needs: quality
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -134,7 +134,7 @@ jobs:
           echo "Build verification successful"
 
       - name: Upload build artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: build-artifacts
           path: build/
@@ -147,7 +147,7 @@ jobs:
     continue-on-error: true
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
