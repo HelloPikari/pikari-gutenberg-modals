@@ -250,7 +250,7 @@ const { state, actions } = store( 'pikari-modal', {
 		 */
 		*prefetchModal() {
 			const context = getContext();
-			const { postId } = context;
+			const { postId, modalId } = context;
 
 			// Skip if no postId or already prefetched/prefetching
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {
@@ -261,8 +261,9 @@ const { state, actions } = store( 'pikari-modal', {
 			state.prefetchedPosts[ postId ] = 'pending';
 
 			try {
+				// URL must match openModal() exactly for browser HTTP cache to work
 				const response = yield fetch(
-					`/wp-json/pikari-gutenberg-modals/v1/modal-content/${ postId }`,
+					`/wp-json/pikari-gutenberg-modals/v1/modal-content/${ postId }?modal_id=${ modalId }`,
 					{
 						priority: 'low',
 						credentials: 'same-origin',
