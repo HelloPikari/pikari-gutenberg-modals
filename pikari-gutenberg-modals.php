@@ -1,9 +1,9 @@
 <?php
 /**
- * Plugin Name: pikari-gutenberg-modals
+ * Plugin Name: Pikari Gutenberg Modals
  * Plugin URI:  https://pikari.io
  * Description: Modal windows for the WordPress Gutenberg block editor. Adds accessible modal dialogs
- * Version:     0.1.0
+ * Version:     0.1.5
  * Author:      Pikari Inc.
  * Author URI:  https://pikari.io
  * License:     GPL-2.0-or-later
@@ -22,7 +22,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version.
  */
-define( 'PIKARI_GUTENBERG_MODALS_VERSION', '0.1.0' );
+define( 'PIKARI_GUTENBERG_MODALS_VERSION', '0.1.5' );
 
 /**
  * Plugin directory path.
@@ -33,6 +33,12 @@ define( 'PIKARI_GUTENBERG_MODALS_DIR', plugin_dir_path( __FILE__ ) );
  * Plugin directory URL.
  */
 define( 'PIKARI_GUTENBERG_MODALS_URL', plugin_dir_url( __FILE__ ) );
+
+/**
+ * Default cache duration for external content (in seconds).
+ * Can be overridden by defining the constant in wp-config.php
+ */
+define( 'PIKARI_GUTENBERG_MODALS_CACHE_DURATION', 1 * HOUR_IN_SECONDS );
 
 // Autoloader for plugin classes.
 spl_autoload_register(
@@ -69,9 +75,12 @@ function pikari_gutenberg_modals_init() {
     new \Pikari\GutenbergModals\EditorIntegration();
     new \Pikari\GutenbergModals\FrontendRenderer();
     new \Pikari\GutenbergModals\BlockSupport();
+    new \Pikari\GutenbergModals\GroupModalTriggerSupport();
     new \Pikari\GutenbergModals\RestApi();
+    new \Pikari\GutenbergModals\SpeculativeLoading();
 }
-add_action( 'plugins_loaded', 'pikari_gutenberg_modals_init' );
+// add_action( 'plugins_loaded', 'pikari_gutenberg_modals_init' );
+add_action( 'init', 'pikari_gutenberg_modals_init' );
 
 /**
  * Enqueue plugin scripts and styles.

@@ -82,6 +82,6 @@ template: |
   ```
   
   ### WordPress Plugin
-  Download `pikari-gutenberg-modals.zip` from the assets below.
+  Download `pikari-gutenberg-modals-v$RESOLVED_VERSION.zip` from the assets below.
   
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

@@ -19,7 +19,10 @@ class FrontendRenderer
     }
 
     /**
-     * Enqueue frontend assets
+     * Register frontend assets.
+     *
+     * Assets are registered here but only enqueued by BlockSupport
+     * when modal triggers are detected during block rendering.
      */
     public function enqueue_frontend_assets(): void
     {
@@ -32,28 +35,17 @@ class FrontendRenderer
 
         $frontend_assets = include $frontend_asset_file;
 
-        // Enqueue frontend script
-        wp_enqueue_script(
+        // Register frontend script module (will be enqueued by BlockSupport when triggers are detected)
+        wp_register_script_module(
             'pikari-gutenberg-modals-frontend',
             PIKARI_GUTENBERG_MODALS_URL . 'build/frontend/index.js',
-            $frontend_assets['dependencies'],
-            $frontend_assets['version'],
-            true
+            ['@wordpress/interactivity'],
+            $frontend_assets['version']
         );
 
-        // Localize script with REST API data
-        wp_localize_script(
-            'pikari-gutenberg-modals-frontend',
-            'pikariModalsData',
-            [
-                'apiUrl' => rest_url('pikari-gutenberg-modals/v1/modal-content/'),
-                'nonce' => wp_create_nonce('wp_rest'),
-            ]
-        );
-
-        // Enqueue frontend styles
+        // Register frontend styles (will be enqueued by BlockSupport when triggers are detected)
         if ( file_exists(PIKARI_GUTENBERG_MODALS_DIR . 'build/frontend/style-index.css') ) {
-            wp_enqueue_style(
+            wp_register_style(
                 'pikari-gutenberg-modals-frontend',
                 PIKARI_GUTENBERG_MODALS_URL . 'build/frontend/style-index.css',
                 [],
