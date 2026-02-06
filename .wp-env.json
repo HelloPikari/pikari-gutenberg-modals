@@ -1,0 +1,6 @@
+{
+	"plugins": [
+		".",
+		"https://github.com/OllieWP/ollie-menu-designer/releases/download/v0.2.4/menu-designer.zip"
+	]
+}
