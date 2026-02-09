@@ -58,5 +58,8 @@
 		"*.{json,md}": [
 			"prettier --write"
 		]
+	},
+	"dependencies": {
+		"@wordpress/primitives": "^4.39.0"
 	}
 }

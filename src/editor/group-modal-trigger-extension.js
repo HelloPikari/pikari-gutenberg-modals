@@ -18,6 +18,15 @@ import {
 import { __ } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
 import { useMemo, useEffect } from '@wordpress/element';
+import useModalContentBlocks from './use-modal-content-blocks';
+
+// Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
+const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
+	{ label: __( 'Default', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( 'Small', 'pikari-gutenberg-modals' ), value: 'small' },
+	{ label: __( 'Large', 'pikari-gutenberg-modals' ), value: 'large' },
+	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
+];
 
 /**
  * Add modal trigger attributes to core/group block.
@@ -40,6 +49,18 @@ function addModalTriggerAttributes( settings, name ) {
 				default: false,
 			},
 			pikariModalTriggerBlockId: {
+				type: 'string',
+				default: '',
+			},
+			pikariModalSize: {
+				type: 'string',
+				default: '',
+			},
+			pikariModalContentSource: {
+				type: 'string',
+				default: 'link',
+			},
+			pikariModalInlineAnchor: {
 				type: 'string',
 				default: '',
 			},
@@ -212,7 +233,17 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 			}
 
 			const { attributes, setAttributes, clientId } = props;
-			const { pikariModalTrigger, pikariModalTriggerBlockId } = attributes;
+			const {
+				pikariModalTrigger,
+				pikariModalTriggerBlockId,
+				pikariModalSize,
+				pikariModalContentSource,
+				pikariModalInlineAnchor,
+			} = attributes;
+
+			const contentSource = pikariModalContentSource || 'link';
+			const isInline = contentSource === 'inline';
+			const modalContentBlocks = useModalContentBlocks();
 
 			// Check if we're in contentOnly editing mode (e.g., locked patterns)
 			const blockEditingMode = useBlockEditingMode();
@@ -226,15 +257,19 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 				[ clientId ]
 			);
 
-			// Detect links in inner blocks
+			// Detect links in inner blocks (only needed for link mode)
 			const detectedLinks = useMemo( () => {
+				if ( isInline ) {
+					return [];
+				}
 				return findLinksInBlocks( innerBlocks );
-			}, [ innerBlocks ] );
+			}, [ innerBlocks, isInline ] );
 
-			// Auto-select first link when modal trigger is enabled and no link is selected
+			// Auto-select first link when modal trigger is enabled and no link is selected (link mode only)
 			useEffect( () => {
 				if (
 					pikariModalTrigger &&
+					! isInline &&
 					! pikariModalTriggerBlockId &&
 					detectedLinks.length > 0
 				) {
@@ -244,11 +279,11 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 						),
 					} );
 				}
-			}, [ pikariModalTrigger, pikariModalTriggerBlockId, detectedLinks, setAttributes ] );
+			}, [ pikariModalTrigger, isInline, pikariModalTriggerBlockId, detectedLinks, setAttributes ] );
 
-			// Clear selection if the selected link no longer exists
+			// Clear selection if the selected link no longer exists (link mode only)
 			useEffect( () => {
-				if ( pikariModalTrigger && pikariModalTriggerBlockId && detectedLinks.length > 0 ) {
+				if ( pikariModalTrigger && ! isInline && pikariModalTriggerBlockId && detectedLinks.length > 0 ) {
 					try {
 						const selectedIdentifier = JSON.parse( pikariModalTriggerBlockId );
 
@@ -276,12 +311,17 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 						setAttributes( { pikariModalTriggerBlockId: '' } );
 					}
 				}
-			}, [ pikariModalTrigger, pikariModalTriggerBlockId, detectedLinks, setAttributes ] );
+			}, [ pikariModalTrigger, isInline, pikariModalTriggerBlockId, detectedLinks, setAttributes ] );
 
 			// Don't show controls if in contentOnly mode
 			if ( isContentOnly ) {
 				return <BlockEdit { ...props } />;
 			}
+
+			// Determine if the trigger has a valid content source configured
+			const hasValidSource = isInline
+				? !! pikariModalInlineAnchor
+				: detectedLinks.length > 0;
 
 			return (
 				<>
@@ -317,37 +357,130 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 								}
 							/>
 
-							{ pikariModalTrigger && detectedLinks.length === 0 && (
-								<Notice status="warning" isDismissible={ false }>
-									{ __(
-										'No links found in this group. Add a block with a link (button, heading, image, etc.) to use as the modal trigger.',
-										'pikari-gutenberg-modals'
-									) }
-								</Notice>
-							) }
+							{ pikariModalTrigger && (
+								<>
+									<SelectControl
+										__nextHasNoMarginBottom
+										label={ __(
+											'Content Source',
+											'pikari-gutenberg-modals'
+										) }
+										value={ contentSource }
+										options={ [
+											{
+												label: __(
+													'Detected Link',
+													'pikari-gutenberg-modals'
+												),
+												value: 'link',
+											},
+											{
+												label: __(
+													'Page Content',
+													'pikari-gutenberg-modals'
+												),
+												value: 'inline',
+											},
+										] }
+										onChange={ ( value ) =>
+											setAttributes( {
+												pikariModalContentSource: value,
+											} )
+										}
+									/>
 
-							{ pikariModalTrigger && detectedLinks.length > 0 && (
-								<SelectControl
-									__nextHasNoMarginBottom
-									label={ __(
-										'Primary Link',
-										'pikari-gutenberg-modals'
+									{ ! isInline && detectedLinks.length === 0 && (
+										<Notice status="warning" isDismissible={ false }>
+											{ __(
+												'No links found in this group. Add a block with a link (button, heading, image, etc.) to use as the modal trigger.',
+												'pikari-gutenberg-modals'
+											) }
+										</Notice>
 									) }
-									help={ __(
-										'This link determines the modal content. Its clickable area will expand to cover the entire group.',
-										'pikari-gutenberg-modals'
+
+									{ ! isInline && detectedLinks.length > 0 && (
+										<SelectControl
+											__nextHasNoMarginBottom
+											label={ __(
+												'Primary Link',
+												'pikari-gutenberg-modals'
+											) }
+											help={ __(
+												'This link determines the modal content. Its clickable area will expand to cover the entire group.',
+												'pikari-gutenberg-modals'
+											) }
+											value={ pikariModalTriggerBlockId }
+											options={ detectedLinks.map( ( link ) => ( {
+												label: link.label,
+												value: JSON.stringify( link.identifier ),
+											} ) ) }
+											onChange={ ( value ) =>
+												setAttributes( {
+													pikariModalTriggerBlockId: value,
+												} )
+											}
+										/>
 									) }
-									value={ pikariModalTriggerBlockId }
-									options={ detectedLinks.map( ( link ) => ( {
-										label: link.label,
-										value: JSON.stringify( link.identifier ),
-									} ) ) }
-									onChange={ ( value ) =>
-										setAttributes( {
-											pikariModalTriggerBlockId: value,
-										} )
-									}
-								/>
+
+									{ isInline && modalContentBlocks.length === 0 && (
+										<Notice
+											status="warning"
+											isDismissible={ false }
+										>
+											{ __(
+												'No Modal Content blocks found on this page. Add a Modal Content block first.',
+												'pikari-gutenberg-modals'
+											) }
+										</Notice>
+									) }
+
+									{ isInline && modalContentBlocks.length > 0 && (
+										<SelectControl
+											__nextHasNoMarginBottom
+											label={ __(
+												'Modal Content',
+												'pikari-gutenberg-modals'
+											) }
+											value={ pikariModalInlineAnchor }
+											options={ [
+												{
+													label: __(
+														'Select\u2026',
+														'pikari-gutenberg-modals'
+													),
+													value: '',
+												},
+												...modalContentBlocks.map(
+													( block ) => ( {
+														label: block.title,
+														value: block.anchor,
+													} )
+												),
+											] }
+											onChange={ ( value ) =>
+												setAttributes( {
+													pikariModalInlineAnchor:
+														value,
+												} )
+											}
+										/>
+									) }
+
+									{ hasValidSource && (
+										<SelectControl
+											__nextHasNoMarginBottom
+											label={ __(
+												'Modal Size',
+												'pikari-gutenberg-modals'
+											) }
+											value={ pikariModalSize }
+											options={ MODAL_SIZE_OPTIONS }
+											onChange={ ( value ) =>
+												setAttributes( { pikariModalSize: value } )
+											}
+										/>
+									) }
+								</>
 							) }
 						</PanelBody>
 					</InspectorControls>

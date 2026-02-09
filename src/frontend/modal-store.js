@@ -43,25 +43,35 @@ const { state, actions } = store( 'pikari-modal', {
 		 */
 		*openModal() {
 			const context = getContext();
-			const { postId, modalId } = context;
+			const { postId, modalId, size, contentSource, inlineAnchor } = context;
 
-			if ( ! postId || ! modalId ) {
+			// Validate required context based on content source
+			const isInline = contentSource === 'inline';
+
+			if ( isInline && ! inlineAnchor ) {
+				// eslint-disable-next-line no-console
+				console.error( 'Missing inlineAnchor in context for inline content' );
+				return;
+			}
+
+			if ( ! isInline && ( ! postId || ! modalId ) ) {
 				// eslint-disable-next-line no-console
 				console.error( 'Missing postId or modalId in context' );
 				return;
 			}
 
+			const activeModalId = isInline ? `inline-${ inlineAnchor }` : modalId;
+
 			// Store the trigger element for focus management
 			// eslint-disable-next-line @wordpress/no-global-active-element
 			state.activeTriggerId = document.activeElement?.id || null;
 
-			// Set loading state
-			state.loading = true;
+			// Set initial state
 			state.isOpen = true;
-			state.activeModalId = modalId; // Track which modal is open for aria-expanded
+			state.activeModalId = activeModalId;
 			state.hasError = false;
 			state.errorMessage = '';
-			state.hasAnimated = false; // Start with entering animation
+			state.hasAnimated = false;
 
 			// Show modal and trigger enter animation
 			const modal = document.getElementById( 'pikari-modal' );
@@ -70,6 +80,13 @@ const { state, actions } = store( 'pikari-modal', {
 				modal.classList.add( 'is-open' );
 				modal.classList.remove( 'is-closing' );
 
+				// Apply size from trigger context
+				if ( size ) {
+					modal.setAttribute( 'data-size', size );
+				} else {
+					modal.removeAttribute( 'data-size' );
+				}
+
 				// Set up accessibility features
 				setupFocusTrap( modal );
 				setBackgroundInert( true );
@@ -77,6 +94,46 @@ const { state, actions } = store( 'pikari-modal', {
 
 			// Prevent body scroll when modal is open
 			document.body.style.overflow = 'hidden';
+
+			if ( isInline ) {
+				// Inline content: clone from hidden element on the page (no REST API call)
+				const sourceElement = document.querySelector(
+					`[data-modal-inline-content="${ inlineAnchor }"]`
+				);
+
+				if ( sourceElement ) {
+					const modalBody = document.getElementById( 'modal-content' );
+					if ( modalBody ) {
+						// Add sr-only title for aria-labelledby="modal-title"
+						const titleText = sourceElement.getAttribute( 'data-modal-inline-title' ) || '';
+						const titleHtml = titleText
+							? `<h2 id="modal-title" class="sr-only">${ escapeHTML( titleText ) }</h2>`
+							: '';
+						modalBody.innerHTML = titleHtml + sourceElement.innerHTML;
+					}
+					state.content = sourceElement.innerHTML;
+				} else {
+					state.hasError = true;
+					state.errorMessage = 'Inline modal content not found on this page.';
+					state.content = '';
+				}
+
+				state.loading = false;
+
+				// Focus first focusable element
+				// eslint-disable-next-line no-undef
+				requestAnimationFrame( () => {
+					const modalElement = document.getElementById( 'pikari-modal' );
+					if ( modalElement ) {
+						focusFirstElement( modalElement );
+					}
+				} );
+
+				return;
+			}
+
+			// Remote content: fetch via REST API
+			state.loading = true;
 
 			try {
 				// Yield the fetch promise - Interactivity API will handle awaiting
@@ -163,6 +220,7 @@ const { state, actions } = store( 'pikari-modal', {
 				if ( modal ) {
 					modal.style.display = 'none';
 					modal.classList.remove( 'is-closing' );
+					modal.removeAttribute( 'data-size' );
 				}
 				state.content = '';
 				// Clear innerHTML directly since data-wp-html doesn't exist
@@ -250,7 +308,12 @@ const { state, actions } = store( 'pikari-modal', {
 		 */
 		*prefetchModal() {
 			const context = getContext();
-			const { postId, modalId } = context;
+			const { postId, modalId, contentSource } = context;
+
+			// Skip prefetch for inline content (already on the page)
+			if ( contentSource === 'inline' ) {
+				return;
+			}
 
 			// Skip if no postId or already prefetched/prefetching
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {

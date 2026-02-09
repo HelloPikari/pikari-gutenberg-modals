@@ -8,8 +8,22 @@
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
 import { InspectorControls } from '@wordpress/block-editor';
-import { PanelBody, ToggleControl, Notice } from '@wordpress/components';
+import {
+	PanelBody,
+	ToggleControl,
+	SelectControl,
+	Notice,
+} from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import useModalContentBlocks from './use-modal-content-blocks';
+
+// Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
+const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
+	{ label: __( 'Default', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( 'Small', 'pikari-gutenberg-modals' ), value: 'small' },
+	{ label: __( 'Large', 'pikari-gutenberg-modals' ), value: 'large' },
+	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
+];
 
 /**
  * Add modal attributes to core/button block.
@@ -30,6 +44,18 @@ function addModalAttributes( settings, name ) {
 			pikariOpenInModal: {
 				type: 'boolean',
 				default: false,
+			},
+			pikariModalSize: {
+				type: 'string',
+				default: '',
+			},
+			pikariModalContentSource: {
+				type: 'string',
+				default: 'link',
+			},
+			pikariModalInlineAnchor: {
+				type: 'string',
+				default: '',
 			},
 		},
 	};
@@ -56,7 +82,22 @@ const withModalInspectorControls = createHigherOrderComponent(
 			}
 
 			const { attributes, setAttributes } = props;
-			const { pikariOpenInModal, url } = attributes;
+			const {
+				pikariOpenInModal,
+				pikariModalSize,
+				pikariModalContentSource,
+				pikariModalInlineAnchor,
+				url,
+			} = attributes;
+
+			const contentSource = pikariModalContentSource || 'link';
+			const modalContentBlocks = useModalContentBlocks();
+			const isInline = contentSource === 'inline';
+
+			// Toggle is enabled if there's a URL (link mode) or inline content is selected
+			const canEnableModal = isInline
+				? modalContentBlocks.length > 0
+				: !! url;
 
 			return (
 				<>
@@ -69,10 +110,10 @@ const withModalInspectorControls = createHigherOrderComponent(
 							) }
 							initialOpen={ pikariOpenInModal }
 						>
-							{ ! url && (
+							{ ! isInline && ! url && (
 								<Notice status="info" isDismissible={ false }>
 									{ __(
-										'Add a link to the button first to enable modal functionality.',
+										'Add a link to the button first, or switch content source to "Page Content".',
 										'pikari-gutenberg-modals'
 									) }
 								</Notice>
@@ -80,17 +121,17 @@ const withModalInspectorControls = createHigherOrderComponent(
 							<ToggleControl
 								__nextHasNoMarginBottom
 								label={ __(
-									'Open link in modal',
+									'Open in modal',
 									'pikari-gutenberg-modals'
 								) }
 								help={
 									pikariOpenInModal
 										? __(
-											'The linked content will open in a modal dialog.',
+											'The content will open in a modal dialog.',
 											'pikari-gutenberg-modals'
 										)
 										: __(
-											'The link will open normally.',
+											'Enable to open content in a modal.',
 											'pikari-gutenberg-modals'
 										)
 								}
@@ -98,8 +139,97 @@ const withModalInspectorControls = createHigherOrderComponent(
 								onChange={ ( value ) =>
 									setAttributes( { pikariOpenInModal: value } )
 								}
-								disabled={ ! url }
+								disabled={ ! canEnableModal }
 							/>
+							{ pikariOpenInModal && (
+								<>
+									<SelectControl
+										__nextHasNoMarginBottom
+										label={ __(
+											'Content Source',
+											'pikari-gutenberg-modals'
+										) }
+										value={ contentSource }
+										options={ [
+											{
+												label: __(
+													'Button Link',
+													'pikari-gutenberg-modals'
+												),
+												value: 'link',
+											},
+											{
+												label: __(
+													'Page Content',
+													'pikari-gutenberg-modals'
+												),
+												value: 'inline',
+											},
+										] }
+										onChange={ ( value ) =>
+											setAttributes( {
+												pikariModalContentSource: value,
+											} )
+										}
+									/>
+									{ isInline && modalContentBlocks.length === 0 && (
+										<Notice
+											status="warning"
+											isDismissible={ false }
+										>
+											{ __(
+												'No Modal Content blocks found on this page. Add a Modal Content block first.',
+												'pikari-gutenberg-modals'
+											) }
+										</Notice>
+									) }
+									{ isInline && modalContentBlocks.length > 0 && (
+										<SelectControl
+											__nextHasNoMarginBottom
+											label={ __(
+												'Modal Content',
+												'pikari-gutenberg-modals'
+											) }
+											value={ pikariModalInlineAnchor }
+											options={ [
+												{
+													label: __(
+														'Select\u2026',
+														'pikari-gutenberg-modals'
+													),
+													value: '',
+												},
+												...modalContentBlocks.map(
+													( block ) => ( {
+														label: block.title,
+														value: block.anchor,
+													} )
+												),
+											] }
+											onChange={ ( value ) =>
+												setAttributes( {
+													pikariModalInlineAnchor:
+														value,
+												} )
+											}
+										/>
+									) }
+									<SelectControl
+										__nextHasNoMarginBottom
+										label={ __(
+											'Modal Size',
+											'pikari-gutenberg-modals'
+										) }
+										value={ pikariModalSize }
+										options={ MODAL_SIZE_OPTIONS }
+										onChange={ ( value ) =>
+											setAttributes( {
+												pikariModalSize: value,
+											} )
+										}
+									/>
+								</>
+							) }
 						</PanelBody>
 					</InspectorControls>
 				</>

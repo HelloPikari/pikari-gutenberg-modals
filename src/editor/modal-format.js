@@ -14,6 +14,7 @@ registerFormatType( 'modal-toolbar-button/modal-link', {
 		'data-modal-link': 'data-modal-link',
 		'data-modal-content-type': 'data-modal-content-type',
 		'data-modal-content-id': 'data-modal-content-id',
+		'data-modal-size': 'data-modal-size',
 	},
 	edit: ModalLinkEdit,
 } );

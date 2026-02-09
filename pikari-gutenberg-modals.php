@@ -70,6 +70,11 @@ function pikari_gutenberg_modals_init() {
     // Hook into WordPress.
     add_action( 'wp_enqueue_scripts', 'pikari_gutenberg_modals_enqueue_scripts' );
 
+    // Register blocks.
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/close-button' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/content-area' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/modal-content' );
+
     // Initialize main components.
     new \Pikari\GutenbergModals\ModalHandler();
     new \Pikari\GutenbergModals\EditorIntegration();
@@ -78,6 +83,7 @@ function pikari_gutenberg_modals_init() {
     new \Pikari\GutenbergModals\GroupModalTriggerSupport();
     new \Pikari\GutenbergModals\RestApi();
     new \Pikari\GutenbergModals\SpeculativeLoading();
+    new \Pikari\GutenbergModals\ModalTemplatePart();
 }
 // add_action( 'plugins_loaded', 'pikari_gutenberg_modals_init' );
 add_action( 'init', 'pikari_gutenberg_modals_init' );

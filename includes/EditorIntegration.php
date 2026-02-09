@@ -69,8 +69,9 @@ class EditorIntegration
             'pikariGutenbergModals',
             [
                 'supportedBlocks' => $this->block_support->get_supported_blocks_for_js(),
-                'restUrl' => rest_url('pikari-gutenberg-modals/v1/'),
-                'nonce' => wp_create_nonce('wp_rest'),
+                'restUrl'         => rest_url('pikari-gutenberg-modals/v1/'),
+                'nonce'           => wp_create_nonce('wp_rest'),
+                'modalSizes'      => $this->get_modal_sizes(),
                 'defaultSettings' => [
                     'size' => 'medium',
                     'animation' => 'fade',
@@ -80,6 +81,58 @@ class EditorIntegration
                 ],
             ]
         );
+    }
+
+    /**
+     * Get available modal sizes for the editor.
+     *
+     * Returns an array of size options for the modal size selector.
+     * Developers can add custom sizes via the
+     * `pikari_gutenberg_modals_modal_sizes` filter.
+     *
+     * Each size entry should have:
+     * - `label` (string) Translated display label.
+     * - `value` (string) Size slug used as the `data-size` attribute value.
+     *                     Empty string means default (uses `--modal-max-width`).
+     *
+     * Custom sizes require matching CSS, e.g.:
+     * ```css
+     * .modal-overlay[data-size="custom-slug"] .modal-content {
+     *     max-width: 768px;
+     * }
+     * ```
+     *
+     * @return array<int, array{label: string, value: string}> Modal size options.
+     */
+    private function get_modal_sizes(): array
+    {
+        $default_sizes = [
+            [
+                'label' => __('Default', 'pikari-gutenberg-modals'),
+                'value' => '',
+            ],
+            [
+                'label' => __('Small', 'pikari-gutenberg-modals'),
+                'value' => 'small',
+            ],
+            [
+                'label' => __('Large', 'pikari-gutenberg-modals'),
+                'value' => 'large',
+            ],
+            [
+                'label' => __('Fullscreen', 'pikari-gutenberg-modals'),
+                'value' => 'fullscreen',
+            ],
+        ];
+
+        /**
+         * Filters the available modal size options.
+         *
+         * @since 0.2.0
+         *
+         * @param array $sizes Array of size options with 'label' and 'value' keys.
+         */
+        return apply_filters('pikari_gutenberg_modals_modal_sizes', $default_sizes);
     }
 
     /**
