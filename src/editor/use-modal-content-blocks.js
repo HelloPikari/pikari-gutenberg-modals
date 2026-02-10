@@ -23,7 +23,7 @@ function findModalContentBlocks( blocks ) {
 			results.push( {
 				title:
 					block.attributes.title ||
-					__( 'Untitled Modal Content', 'pikari-gutenberg-modals' ),
+					__( 'Untitled Modal', 'pikari-gutenberg-modals' ),
 				anchor: block.attributes.anchor,
 				clientId: block.clientId,
 			} );

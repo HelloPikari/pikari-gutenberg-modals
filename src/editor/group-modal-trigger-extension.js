@@ -19,6 +19,7 @@ import { __ } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
 import { useMemo, useEffect } from '@wordpress/element';
 import useModalContentBlocks from './use-modal-content-blocks';
+import useIsModalTemplatePart from './use-is-modal-template-part';
 
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
@@ -248,6 +249,7 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 			// Check if we're in contentOnly editing mode (e.g., locked patterns)
 			const blockEditingMode = useBlockEditingMode();
 			const isContentOnly = blockEditingMode === 'contentOnly';
+			const isInsideModalTemplatePart = useIsModalTemplatePart( clientId );
 
 			// Get inner blocks for this group
 			const innerBlocks = useSelect(
@@ -313,8 +315,8 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 				}
 			}, [ pikariModalTrigger, isInline, pikariModalTriggerBlockId, detectedLinks, setAttributes ] );
 
-			// Don't show controls if in contentOnly mode
-			if ( isContentOnly ) {
+			// Don't show controls if in contentOnly mode or inside the modal template part
+			if ( isContentOnly || isInsideModalTemplatePart ) {
 				return <BlockEdit { ...props } />;
 			}
 

@@ -3,7 +3,7 @@
 	"apiVersion": 3,
 	"name": "pikari-gutenberg-modals/modal-content",
 	"version": "0.1.0",
-	"title": "Modal Content",
+	"title": "Modal",
 	"category": "design",
 	"description": "Stores inline modal content on the page. Triggers can reference this block to display content without a REST API call.",
 	"textdomain": "pikari-gutenberg-modals",

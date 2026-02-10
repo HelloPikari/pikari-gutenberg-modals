@@ -16,6 +16,7 @@ import {
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 import useModalContentBlocks from './use-modal-content-blocks';
+import useIsModalTemplatePart from './use-is-modal-template-part';
 
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
@@ -81,7 +82,7 @@ const withModalInspectorControls = createHigherOrderComponent(
 				return <BlockEdit { ...props } />;
 			}
 
-			const { attributes, setAttributes } = props;
+			const { attributes, setAttributes, clientId } = props;
 			const {
 				pikariOpenInModal,
 				pikariModalSize,
@@ -93,6 +94,12 @@ const withModalInspectorControls = createHigherOrderComponent(
 			const contentSource = pikariModalContentSource || 'link';
 			const modalContentBlocks = useModalContentBlocks();
 			const isInline = contentSource === 'inline';
+			const isInsideModalTemplatePart = useIsModalTemplatePart( clientId );
+
+			// Don't show controls if inside the modal template part
+			if ( isInsideModalTemplatePart ) {
+				return <BlockEdit { ...props } />;
+			}
 
 			// Toggle is enabled if there's a URL (link mode) or inline content is selected
 			const canEnableModal = isInline

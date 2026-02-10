@@ -32,6 +32,9 @@ class EditorIntegration
 
         // Hook into block assets for styles (works with iframe editor)
         add_action('enqueue_block_assets', [$this, 'enqueue_block_styles']);
+
+        // Restrict Content Area block to template part editors
+        add_filter('allowed_block_types_all', [$this, 'restrict_content_area_block'], 10, 2);
     }
 
     /**
@@ -166,5 +169,49 @@ class EditorIntegration
                 $version
             );
         }
+    }
+
+    /**
+     * Restrict the Content Area block to template part editors.
+     *
+     * The Content Area block is only meaningful inside a template part
+     * (e.g., the modal template part). This filter removes it from the
+     * block inserter in post, page, and template editors.
+     *
+     * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
+     *                                                      or true for all registered blocks.
+     * @param \WP_Block_Editor_Context $editor_context      The editor context.
+     * @return bool|string[] Filtered allowed block types.
+     */
+    public function restrict_content_area_block( $allowed_block_types, $editor_context )
+    {
+        // Allow all blocks in template part editors
+        if (
+            isset( $editor_context->post ) &&
+            $editor_context->post->post_type === 'wp_template_part'
+        ) {
+            return $allowed_block_types;
+        }
+
+        // When $allowed_block_types is true (WordPress default: all blocks allowed),
+        // convert to an explicit array so we can filter out our block.
+        if ( $allowed_block_types === true ) {
+            $all_block_types     = \WP_Block_Type_Registry::get_instance()->get_all_registered();
+            $allowed_block_types = array_keys( $all_block_types );
+        }
+
+        // Remove Content Area block from non-template-part editors
+        if ( is_array( $allowed_block_types ) ) {
+            $allowed_block_types = array_values(
+                array_filter(
+                    $allowed_block_types,
+                    static function ( $block_type ) {
+                        return $block_type !== 'pikari-gutenberg-modals/content-area';
+                    }
+                )
+            );
+        }
+
+        return $allowed_block_types;
     }
 }

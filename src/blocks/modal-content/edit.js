@@ -23,7 +23,7 @@ export default function Edit( { attributes, setAttributes } ) {
 		<div { ...blockProps }>
 			<div className="modal-content-header">
 				<span className="modal-content-label">
-					{ __( 'Modal Content', 'pikari-gutenberg-modals' ) }
+					{ __( 'Modal', 'pikari-gutenberg-modals' ) }
 				</span>
 				<input
 					className="modal-content-title"

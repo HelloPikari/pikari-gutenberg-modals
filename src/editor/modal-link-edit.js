@@ -21,6 +21,7 @@ import { __ } from '@wordpress/i18n';
 import { external } from '@wordpress/icons';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 import useModalContentBlocks from './use-modal-content-blocks';
+import useIsModalTemplatePart from './use-is-modal-template-part';
 
 const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
 
@@ -86,6 +87,9 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		'core/preformatted',
 		'core/navigation-link',
 	];
+
+	// Check if editing context is inside the modal template part
+	const isInsideModalTemplatePart = useIsModalTemplatePart( null );
 
 	// Check if the current block supports modal links
 	const isBlockSupported =
@@ -189,7 +193,8 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	}, [ contentRef, stopAddingLink ] );
 
 	// Don't render anything if the block doesn't support modal links
-	if ( ! isBlockSupported ) {
+	// or if we're inside the modal template part
+	if ( ! isBlockSupported || isInsideModalTemplatePart ) {
 		return null;
 	}
 
