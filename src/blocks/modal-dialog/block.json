@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pikari-gutenberg-modals/modal-dialog",
+	"version": "0.1.0",
+	"title": "Modal Dialog",
+	"category": "design",
+	"description": "The dialog container for the modal. Controls the dialog chrome (background, border, shadow) and overlay appearance.",
+	"textdomain": "pikari-gutenberg-modals",
+	"attributes": {
+		"overlayColor": {
+			"type": "string"
+		},
+		"backgroundImage": {
+			"type": "object"
+		},
+		"focalPoint": {
+			"type": "object"
+		},
+		"hasParallax": {
+			"type": "boolean",
+			"default": false
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"reusable": false,
+		"color": {
+			"background": true,
+			"text": false,
+			"link": false,
+			"gradients": true,
+			"__experimentalDefaultControls": {
+				"background": true
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"radius": true
+			}
+		},
+		"spacing": {
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"padding": true
+			}
+		},
+		"shadow": true
+	},
+	"editorScript": "file:../../../build/blocks/modal-dialog/index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css",
+	"render": "file:./render.php"
+}

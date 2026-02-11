@@ -1,17 +1,3 @@
-// CSS Custom Properties for theming
-:root {
-	--modal-overlay-bg: rgba(0, 0, 0, 0.8);
-	--modal-content-bg: #fff;
-	--modal-content-shadow: 0 4px 6px rgba(0, 0, 0, 0.1),
-		0 2px 4px rgba(0, 0, 0, 0.06);
-	--modal-max-width: 1024px;
-	--modal-max-width-small: 500px;
-	--modal-max-width-large: 1200px;
-	--modal-border-radius: 20px;
-	--modal-focus-color: #3b82f6;
-	--modal-transition: all 0.2s ease;
-}
-
 // Frontend modal trigger styles
 // Applied to anchor tags that open modals
 a.has-modal-link,
@@ -19,7 +5,7 @@ a.modal-link-trigger {
 	// Inherit text color from parent instead of default link blue
 	color: inherit;
 	cursor: pointer;
-	transition: text-decoration-color var(--modal-transition);
+	transition: text-decoration-color 0.2s ease;
 	&:hover,
 	&:focus {
 		// Keep inherited color on hover/focus
@@ -34,144 +20,6 @@ a.modal-link-trigger {
 	&:visited {
 		// Prevent visited link color change
 		color: inherit;
-	}
-}
-
-// Modal overlay styles
-.modal-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: var(--modal-overlay-bg);
-	z-index: 9999;
-	display: none;
-	align-items: center;
-	justify-content: center;
-
-	// Open state with enter animation
-	// Theme authors can override these animations
-	&.is-open {
-		display: flex;
-		animation: modal-fade-in 300ms ease-out forwards;
-		.modal-content {
-			animation: modal-scale-in 300ms ease-out forwards;
-		}
-	}
-
-	// Closing state with exit animation
-	&.is-closing {
-		display: flex;
-		animation: modal-fade-out 200ms ease-in forwards;
-		.modal-content {
-			animation: modal-scale-out 200ms ease-in forwards;
-		}
-	}
-}
-
-// Modal content container
-.modal-content {
-	position: relative;
-	background: var(--modal-content-bg);
-	width: 100%;
-	max-width: var(--modal-max-width);
-	max-height: 90vh;
-	overflow: hidden;
-	border-radius: var(--modal-border-radius);
-	box-shadow: var(--modal-content-shadow);
-	display: flex;
-	flex-direction: column;
-
-	// Size variations
-	.modal-overlay[data-size="small"] & {
-		max-width: var(--modal-max-width-small);
-	}
-	.modal-overlay[data-size="large"] & {
-		max-width: var(--modal-max-width-large);
-	}
-	.modal-overlay[data-size="fullscreen"] & {
-		max-width: 100%;
-		max-height: 100%;
-		height: 100%;
-		border-radius: 0;
-	}
-}
-
-// Mobile responsiveness
-@media (max-width: 768px) {
-	.modal-overlay {
-		padding: 0;
-	}
-	.modal-content {
-		max-width: 100%;
-		max-height: 100%;
-		height: 100%;
-		border-radius: 0;
-	}
-}
-
-// Print styles
-@media print {
-	.modal-overlay {
-		display: none !important;
-	}
-}
-
-// Keyframe animations
-@keyframes modal-fade-in {
-	from {
-		opacity: 0;
-	}
-	to {
-		opacity: 1;
-	}
-}
-
-@keyframes modal-fade-out {
-	from {
-		opacity: 1;
-	}
-	to {
-		opacity: 0;
-	}
-}
-
-@keyframes modal-scale-in {
-	from {
-		opacity: 0;
-		transform: scale(0.95) translateY(-10px);
-	}
-	to {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-}
-
-@keyframes modal-scale-out {
-	from {
-		opacity: 1;
-		transform: scale(1) translateY(0);
-	}
-	to {
-		opacity: 0;
-		transform: scale(0.95) translateY(-10px);
-	}
-}
-
-// Accessibility
-@media (prefers-reduced-motion: reduce) {
-	.modal-overlay,
-	.modal-content {
-		transition: none;
-	}
-	// Disable animations for reduced motion
-	.modal-overlay.modal-entering,
-	.modal-overlay.modal-leaving {
-		animation: none;
-		.modal-content {
-			animation: none;
-		}
 	}
 }
 

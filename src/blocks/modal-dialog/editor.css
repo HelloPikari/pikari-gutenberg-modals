@@ -1,0 +1,17 @@
+/*
+ * Modal Dialog Block - Editor-only styles.
+ *
+ * Subtle visual indicator when no background is set via block supports.
+ */
+.wp-block-pikari-gutenberg-modals-modal-dialog:not(.has-background) {
+	outline: 1px dashed rgba(0, 0, 0, 0.15);
+}
+.wp-block-pikari-gutenberg-modals-modal-dialog {
+	min-height: 80px;
+	width: auto;
+}
+
+/* Image control spacing */
+.modal-dialog-image-control {
+	margin-bottom: 16px;
+}

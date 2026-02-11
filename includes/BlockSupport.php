@@ -106,6 +106,7 @@ class BlockSupport
 
         // Enqueue block styles for blocks rendered inside the modal template part.
         // These render in wp_footer after WordPress's normal block style enqueuing.
+        wp_enqueue_style( 'pikari-gutenberg-modals-modal-dialog-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-close-button-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-content-area-style' );
     }
@@ -814,14 +815,9 @@ class BlockSupport
             return;
         }
 
-        // The outer structural wrapper is always hardcoded (overlay, dialog role, Interactivity API scope).
-        // The inner content comes from the template part or legacy fallback.
-        $template_part_content = ModalTemplatePart::render();
-        if ( ! empty( $template_part_content ) ) {
-            $inner_content = $template_part_content;
-        } else {
-            $inner_content = $this->get_legacy_modal_content();
-        }
+        // The outer structural wrapper handles overlay positioning, ARIA, and Interactivity API scope.
+        // The inner content (modal-dialog block) owns the dialog chrome and overlay appearance.
+        $inner_content = ModalTemplatePart::render();
         ?>
         <div
             id="pikari-modal"
@@ -832,70 +828,15 @@ class BlockSupport
             style="display: none;"
             role="dialog"
             aria-modal="true"
+            aria-label="<?php esc_attr_e( 'Modal dialog', 'pikari-gutenberg-modals' ); ?>"
             aria-labelledby="modal-title"
             aria-describedby="modal-content"
         >
-            <div class="modal-content" data-wp-on--click="actions.stopPropagation">
         <?php
-        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Content is either template part (do_blocks) or pre-escaped legacy HTML.
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template part content is processed by do_blocks().
         echo $inner_content;
         ?>
-            </div>
         </div>
         <?php
-    }
-
-    /**
-     * Get the legacy hardcoded modal content for classic themes.
-     *
-     * @return string Modal inner HTML.
-     */
-    private function get_legacy_modal_content(): string
-    {
-        ob_start();
-        ?>
-<button
-    class="modal-close"
-    data-wp-on--click="actions.closeModal"
-    aria-label="<?php esc_attr_e('Close modal', 'pikari-gutenberg-modals'); ?>"
->
-    <span aria-hidden="true">&times;</span>
-</button>
-
-<!-- Screen reader announcements - always in DOM -->
-<div class="sr-only" aria-live="polite" aria-atomic="true">
-    <span data-wp-text="state.loading ? '<?php echo esc_js(__('Loading content...', 'pikari-gutenberg-modals')); ?>' : ''"></span>
-</div>
-<div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
-    <span data-wp-text="state.hasError ? state.errorMessage : ''"></span>
-</div>
-
-<!-- Loading state (visual) -->
-<div
-    class="modal-loading"
-    data-wp-class--hidden="!state.loading"
-    aria-hidden="true"
->
-    <div class="loading-spinner"></div>
-    <p><?php esc_html_e('Loading...', 'pikari-gutenberg-modals'); ?></p>
-</div>
-
-<!-- Error state (visual) -->
-<div
-    class="modal-error"
-    data-wp-class--hidden="!state.hasError"
-    aria-hidden="true"
->
-    <p data-wp-text="state.errorMessage"></p>
-</div>
-
-<!-- Content - innerHTML set directly via JS since data-wp-html doesn't exist -->
-<div
-    id="modal-content"
-    class="modal-body"
-    data-wp-class--hidden="state.loading || state.hasError"
-></div>
-        <?php
-        return ob_get_clean();
     }
 }

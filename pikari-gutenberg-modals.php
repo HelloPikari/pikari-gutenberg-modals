@@ -74,6 +74,7 @@ function pikari_gutenberg_modals_init() {
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/close-button' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/content-area' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/modal-content' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/modal-dialog' );
 
     // Initialize main components.
     new \Pikari\GutenbergModals\ModalHandler();

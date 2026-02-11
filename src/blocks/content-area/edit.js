@@ -14,6 +14,7 @@ export default function Edit() {
 		<div { ...blockProps }>
 			<Placeholder
 				label={ __( 'Modal Content Area', 'pikari-gutenberg-modals' ) }
+				style={ { backgroundColor: 'transparent' } }
 				instructions={ __(
 					'Modal content will be dynamically loaded here when a trigger is clicked.',
 					'pikari-gutenberg-modals'

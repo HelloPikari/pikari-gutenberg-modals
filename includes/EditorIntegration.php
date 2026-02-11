@@ -33,8 +33,8 @@ class EditorIntegration
         // Hook into block assets for styles (works with iframe editor)
         add_action('enqueue_block_assets', [$this, 'enqueue_block_styles']);
 
-        // Restrict Content Area block to template part editors
-        add_filter('allowed_block_types_all', [$this, 'restrict_content_area_block'], 10, 2);
+        // Restrict modal template blocks to template part editors
+        add_filter('allowed_block_types_all', [$this, 'restrict_modal_template_blocks'], 10, 2);
     }
 
     /**
@@ -172,41 +172,52 @@ class EditorIntegration
     }
 
     /**
-     * Restrict the Content Area block to template part editors.
+     * Restrict modal template blocks to template part editors.
      *
-     * The Content Area block is only meaningful inside a template part
-     * (e.g., the modal template part). This filter removes it from the
-     * block inserter in post, page, and template editors.
+     * The Content Area and Modal Dialog blocks are only meaningful inside
+     * a template part (e.g., the modal template part). This filter hides
+     * them from the block inserter in post and page editors.
+     *
+     * In the Site Editor (core/edit-site), all blocks are allowed because
+     * template parts are edited within it. The allowed_block_types_all
+     * filter fires once on page load, not when navigating between
+     * templates and template parts within the single-page Site Editor.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
      * @param \WP_Block_Editor_Context $editor_context      The editor context.
      * @return bool|string[] Filtered allowed block types.
      */
-    public function restrict_content_area_block( $allowed_block_types, $editor_context )
+    public function restrict_modal_template_blocks( $allowed_block_types, $editor_context )
     {
-        // Allow all blocks in template part editors
+        // Only restrict blocks in the post editor. The Site Editor needs
+        // all blocks available because template parts are edited within it.
         if (
-            isset( $editor_context->post ) &&
-            $editor_context->post->post_type === 'wp_template_part'
+            ! isset( $editor_context->name ) ||
+            $editor_context->name !== 'core/edit-post'
         ) {
             return $allowed_block_types;
         }
 
+        $restricted_blocks = [
+            'pikari-gutenberg-modals/content-area',
+            'pikari-gutenberg-modals/modal-dialog',
+        ];
+
         // When $allowed_block_types is true (WordPress default: all blocks allowed),
-        // convert to an explicit array so we can filter out our block.
+        // convert to an explicit array so we can filter out our blocks.
         if ( $allowed_block_types === true ) {
             $all_block_types     = \WP_Block_Type_Registry::get_instance()->get_all_registered();
             $allowed_block_types = array_keys( $all_block_types );
         }
 
-        // Remove Content Area block from non-template-part editors
+        // Remove restricted blocks from post/page editors
         if ( is_array( $allowed_block_types ) ) {
             $allowed_block_types = array_values(
                 array_filter(
                     $allowed_block_types,
-                    static function ( $block_type ) {
-                        return $block_type !== 'pikari-gutenberg-modals/content-area';
+                    static function ( $block_type ) use ( $restricted_blocks ) {
+                        return ! in_array( $block_type, $restricted_blocks, true );
                     }
                 )
             );
