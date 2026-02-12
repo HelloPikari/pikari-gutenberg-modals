@@ -2,93 +2,102 @@
 Contributors: pikari
 Tags: modal, popup, dialog, gutenberg, block, accessible
 Requires at least: 6.8
-Tested up to: 6.8
+Tested up to: 6.9.1
 Requires PHP: 8.2
 Stable tag: trunk
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.
+Accessible modal dialogs for the WordPress block editor. Display posts, pages, and external content in overlays triggered by inline links, buttons, or clickable cards.
 
 == Description ==
 
-Create beautiful, accessible modal windows with this comprehensive WordPress Gutenberg block plugin. Perfect for showcasing content, images, forms, and improving user engagement.
+Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block editor. Content — posts, pages, custom post types, or external URLs — is displayed in overlays with smooth animations. Triggers are real links that work without JavaScript (progressive enhancement).
+
+**Three Trigger Types:**
+
+* **Inline Modal Links** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+* **Button Block Modals** — Toggle the "Open in Modal" option on any core Button block
+* **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, automatically detecting the primary link inside
 
 **Key Features:**
 
-* **Full Accessibility Support** - Complete ARIA attributes, keyboard navigation, and semantic HTML
-* **Smooth Animations** - Elegant CSS transitions for modal open/close effects
-* **WordPress Interactivity API** - Built on WordPress core Interactivity API for optimal performance
-* **WordPress Integration** - Full support for core layout features (spacing, colors, borders)
-* **Block Editor Native** - Seamlessly integrates with Gutenberg block editor
-* **Progressive Enhancement** - Works with JavaScript disabled (fallback behavior)
-* **Responsive Design** - Mobile-friendly modal windows
+* **Full Accessibility** — ARIA attributes, focus trapping, keyboard navigation (Escape to close, Tab cycling), screen reader support
+* **Template Part Customization** — Customize the modal dialog layout (close button, content area) via the Site Editor template part system
+* **Multiple Modal Templates** — Create different modal designs and assign them per trigger
+* **Overlay Styling** — Solid colors, gradients, or images with alpha transparency on the overlay backdrop
+* **Dialog Chrome** — Background color, border, padding, and box shadow on the dialog container via block supports
+* **Four Size Options** — Default, Small, Large, and Fullscreen (extendable via filter)
+* **Smooth Animations** — CSS transitions with reduced-motion support
+* **WordPress Interactivity API** — Built on the core Interactivity API for optimal performance
+* **Progressive Enhancement** — Triggers render as real `<a>` tags that navigate without JavaScript
+* **Hover Prefetch** — 200ms debounced prefetch warms the browser cache before click
+* **Dynamic Block Styles** — Automatically loads stylesheets for blocks inside modal content
+* **HTTP Caching** — REST API responses include ETag, Last-Modified, and Cache-Control headers
 
-**Perfect for:**
-* Image galleries and lightboxes
-* Contact forms and lead generation
-* Product showcases
-* Video content
-* Call-to-action overlays
-* Any popup content needs
+**Works With:**
+
+* Block themes (full Site Editor support)
+* Hybrid themes (automatic fallback rendering)
 
 == Installation ==
 
 1. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. In the block editor, add the "Modal" block
-4. Add content inside the Modal block
-5. Customize settings in the block inspector
+3. Use any of the three trigger types in the block editor to create modal links
+
+= Block Themes =
+
+The plugin registers a "Modal" template part area. Customize it in **Appearance → Editor → Patterns → Template Parts → Modal**. Create additional modal template parts in the "Modal" area for different designs.
+
+= Hybrid Themes =
+
+Modals work automatically with the plugin's default template. To customize:
+
+1. Create `parts/modal.html` in your theme directory with block markup
+2. For additional templates, use `parts/modal-{slug}.html` (e.g., `parts/modal-compact.html`)
+3. Or use the `pikari_gutenberg_modals_fallback_template` filter for programmatic customization
+
+= Composer =
+
+`composer require pikari-inc/pikari-gutenberg-modals`
 
 == Frequently Asked Questions ==
 
 = Is this plugin fully accessible? =
 
-Yes! We follow WCAG guidelines with proper ARIA attributes, keyboard navigation support, and semantic HTML structure. The plugin is compatible with screen readers and other assistive technologies.
+Yes. The plugin follows WCAG guidelines with proper ARIA attributes, focus trapping, keyboard navigation (Escape to close, Tab to cycle through focusable elements), and screen reader support. Background content is marked inert when a modal is open.
 
-= Does it work with my theme? =
+= Does it work with hybrid themes? =
 
-Yes! The plugin uses WordPress core layout features and follows coding standards for broad theme compatibility. It respects your theme's typography and color schemes.
+Yes. Block themes get full Site Editor template part support. Hybrid themes (classic PHP templates with block editor for content) use an automatic fallback that renders the modal dialog via `do_blocks()`. Theme authors can customize by placing `parts/modal.html` in their theme directory.
 
-= What is the WordPress Interactivity API? =
+= How do I create different modal designs? =
 
-The WordPress Interactivity API is a new framework introduced in WordPress 6.8 that provides a standard way to add interactive behavior to blocks. Our plugin uses this API for optimal performance and compatibility.
+**Block themes:** Create additional template parts in the "Modal" area via the Site Editor. Assign them to triggers using the "Modal Template" dropdown in the block inspector.
+
+**Hybrid themes:** Create `parts/modal-{slug}.html` files in your theme. For example, `parts/modal-compact.html` appears as "Compact" in the template selector.
+
+= What are the three trigger types? =
+
+1. **Inline Modal Links** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
+2. **Button Block Modals** — Add a core Button block, toggle "Open in Modal" in the inspector, and set the button URL to a post/page
+3. **Clickable Group Cards** — Enable "Modal Trigger" on a Group block; the plugin detects the primary link inside (from buttons, images, headings, etc.) and makes the whole card clickable
 
 = Does it work without JavaScript? =
 
-Yes! The plugin uses progressive enhancement, so it will provide fallback behavior when JavaScript is disabled, ensuring content remains accessible.
+Yes. All triggers render as standard `<a href="...">` links. Without JavaScript, clicking navigates to the linked post/page. With JavaScript, the content loads in a modal overlay instead.
 
-= Can I customize the modal appearance? =
+= Can I load external URLs in modals? =
 
-Yes! The plugin respects WordPress core layout features including spacing, colors, and borders. You can customize the appearance through the block inspector.
+Yes. Set the trigger URL to an external page. Use the domain allowlist/blocklist filters to control which external domains are permitted.
 
 == Developer Filters ==
-
-The plugin provides several filters for developers to customize behavior:
-
-= Cache & Performance =
-
-**pikari_gutenberg_modals_cache_duration**
-Customize the browser cache duration for modal content REST API responses.
-
-`add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
-    return 2 * HOUR_IN_SECONDS; // Cache for 2 hours instead of 1
-} );`
-
-Default: `HOUR_IN_SECONDS` (3600 seconds)
-
-**pikari_gutenberg_modals_prefetch_urls**
-Modify the REST API URLs to prefetch for modal content.
-
-`add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
-    // Add additional URLs or filter existing ones
-    return $urls;
-}, 10, 2 );`
 
 = Content & Display =
 
 **pikari_gutenberg_modals_supported_blocks**
-Customize which block types support the modal link format.
+Customize which block types support the inline modal link format.
 
 `add_filter( 'pikari_gutenberg_modals_supported_blocks', function( $blocks ) {
     $blocks[] = 'my-plugin/custom-block';
@@ -105,25 +114,36 @@ Modify the REST API response for modal content.
     return $response_data;
 }, 10, 2 );`
 
-**pikari_gutenberg_modals_post_content**
-Filter the rendered post content before it's returned in the modal.
+= Cache & Performance =
 
-`add_filter( 'pikari_gutenberg_modals_post_content', function( $content, $post ) {
-    return $content . '<p>Additional content</p>';
-}, 10, 2 );`
+**pikari_gutenberg_modals_cache_duration**
+Customize the browser cache duration for modal content REST API responses.
 
-**pikari_gutenberg_modals_url_content**
-Filter content loaded from external URLs.
+`add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
+    return 2 * HOUR_IN_SECONDS; // Cache for 2 hours instead of 1
+} );`
 
-`add_filter( 'pikari_gutenberg_modals_url_content', function( $content, $url ) {
-    // Modify external URL content
-    return $content;
+Default: `HOUR_IN_SECONDS` (3600 seconds)
+
+**pikari_gutenberg_modals_enable_prefetch_hints**
+Enable automatic `<link rel="prefetch">` resource hints in the document head for modal content URLs detected on the page.
+
+`add_filter( 'pikari_gutenberg_modals_enable_prefetch_hints', '__return_true' );`
+
+Default: `false` (hover-based prefetch still works regardless)
+
+**pikari_gutenberg_modals_prefetch_urls**
+Modify the REST API URLs included in prefetch resource hints.
+
+`add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
+    // Add additional URLs or filter existing ones
+    return $urls;
 }, 10, 2 );`
 
 = Search =
 
 **pikari_gutenberg_modals_search_args**
-Modify the WP_Query arguments for the modal content search endpoint.
+Modify the WP_Query arguments for the modal content search endpoint (used in the editor link picker).
 
 `add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term ) {
     $args['post_type'] = array( 'post', 'page' ); // Limit to specific post types
@@ -154,7 +174,7 @@ Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 = Domain Restrictions =
 
 **pikari_gutenberg_modals_allowed_domains**
-Specify domains allowed for external URL content (allowlist).
+Specify domains allowed for external URL content (allowlist). When set, only these domains are permitted.
 
 `add_filter( 'pikari_gutenberg_modals_allowed_domains', function( $domains ) {
     return array( 'example.com', 'trusted-site.org' );
@@ -167,11 +187,17 @@ Specify domains blocked from external URL content (blocklist).
     return array( 'untrusted-site.com' );
 } );`
 
-**pikari_gutenberg_modals_allowed_domains_list**
-Filter the final computed allowed domains list.
+= Theme Customization =
 
-**pikari_gutenberg_modals_blocked_domains_list**
-Filter the final computed blocked domains list.
+**pikari_gutenberg_modals_fallback_template**
+Override the modal template markup for hybrid (non-block) themes. Return block markup to bypass the default theme file and plugin template resolution.
+
+`add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $slug ) {
+    if ( 'compact' === $slug ) {
+        return '<!-- wp:pikari-gutenberg-modals/modal-dialog -->...<!-- /wp:pikari-gutenberg-modals/modal-dialog -->';
+    }
+    return $content;
+}, 10, 2 );`
 
 == CSS Custom Properties ==
 
@@ -192,24 +218,43 @@ The plugin exposes CSS custom properties on `:root` for easy theming without fil
 --modal-focus-color: #3b82f6;
 --modal-transition: all 0.2s ease;`
 
-Override any of these in your theme's CSS to customize the modal appearance.
+Override any of these in your theme's CSS to customize the modal appearance:
+
+`/* In your theme's style.css or editor styles */
+:root {
+    --modal-border-radius: 8px;
+    --modal-max-width: 800px;
+    --modal-content-bg: #f9f9f9;
+}`
 
 == Screenshots ==
 
-1. Modal block in the editor with content
-2. Live modal with smooth animations
-3. Block settings panel with customization options
-4. Accessible keyboard navigation in action
+1. Inline modal link in the editor with link picker
+2. Button block with "Open in Modal" toggle
+3. Clickable group card pattern
+4. Live modal with smooth animations
+5. Template part customization in the Site Editor
 
 == Changelog ==
 
 = 1.0.0 =
-* Initial release
-* Full modal functionality with accessibility features
-* WordPress Interactivity API integration
-* Smooth animation support
-* Progressive enhancement with JavaScript fallback
-* Block Editor native integration
+* Three trigger types: inline modal links, button block modals, clickable group cards
+* Template part system for customizable modal dialog layout
+* Multiple modal template support with per-trigger assignment
+* Overlay styling: solid colors, gradients, and images with alpha transparency
+* Dialog chrome: background, border, padding, and box shadow via block supports
+* Four built-in sizes: Default, Small, Large, Fullscreen
+* Hybrid theme support with automatic `do_blocks()` fallback rendering
+* Theme file overrides for hybrid themes (`parts/modal.html`, `parts/modal-{slug}.html`)
+* `pikari_gutenberg_modals_fallback_template` filter for programmatic template customization
+* Hover-based content prefetch with 200ms debounce
+* Dynamic block stylesheet loading for modal content
+* REST API with HTTP caching (ETag, Last-Modified, Cache-Control)
+* Full WCAG accessibility: focus trap, keyboard navigation, ARIA attributes, inert background
+* Progressive enhancement: triggers are real links that work without JavaScript
+* CSS custom properties for easy theming
+* Domain allowlist/blocklist for external URL content
+* 12 developer filters for deep customization
 
 == Upgrade Notice ==
 

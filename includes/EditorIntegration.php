@@ -142,12 +142,48 @@ class EditorIntegration
     /**
      * Get available modal template parts for the editor.
      *
-     * Queries all template parts in the 'modal' area and returns them
-     * as an array of slug/title pairs for the template part selector.
+     * Block themes use the native get_block_templates() query.
+     * Hybrid themes scan the theme's parts/ directory for modal*.html files.
+     * Both paths ensure the default 'modal' slug is always present.
      *
      * @return array<int, array{slug: string, title: string}> Template part options.
      */
     private function get_modal_template_parts(): array
+    {
+        if ( ModalTemplatePart::is_supported() ) {
+            $parts = $this->get_block_theme_template_parts();
+        } else {
+            $parts = $this->scan_theme_modal_templates();
+        }
+
+        // Ensure the default 'modal' slug is always present.
+        $has_default = false;
+        foreach ( $parts as $part ) {
+            if ( 'modal' === $part['slug'] ) {
+                $has_default = true;
+                break;
+            }
+        }
+
+        if ( ! $has_default ) {
+            array_unshift(
+                $parts,
+                [
+                    'slug'  => 'modal',
+                    'title' => __( 'Modal', 'pikari-gutenberg-modals' ),
+                ]
+            );
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Get template parts from the block template system.
+     *
+     * @return array<int, array{slug: string, title: string}> Template part options.
+     */
+    private function get_block_theme_template_parts(): array
     {
         $templates = get_block_templates(
             [ 'area' => 'modal' ],
@@ -160,6 +196,70 @@ class EditorIntegration
                 'slug'  => $template->slug,
                 'title' => $template->title ?? $template->slug,
             ];
+        }
+
+        return $parts;
+    }
+
+    /**
+     * Scan theme directories for modal template files.
+     *
+     * Looks for parts/modal*.html files in child and parent theme directories.
+     * Derives slugs from filenames:
+     * - parts/modal.html → slug 'modal', title 'Modal'
+     * - parts/modal-compact.html → slug 'compact', title 'Compact'
+     * - parts/modal-my-template.html → slug 'my-template', title 'My Template'
+     *
+     * Child theme files take precedence over parent theme duplicates.
+     *
+     * @return array<int, array{slug: string, title: string}> Template part options.
+     */
+    private function scan_theme_modal_templates(): array
+    {
+        $parts      = [];
+        $seen_slugs = [];
+
+        // Check child theme first, then parent theme.
+        $dirs = [ get_stylesheet_directory() ];
+        if ( get_stylesheet_directory() !== get_template_directory() ) {
+            $dirs[] = get_template_directory();
+        }
+
+        foreach ( $dirs as $dir ) {
+            $pattern = $dir . '/parts/modal*.html';
+            $files   = glob( $pattern );
+
+            if ( empty( $files ) ) {
+                continue;
+            }
+
+            foreach ( $files as $file ) {
+                $basename = basename( $file, '.html' );
+
+                // Derive slug: 'modal' → 'modal', 'modal-compact' → 'compact'.
+                if ( 'modal' === $basename ) {
+                    $slug = 'modal';
+                } elseif ( str_starts_with( $basename, 'modal-' ) ) {
+                    $slug = substr( $basename, 6 );
+                } else {
+                    continue;
+                }
+
+                // Child theme files take precedence.
+                if ( in_array( $slug, $seen_slugs, true ) ) {
+                    continue;
+                }
+
+                $seen_slugs[] = $slug;
+
+                // Title: 'modal' → 'Modal', 'compact' → 'Compact', 'my-template' → 'My Template'.
+                $title = ucwords( str_replace( '-', ' ', $slug ) );
+
+                $parts[] = [
+                    'slug'  => $slug,
+                    'title' => $title,
+                ];
+            }
         }
 
         return $parts;
