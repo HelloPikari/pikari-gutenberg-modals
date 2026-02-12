@@ -15,11 +15,12 @@ import {
 	SelectControl,
 	Notice,
 } from '@wordpress/components';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { useSelect } from '@wordpress/data';
 import { useMemo, useEffect } from '@wordpress/element';
 import useModalContentBlocks from './use-modal-content-blocks';
 import useIsModalTemplatePart from './use-is-modal-template-part';
+import useModalTemplateParts from './use-modal-template-parts';
 
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
@@ -62,6 +63,10 @@ function addModalTriggerAttributes( settings, name ) {
 				default: 'link',
 			},
 			pikariModalInlineAnchor: {
+				type: 'string',
+				default: '',
+			},
+			pikariModalTemplatePart: {
 				type: 'string',
 				default: '',
 			},
@@ -240,11 +245,13 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 				pikariModalSize,
 				pikariModalContentSource,
 				pikariModalInlineAnchor,
+				pikariModalTemplatePart,
 			} = attributes;
 
 			const contentSource = pikariModalContentSource || 'link';
 			const isInline = contentSource === 'inline';
 			const modalContentBlocks = useModalContentBlocks();
+			const templateParts = useModalTemplateParts();
 
 			// Check if we're in contentOnly editing mode (e.g., locked patterns)
 			const blockEditingMode = useBlockEditingMode();
@@ -481,6 +488,43 @@ const withModalTriggerInspectorControls = createHigherOrderComponent(
 												setAttributes( { pikariModalSize: value } )
 											}
 										/>
+									) }
+									{ templateParts.hasMultiple && (
+										<SelectControl
+											__nextHasNoMarginBottom
+											label={ __(
+												'Modal Template',
+												'pikari-gutenberg-modals'
+											) }
+											value={
+												pikariModalTemplatePart
+											}
+											options={
+												templateParts.options
+											}
+											onChange={ ( value ) =>
+												setAttributes( {
+													pikariModalTemplatePart:
+														value,
+												} )
+											}
+										/>
+									) }
+									{ ! templateParts.isValidSelection( pikariModalTemplatePart ) && (
+										<Notice
+											status="warning"
+											onRemove={ () =>
+												setAttributes( {
+													pikariModalTemplatePart: '',
+												} )
+											}
+										>
+											{ sprintf(
+												/* translators: %s: template part slug */
+												__( 'The modal template "%s" no longer exists. The default template will be used.', 'pikari-gutenberg-modals' ),
+												pikariModalTemplatePart
+											) }
+										</Notice>
 									) }
 								</>
 							) }

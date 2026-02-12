@@ -12,6 +12,8 @@
 	height: 40px;
 	border-radius: 50%;
 	border: 1px solid #e5e7eb;
+	background-color: transparent;
+	color: #1e1e1e;
 	font-size: 36px;
 	line-height: 1;
 	cursor: pointer;
@@ -24,14 +26,17 @@
 
 /* Alignment */
 .wp-block-pikari-gutenberg-modals-close-button.alignright {
+	align-self: flex-end;
 	margin-left: auto;
 	margin-right: 0;
 }
 .wp-block-pikari-gutenberg-modals-close-button.aligncenter {
+	align-self: center;
 	margin-left: auto;
 	margin-right: auto;
 }
 .wp-block-pikari-gutenberg-modals-close-button.alignleft {
+	align-self: flex-start;
 	margin-left: 0;
 	margin-right: auto;
 }

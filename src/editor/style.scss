@@ -52,6 +52,9 @@ span.modal-link-trigger,
 		padding: 16px;
 		max-height: none !important; // Override inline max-height
 		overflow: visible !important;
+		display: flex;
+		flex-direction: column;
+		gap: 1em;
 	}
 
 	// Ensure search results are visible
