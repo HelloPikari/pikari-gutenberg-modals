@@ -28,6 +28,7 @@ const INNER_BLOCKS_TEMPLATE = [
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		overlayColor,
+		overlayGradient,
 		backgroundImage,
 		focalPoint,
 		hasParallax,
@@ -44,6 +45,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					settings={ [
 						{
 							colorValue: overlayColor,
+							gradientValue: overlayGradient,
 							label: __(
 								'Overlay',
 								'pikari-gutenberg-modals'
@@ -52,11 +54,16 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 								setAttributes( {
 									overlayColor: value,
 								} ),
+							onGradientChange: ( value ) =>
+								setAttributes( {
+									overlayGradient: value,
+								} ),
 							isShownByDefault: true,
 							enableAlpha: true,
 							clearable: true,
 							resetAllFilter: () => ( {
 								overlayColor: undefined,
+								overlayGradient: undefined,
 							} ),
 						},
 					] }

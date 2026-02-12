@@ -11,6 +11,9 @@
 		"overlayColor": {
 			"type": "string"
 		},
+		"overlayGradient": {
+			"type": "string"
+		},
 		"backgroundImage": {
 			"type": "object"
 		},
@@ -20,6 +23,19 @@
 		"hasParallax": {
 			"type": "boolean",
 			"default": false
+		},
+		"style": {
+			"type": "object",
+			"default": {
+				"spacing": {
+					"padding": {
+						"top": "1.5rem",
+						"right": "1.5rem",
+						"bottom": "1.5rem",
+						"left": "1.5rem"
+					}
+				}
+			}
 		}
 	},
 	"supports": {

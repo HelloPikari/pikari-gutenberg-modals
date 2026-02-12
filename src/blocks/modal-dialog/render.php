@@ -33,9 +33,12 @@ if ( str_starts_with( $trimmed_content, '<div' ) ) {
     }
 }
 
-// --- Overlay background color ---
+// --- Overlay background color/gradient ---
+// Gradient takes precedence over solid color.
 // Color values include alpha for opacity (e.g., rgba(0,0,0,0.8)).
-if ( ! empty( $attributes['overlayColor'] ) ) {
+if ( ! empty( $attributes['overlayGradient'] ) ) {
+    $overlay_style = 'background:' . $attributes['overlayGradient'];
+} elseif ( ! empty( $attributes['overlayColor'] ) ) {
     $overlay_style = 'background-color:' . $attributes['overlayColor'];
 } else {
     $overlay_style = 'background-color:rgba(0,0,0,0.8)';
