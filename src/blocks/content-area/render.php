@@ -44,7 +44,6 @@ $wrapper_attrs = get_block_wrapper_attributes();
 
     <!-- Content body -->
     <div
-        id="modal-content"
         class="modal-body"
         data-wp-class--hidden="state.loading || state.hasError"
     ></div>

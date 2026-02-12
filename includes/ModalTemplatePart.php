@@ -168,20 +168,21 @@ class ModalTemplatePart
     }
 
     /**
-     * Render the modal template part.
+     * Render a modal template part by slug.
      *
-     * Falls back to the legacy hardcoded HTML for classic themes.
+     * Falls back to empty string for classic themes without template part support.
      *
-     * @return string Rendered template part HTML, or empty string if using legacy rendering.
+     * @param string $slug Template part slug (default: 'modal').
+     * @return string Rendered template part HTML, or empty string.
      */
-    public static function render(): string
+    public static function render( string $slug = self::SLUG ): string
     {
         if ( ! self::is_supported() ) {
             return '';
         }
 
         ob_start();
-        block_template_part( self::SLUG );
+        block_template_part( $slug );
         return ob_get_clean();
     }
 

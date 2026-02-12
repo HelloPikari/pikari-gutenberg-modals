@@ -3,6 +3,7 @@
  */
 /* eslint-disable @wordpress/no-unsafe-wp-apis */
 import {
+	Notice,
 	Popover,
 	SelectControl,
 	__experimentalHeading as Heading,
@@ -17,11 +18,12 @@ import {
 	useMemo,
 } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { external } from '@wordpress/icons';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 import useModalContentBlocks from './use-modal-content-blocks';
 import useIsModalTemplatePart from './use-is-modal-template-part';
+import useModalTemplateParts from './use-modal-template-parts';
 
 const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
 
@@ -60,7 +62,9 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	const [ openedBy, setOpenedBy ] = useState( null );
 	const [ size, setSize ] = useState( '' );
 	const [ contentSource, setContentSource ] = useState( 'link' );
+	const [ templatePart, setTemplatePart ] = useState( '' );
 	const modalContentBlocks = useModalContentBlocks();
+	const templateParts = useModalTemplateParts();
 
 	// Use useAnchor to position popover at the text selection/formatted element
 	const popoverAnchor = useAnchor( {
@@ -157,6 +161,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 				( format ) => format.type === MODAL_FORMAT_NAME
 			);
 			setSize( activeFormat?.attributes?.[ 'data-modal-size' ] || '' );
+			setTemplatePart( activeFormat?.attributes?.[ 'data-modal-template-part' ] || '' );
 			const existingType =
 				activeFormat?.attributes?.[ 'data-modal-content-type' ] || '';
 			setContentSource( existingType === 'inline' ? 'inline' : 'link' );
@@ -259,6 +264,11 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		// Only include size attribute when not default
 		if ( size ) {
 			formatAttributes[ 'data-modal-size' ] = size;
+		}
+
+		// Only include template part when not default
+		if ( templatePart ) {
+			formatAttributes[ 'data-modal-template-part' ] = templatePart;
 		}
 
 		const format = {
@@ -405,6 +415,10 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 									formatAttributes[ 'data-modal-size' ] =
 										size;
 								}
+								if ( templatePart ) {
+									formatAttributes[ 'data-modal-template-part' ] =
+										templatePart;
+								}
 								onChange(
 									applyFormat( value, {
 										type: MODAL_FORMAT_NAME,
@@ -446,6 +460,71 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 							}
 						} }
 					/>
+					{ templateParts.hasMultiple && (
+						<SelectControl
+							__nextHasNoMarginBottom
+							label={ __( 'Modal Template', 'pikari-gutenberg-modals' ) }
+							value={ templatePart }
+							options={ templateParts.options }
+							onChange={ ( newTemplatePart ) => {
+								setTemplatePart( newTemplatePart );
+
+								// Re-apply format immediately so the change persists
+								if ( isActive && value.activeFormats ) {
+									const activeFormat = value.activeFormats.find(
+										( f ) => f.type === MODAL_FORMAT_NAME
+									);
+									if ( activeFormat?.attributes ) {
+										const updatedAttributes = {
+											...activeFormat.attributes,
+										};
+										if ( newTemplatePart ) {
+											updatedAttributes[ 'data-modal-template-part' ] = newTemplatePart;
+										} else {
+											delete updatedAttributes[ 'data-modal-template-part' ];
+										}
+										onChange(
+											applyFormat( value, {
+												type: MODAL_FORMAT_NAME,
+												attributes: updatedAttributes,
+											} )
+										);
+									}
+								}
+							} }
+						/>
+					) }
+					{ ! templateParts.isValidSelection( templatePart ) && (
+						<Notice
+							status="warning"
+							onRemove={ () => {
+								setTemplatePart( '' );
+								if ( isActive && value.activeFormats ) {
+									const activeFormat = value.activeFormats.find(
+										( f ) => f.type === MODAL_FORMAT_NAME
+									);
+									if ( activeFormat?.attributes ) {
+										const updatedAttributes = {
+											...activeFormat.attributes,
+										};
+										delete updatedAttributes[ 'data-modal-template-part' ];
+										onChange(
+											applyFormat( value, {
+												type: MODAL_FORMAT_NAME,
+												attributes: updatedAttributes,
+											} )
+										);
+									}
+								}
+							} }
+						>
+							{ sprintf(
+								/* translators: %s: template part slug */
+								__( 'The modal template "%s" no longer exists. The default template will be used.', 'pikari-gutenberg-modals' ),
+								templatePart
+							) }
+						</Notice>
+					) }
 				</Popover>
 			) }
 		</>

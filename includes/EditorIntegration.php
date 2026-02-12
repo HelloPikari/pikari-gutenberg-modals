@@ -71,11 +71,12 @@ class EditorIntegration
             'pikari-gutenberg-modals-editor',
             'pikariGutenbergModals',
             [
-                'supportedBlocks' => $this->block_support->get_supported_blocks_for_js(),
-                'restUrl'         => rest_url('pikari-gutenberg-modals/v1/'),
-                'nonce'           => wp_create_nonce('wp_rest'),
-                'modalSizes'      => $this->get_modal_sizes(),
-                'defaultSettings' => [
+                'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
+                'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
+                'nonce'              => wp_create_nonce('wp_rest'),
+                'modalSizes'         => $this->get_modal_sizes(),
+                'modalTemplateParts' => $this->get_modal_template_parts(),
+                'defaultSettings'    => [
                     'size' => 'medium',
                     'animation' => 'fade',
                     'closeOnClickOutside' => true,
@@ -136,6 +137,32 @@ class EditorIntegration
          * @param array $sizes Array of size options with 'label' and 'value' keys.
          */
         return apply_filters('pikari_gutenberg_modals_modal_sizes', $default_sizes);
+    }
+
+    /**
+     * Get available modal template parts for the editor.
+     *
+     * Queries all template parts in the 'modal' area and returns them
+     * as an array of slug/title pairs for the template part selector.
+     *
+     * @return array<int, array{slug: string, title: string}> Template part options.
+     */
+    private function get_modal_template_parts(): array
+    {
+        $templates = get_block_templates(
+            [ 'area' => 'modal' ],
+            'wp_template_part'
+        );
+
+        $parts = [];
+        foreach ( $templates as $template ) {
+            $parts[] = [
+                'slug'  => $template->slug,
+                'title' => $template->title ?? $template->slug,
+            ];
+        }
+
+        return $parts;
     }
 
     /**

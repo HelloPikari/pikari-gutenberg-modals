@@ -184,6 +184,7 @@ See monorepo `CLAUDE.md` for full command list, git workflow, branching strategy
 - Commit format: `type: Brief description` (types: feat, fix, docs, style, refactor, test, chore)
 - **Do NOT include `Co-Authored-By` lines or "Generated with Claude Code" in commits**
 - Pre-commit hooks: Husky + lint-staged auto-lint staged files and sync lock files
+- **Commit regularly:** When the user confirms changes are working and moves on to the next task, proactively suggest committing the current changes before starting new work
 
 ## Project Structure
 
