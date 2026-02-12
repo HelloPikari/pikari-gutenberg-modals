@@ -71,10 +71,10 @@ function pikari_gutenberg_modals_init() {
     add_action( 'wp_enqueue_scripts', 'pikari_gutenberg_modals_enqueue_scripts' );
 
     // Register blocks.
-    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/close-button' );
-    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/content-area' );
-    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/modal-content' );
-    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'src/blocks/modal-dialog' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/close-button' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/content-area' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-content' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-dialog' );
 
     // Initialize main components.
     new \Pikari\GutenbergModals\ModalHandler();
