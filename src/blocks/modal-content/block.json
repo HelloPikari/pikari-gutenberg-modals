@@ -21,7 +21,8 @@
 	"supports": {
 		"html": false,
 		"anchor": true,
-		"reusable": false
+		"reusable": false,
+		"align": ["wide", "full"]
 	},
 	"editorScript": "file:../../../build/blocks/modal-content/index.js",
 	"editorStyle": "file:./editor.css",

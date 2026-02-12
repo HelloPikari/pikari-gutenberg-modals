@@ -7,37 +7,45 @@
  * @package PikariGutenbergModals
  */
 
+$wrapper_attrs = get_block_wrapper_attributes();
 ?>
-<!-- Screen reader announcements -->
-<div class="sr-only" aria-live="polite" aria-atomic="true">
-    <span data-wp-text="state.loading ? '<?php echo esc_js( __( 'Loading content...', 'pikari-gutenberg-modals' ) ); ?>' : ''"></span>
-</div>
-<div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
-    <span data-wp-text="state.hasError ? state.errorMessage : ''"></span>
-</div>
-
-<!-- Loading state (visual) -->
 <div
-    class="modal-loading"
-    data-wp-class--hidden="!state.loading"
-    aria-hidden="true"
+    <?php
+    // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- get_block_wrapper_attributes() returns pre-escaped HTML.
+    echo $wrapper_attrs;
+    ?>
 >
-    <div class="loading-spinner"></div>
-    <p><?php esc_html_e( 'Loading...', 'pikari-gutenberg-modals' ); ?></p>
-</div>
+    <!-- Screen reader announcements -->
+    <div class="sr-only" aria-live="polite" aria-atomic="true">
+        <span data-wp-text="state.loading ? '<?php echo esc_js( __( 'Loading content...', 'pikari-gutenberg-modals' ) ); ?>' : ''"></span>
+    </div>
+    <div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
+        <span data-wp-text="state.hasError ? state.errorMessage : ''"></span>
+    </div>
 
-<!-- Error state (visual) -->
-<div
-    class="modal-error"
-    data-wp-class--hidden="!state.hasError"
-    aria-hidden="true"
->
-    <p data-wp-text="state.errorMessage"></p>
-</div>
+    <!-- Loading state (visual) -->
+    <div
+        class="modal-loading"
+        data-wp-class--hidden="!state.loading"
+        aria-hidden="true"
+    >
+        <div class="loading-spinner"></div>
+        <p><?php esc_html_e( 'Loading...', 'pikari-gutenberg-modals' ); ?></p>
+    </div>
 
-<!-- Content body -->
-<div
-    id="modal-content"
-    class="modal-body"
-    data-wp-class--hidden="state.loading || state.hasError"
-></div>
+    <!-- Error state (visual) -->
+    <div
+        class="modal-error"
+        data-wp-class--hidden="!state.hasError"
+        aria-hidden="true"
+    >
+        <p data-wp-text="state.errorMessage"></p>
+    </div>
+
+    <!-- Content body -->
+    <div
+        id="modal-content"
+        class="modal-body"
+        data-wp-class--hidden="state.loading || state.hasError"
+    ></div>
+</div>

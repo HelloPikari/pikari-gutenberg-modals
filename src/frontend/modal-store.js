@@ -104,12 +104,16 @@ const { state, actions } = store( 'pikari-modal', {
 				if ( sourceElement ) {
 					const modalBody = document.getElementById( 'modal-content' );
 					if ( modalBody ) {
-						// Add sr-only title for aria-labelledby="modal-title"
 						const titleText = sourceElement.getAttribute( 'data-modal-inline-title' ) || '';
-						const titleHtml = titleText
-							? `<h2 id="modal-title" class="sr-only">${ escapeHTML( titleText ) }</h2>`
-							: '';
-						modalBody.innerHTML = titleHtml + sourceElement.innerHTML;
+						const htmlContent = `
+							<article class="modal-entry">
+								<h2 id="modal-title" class="sr-only">${ escapeHTML( titleText ) }</h2>
+								<div class="modal-entry-content is-layout-constrained">
+									${ sourceElement.innerHTML }
+								</div>
+							</article>
+						`;
+						modalBody.innerHTML = htmlContent;
 					}
 					state.content = sourceElement.innerHTML;
 				} else {
@@ -161,10 +165,8 @@ const { state, actions } = store( 'pikari-modal', {
 					const htmlContent = `
 						${ data.styles ? `<style>${ data.styles }</style>` : '' }
 						<article class="modal-entry type-${ escapeAttribute( String( data.type ) ) } post-${ escapeAttribute( String( data.id ) ) }">
-							<header class="modal-entry-header sr-only">
-								<h2 id="modal-title">${ escapeHTML( data.title ) }</h2>
-							</header>
-							<div class="modal-entry-content">
+							<h2 id="modal-title" class="sr-only">${ escapeHTML( data.title ) }</h2>
+							<div class="modal-entry-content is-layout-constrained">
 								${ data.content }
 							</div>
 						</article>
