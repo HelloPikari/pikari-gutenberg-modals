@@ -32,6 +32,9 @@ class EditorIntegration
 
         // Hook into block assets for styles (works with iframe editor)
         add_action('enqueue_block_assets', [$this, 'enqueue_block_styles']);
+
+        // Restrict modal template blocks to template part editors
+        add_filter('allowed_block_types_all', [$this, 'restrict_modal_template_blocks'], 10, 2);
     }
 
     /**
@@ -68,10 +71,12 @@ class EditorIntegration
             'pikari-gutenberg-modals-editor',
             'pikariGutenbergModals',
             [
-                'supportedBlocks' => $this->block_support->get_supported_blocks_for_js(),
-                'restUrl' => rest_url('pikari-gutenberg-modals/v1/'),
-                'nonce' => wp_create_nonce('wp_rest'),
-                'defaultSettings' => [
+                'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
+                'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
+                'nonce'              => wp_create_nonce('wp_rest'),
+                'modalSizes'         => $this->get_modal_sizes(),
+                'modalTemplateParts' => $this->get_modal_template_parts(),
+                'defaultSettings'    => [
                     'size' => 'medium',
                     'animation' => 'fade',
                     'closeOnClickOutside' => true,
@@ -80,6 +85,84 @@ class EditorIntegration
                 ],
             ]
         );
+    }
+
+    /**
+     * Get available modal sizes for the editor.
+     *
+     * Returns an array of size options for the modal size selector.
+     * Developers can add custom sizes via the
+     * `pikari_gutenberg_modals_modal_sizes` filter.
+     *
+     * Each size entry should have:
+     * - `label` (string) Translated display label.
+     * - `value` (string) Size slug used as the `data-size` attribute value.
+     *                     Empty string means default (uses `--modal-max-width`).
+     *
+     * Custom sizes require matching CSS, e.g.:
+     * ```css
+     * .modal-overlay[data-size="custom-slug"] .modal-content {
+     *     max-width: 768px;
+     * }
+     * ```
+     *
+     * @return array<int, array{label: string, value: string}> Modal size options.
+     */
+    private function get_modal_sizes(): array
+    {
+        $default_sizes = [
+            [
+                'label' => __('Default', 'pikari-gutenberg-modals'),
+                'value' => '',
+            ],
+            [
+                'label' => __('Small', 'pikari-gutenberg-modals'),
+                'value' => 'small',
+            ],
+            [
+                'label' => __('Large', 'pikari-gutenberg-modals'),
+                'value' => 'large',
+            ],
+            [
+                'label' => __('Fullscreen', 'pikari-gutenberg-modals'),
+                'value' => 'fullscreen',
+            ],
+        ];
+
+        /**
+         * Filters the available modal size options.
+         *
+         * @since 0.2.0
+         *
+         * @param array $sizes Array of size options with 'label' and 'value' keys.
+         */
+        return apply_filters('pikari_gutenberg_modals_modal_sizes', $default_sizes);
+    }
+
+    /**
+     * Get available modal template parts for the editor.
+     *
+     * Queries all template parts in the 'modal' area and returns them
+     * as an array of slug/title pairs for the template part selector.
+     *
+     * @return array<int, array{slug: string, title: string}> Template part options.
+     */
+    private function get_modal_template_parts(): array
+    {
+        $templates = get_block_templates(
+            [ 'area' => 'modal' ],
+            'wp_template_part'
+        );
+
+        $parts = [];
+        foreach ( $templates as $template ) {
+            $parts[] = [
+                'slug'  => $template->slug,
+                'title' => $template->title ?? $template->slug,
+            ];
+        }
+
+        return $parts;
     }
 
     /**
@@ -113,5 +196,60 @@ class EditorIntegration
                 $version
             );
         }
+    }
+
+    /**
+     * Restrict modal template blocks to template part editors.
+     *
+     * The Content Area and Modal Dialog blocks are only meaningful inside
+     * a template part (e.g., the modal template part). This filter hides
+     * them from the block inserter in post and page editors.
+     *
+     * In the Site Editor (core/edit-site), all blocks are allowed because
+     * template parts are edited within it. The allowed_block_types_all
+     * filter fires once on page load, not when navigating between
+     * templates and template parts within the single-page Site Editor.
+     *
+     * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
+     *                                                      or true for all registered blocks.
+     * @param \WP_Block_Editor_Context $editor_context      The editor context.
+     * @return bool|string[] Filtered allowed block types.
+     */
+    public function restrict_modal_template_blocks( $allowed_block_types, $editor_context )
+    {
+        // Only restrict blocks in the post editor. The Site Editor needs
+        // all blocks available because template parts are edited within it.
+        if (
+            ! isset( $editor_context->name ) ||
+            $editor_context->name !== 'core/edit-post'
+        ) {
+            return $allowed_block_types;
+        }
+
+        $restricted_blocks = [
+            'pikari-gutenberg-modals/content-area',
+            'pikari-gutenberg-modals/modal-dialog',
+        ];
+
+        // When $allowed_block_types is true (WordPress default: all blocks allowed),
+        // convert to an explicit array so we can filter out our blocks.
+        if ( $allowed_block_types === true ) {
+            $all_block_types     = \WP_Block_Type_Registry::get_instance()->get_all_registered();
+            $allowed_block_types = array_keys( $all_block_types );
+        }
+
+        // Remove restricted blocks from post/page editors
+        if ( is_array( $allowed_block_types ) ) {
+            $allowed_block_types = array_values(
+                array_filter(
+                    $allowed_block_types,
+                    static function ( $block_type ) use ( $restricted_blocks ) {
+                        return ! in_array( $block_type, $restricted_blocks, true );
+                    }
+                )
+            );
+        }
+
+        return $allowed_block_types;
     }
 }
