@@ -85,4 +85,4 @@ pikari-dev-setup-*/
 # Lock files (uncomment if you don't want to track lock files)
 # package-lock.json
 # yarn.lock
-# composer.lock.claude/
+# composer.lock

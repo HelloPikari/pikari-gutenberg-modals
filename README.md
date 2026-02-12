@@ -171,6 +171,32 @@ add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term
 }, 10, 2 );
 ```
 
+### Editor
+
+#### `pikari_gutenberg_modals_modal_sizes`
+
+Add or modify the modal size options available in the editor dropdown. Each entry needs a `label` (display text) and `value` (slug used as the `data-size` attribute). Custom sizes require matching CSS.
+
+```php
+add_filter( 'pikari_gutenberg_modals_modal_sizes', function( $sizes ) {
+    $sizes[] = array(
+        'label' => __( 'Medium', 'my-theme' ),
+        'value' => 'medium',
+    );
+    return $sizes;
+} );
+```
+
+Then add the CSS for your custom size:
+
+```css
+.modal-overlay[data-size='medium'] .modal-content {
+	max-width: 768px;
+}
+```
+
+Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
+
 ### Domain Restrictions
 
 #### `pikari_gutenberg_modals_allowed_domains`
@@ -200,6 +226,29 @@ Filter the final computed allowed domains list.
 #### `pikari_gutenberg_modals_blocked_domains_list`
 
 Filter the final computed blocked domains list.
+
+## CSS Custom Properties
+
+The plugin exposes CSS custom properties on `:root` for easy theming without filters or PHP:
+
+```css
+/* Modal appearance */
+--modal-overlay-bg: rgba(0, 0, 0, 0.8);
+--modal-content-bg: #fff;
+--modal-content-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
+--modal-border-radius: 20px;
+
+/* Modal widths */
+--modal-max-width: 1024px; /* Default size */
+--modal-max-width-small: 500px; /* Small size */
+--modal-max-width-large: 1200px; /* Large size */
+
+/* Interaction */
+--modal-focus-color: #3b82f6;
+--modal-transition: all 0.2s ease;
+```
+
+Override any of these in your theme's CSS to customize the modal appearance.
 
 ## Contributing
 

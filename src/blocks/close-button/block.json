@@ -1,0 +1,59 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pikari-gutenberg-modals/close-button",
+	"version": "0.1.0",
+	"title": "Modal Close Button",
+	"category": "design",
+	"description": "A close button for the modal dialog. Place inside the modal template part.",
+	"textdomain": "pikari-gutenberg-modals",
+	"attributes": {
+		"align": {
+			"type": "string",
+			"default": "right"
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"reusable": false,
+		"align": ["left", "center", "right"],
+		"color": {
+			"background": true,
+			"text": true,
+			"gradients": true,
+			"__experimentalDefaultControls": {
+				"background": true,
+				"text": true
+			}
+		},
+		"typography": {
+			"fontSize": true,
+			"__experimentalDefaultControls": {
+				"fontSize": true
+			}
+		},
+		"__experimentalBorder": {
+			"color": true,
+			"radius": true,
+			"style": true,
+			"width": true,
+			"__experimentalDefaultControls": {
+				"color": true,
+				"radius": true,
+				"style": true,
+				"width": true
+			}
+		},
+		"spacing": {
+			"padding": true,
+			"__experimentalDefaultControls": {
+				"padding": true
+			}
+		},
+		"shadow": true
+	},
+	"editorScript": "file:../../../build/blocks/close-button/index.js",
+	"style": "file:./style.css",
+	"render": "file:./render.php"
+}

@@ -61,15 +61,16 @@ export function removeFocusTrap() {
  * Set inert attribute on background content.
  * This hides background content from screen readers and prevents interaction.
  *
- * @param {boolean} inert - Whether to set or remove inert
+ * @param {boolean}     inert           - Whether to set or remove inert
+ * @param {HTMLElement} activeContainer - The active modal container element
  */
-export function setBackgroundInert( inert ) {
+export function setBackgroundInert( inert, activeContainer ) {
 	const selectors = [ 'main', 'header', 'footer', 'aside', 'nav' ];
 	selectors.forEach( ( selector ) => {
 		const elements = document.querySelectorAll( selector );
 		elements.forEach( ( el ) => {
 			// Don't make the modal's parent inert
-			if ( ! el.contains( document.getElementById( 'pikari-modal' ) ) ) {
+			if ( ! activeContainer || ! el.contains( activeContainer ) ) {
 				if ( inert ) {
 					el.setAttribute( 'inert', '' );
 				} else {

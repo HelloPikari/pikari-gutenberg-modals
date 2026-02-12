@@ -1,8 +1,14 @@
 /**
  * WordPress dependencies
  */
-// eslint-disable-next-line @wordpress/no-unsafe-wp-apis
-import { Popover, __experimentalHeading as Heading } from '@wordpress/components';
+/* eslint-disable @wordpress/no-unsafe-wp-apis */
+import {
+	Notice,
+	Popover,
+	SelectControl,
+	__experimentalHeading as Heading,
+} from '@wordpress/components';
+/* eslint-enable @wordpress/no-unsafe-wp-apis */
 import { LinkControl, RichTextToolbarButton } from '@wordpress/block-editor';
 import {
 	useState,
@@ -12,9 +18,12 @@ import {
 	useMemo,
 } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
-import { __ } from '@wordpress/i18n';
+import { __, sprintf } from '@wordpress/i18n';
 import { external } from '@wordpress/icons';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
+import useModalContentBlocks from './use-modal-content-blocks';
+import useIsModalTemplatePart from './use-is-modal-template-part';
+import useModalTemplateParts from './use-modal-template-parts';
 
 const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
 
@@ -39,10 +48,23 @@ const modalLinkFormatSettings = {
  * @param {Object}   props.contentRef - Reference to the content element
  * @return {JSX.Element} The modal link edit UI
  */
+// Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
+const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
+	{ label: __( 'Default', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( 'Small', 'pikari-gutenberg-modals' ), value: 'small' },
+	{ label: __( 'Large', 'pikari-gutenberg-modals' ), value: 'large' },
+	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
+];
+
 const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	const [ addingLink, setAddingLink ] = useState( false );
 	// Track what opened the popover: 'toolbar' or 'click'
 	const [ openedBy, setOpenedBy ] = useState( null );
+	const [ size, setSize ] = useState( '' );
+	const [ contentSource, setContentSource ] = useState( 'link' );
+	const [ templatePart, setTemplatePart ] = useState( '' );
+	const modalContentBlocks = useModalContentBlocks();
+	const templateParts = useModalTemplateParts();
 
 	// Use useAnchor to position popover at the text selection/formatted element
 	const popoverAnchor = useAnchor( {
@@ -69,6 +91,9 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		'core/preformatted',
 		'core/navigation-link',
 	];
+
+	// Check if editing context is inside the modal template part
+	const isInsideModalTemplatePart = useIsModalTemplatePart( null );
 
 	// Check if the current block supports modal links
 	const isBlockSupported =
@@ -129,6 +154,20 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		}
 	}, [ isActive, value.activeFormats ] );
 
+	// Sync size and content source state when editing an existing modal link
+	useEffect( () => {
+		if ( isActive && value.activeFormats ) {
+			const activeFormat = value.activeFormats.find(
+				( format ) => format.type === MODAL_FORMAT_NAME
+			);
+			setSize( activeFormat?.attributes?.[ 'data-modal-size' ] || '' );
+			setTemplatePart( activeFormat?.attributes?.[ 'data-modal-template-part' ] || '' );
+			const existingType =
+				activeFormat?.attributes?.[ 'data-modal-content-type' ] || '';
+			setContentSource( existingType === 'inline' ? 'inline' : 'link' );
+		}
+	}, [ isActive, value.activeFormats ] );
+
 	/**
 	 * Click detection for existing modal triggers.
 	 * When user clicks on a modal trigger in the editor, show the popover.
@@ -159,7 +198,8 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	}, [ contentRef, stopAddingLink ] );
 
 	// Don't render anything if the block doesn't support modal links
-	if ( ! isBlockSupported ) {
+	// or if we're inside the modal template part
+	if ( ! isBlockSupported || isInsideModalTemplatePart ) {
 		return null;
 	}
 
@@ -214,14 +254,26 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		};
 
 		// Create the format object with all necessary attributes
+		const formatAttributes = {
+			'data-modal-link': JSON.stringify( linkData ), // Full data for editor display
+			'data-modal-content-type': contentType, // Quick access for backend
+			'data-modal-content-id': String( contentId ), // ID or URL for backend
+			href: '#', // Prevents default link behavior
+		};
+
+		// Only include size attribute when not default
+		if ( size ) {
+			formatAttributes[ 'data-modal-size' ] = size;
+		}
+
+		// Only include template part when not default
+		if ( templatePart ) {
+			formatAttributes[ 'data-modal-template-part' ] = templatePart;
+		}
+
 		const format = {
 			type: MODAL_FORMAT_NAME,
-			attributes: {
-				'data-modal-link': JSON.stringify( linkData ), // Full data for editor display
-				'data-modal-content-type': contentType, // Quick access for backend
-				'data-modal-content-id': String( contentId ), // ID or URL for backend
-				href: '#', // Prevents default link behavior
-			},
+			attributes: formatAttributes,
 		};
 
 		onChange( applyFormat( value, format ) );
@@ -262,22 +314,217 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 					className="modal-link-popover"
 				>
 					<Heading level={ 4 }>
-						{ ! linkValue || ! linkValue.url
+						{ ! isActive
 							? __( 'Add Modal Link', 'pikari-gutenberg-modals' )
 							: __( 'Edit Modal Link', 'pikari-gutenberg-modals' ) }
 					</Heading>
-					<LinkControl
-						searchInputPlaceholder={ __(
-							'Search or enter URL',
+					<SelectControl
+						__nextHasNoMarginBottom
+						label={ __(
+							'Content Source',
 							'pikari-gutenberg-modals'
 						) }
-						value={ linkValue }
-						onChange={ onSubmit }
-						onRemove={ isActive ? onRemove : undefined }
-						showInitialSuggestions={ ! isActive }
-						showSuggestions
-						settings={ [] }
+						value={ contentSource }
+						options={ [
+							{
+								label: __(
+									'Post / URL',
+									'pikari-gutenberg-modals'
+								),
+								value: 'link',
+							},
+							{
+								label: __(
+									'Page Content',
+									'pikari-gutenberg-modals'
+								),
+								value: 'inline',
+							},
+						] }
+						onChange={ setContentSource }
 					/>
+					{ contentSource === 'link' && (
+						<LinkControl
+							searchInputPlaceholder={ __(
+								'Search or enter URL',
+								'pikari-gutenberg-modals'
+							) }
+							value={ linkValue }
+							onChange={ onSubmit }
+							onRemove={ isActive ? onRemove : undefined }
+							showInitialSuggestions={ ! isActive }
+							showSuggestions
+							settings={ [] }
+						/>
+					) }
+					{ contentSource === 'inline' && (
+						<SelectControl
+							__nextHasNoMarginBottom
+							label={ __(
+								'Modal Content',
+								'pikari-gutenberg-modals'
+							) }
+							value={
+								isActive &&
+								value.activeFormats?.find(
+									( f ) => f.type === MODAL_FORMAT_NAME
+								)?.attributes?.[ 'data-modal-content-type' ] ===
+									'inline'
+									? value.activeFormats.find(
+										( f ) =>
+											f.type === MODAL_FORMAT_NAME
+									)?.attributes?.[
+										'data-modal-content-id'
+									] || ''
+									: ''
+							}
+							options={ [
+								{
+									label: __(
+										'Select\u2026',
+										'pikari-gutenberg-modals'
+									),
+									value: '',
+								},
+								...modalContentBlocks.map( ( block ) => ( {
+									label: block.title,
+									value: block.anchor,
+								} ) ),
+							] }
+							onChange={ ( anchor ) => {
+								if ( ! anchor ) {
+									return;
+								}
+								const block = modalContentBlocks.find(
+									( b ) => b.anchor === anchor
+								);
+								const formatAttributes = {
+									'data-modal-link': JSON.stringify( {
+										title:
+											block?.title ||
+											__(
+												'Modal Content',
+												'pikari-gutenberg-modals'
+											),
+									} ),
+									'data-modal-content-type': 'inline',
+									'data-modal-content-id': anchor,
+									href: '#' + anchor,
+								};
+								if ( size ) {
+									formatAttributes[ 'data-modal-size' ] =
+										size;
+								}
+								if ( templatePart ) {
+									formatAttributes[ 'data-modal-template-part' ] =
+										templatePart;
+								}
+								onChange(
+									applyFormat( value, {
+										type: MODAL_FORMAT_NAME,
+										attributes: formatAttributes,
+									} )
+								);
+							} }
+						/>
+					) }
+					<SelectControl
+						__nextHasNoMarginBottom
+						label={ __( 'Modal Size', 'pikari-gutenberg-modals' ) }
+						value={ size }
+						options={ MODAL_SIZE_OPTIONS }
+						onChange={ ( newSize ) => {
+							setSize( newSize );
+
+							// Re-apply format immediately so the change persists
+							if ( isActive && value.activeFormats ) {
+								const activeFormat = value.activeFormats.find(
+									( f ) => f.type === MODAL_FORMAT_NAME
+								);
+								if ( activeFormat?.attributes ) {
+									const updatedAttributes = {
+										...activeFormat.attributes,
+									};
+									if ( newSize ) {
+										updatedAttributes[ 'data-modal-size' ] = newSize;
+									} else {
+										delete updatedAttributes[ 'data-modal-size' ];
+									}
+									onChange(
+										applyFormat( value, {
+											type: MODAL_FORMAT_NAME,
+											attributes: updatedAttributes,
+										} )
+									);
+								}
+							}
+						} }
+					/>
+					{ templateParts.hasMultiple && (
+						<SelectControl
+							__nextHasNoMarginBottom
+							label={ __( 'Modal Template', 'pikari-gutenberg-modals' ) }
+							value={ templatePart }
+							options={ templateParts.options }
+							onChange={ ( newTemplatePart ) => {
+								setTemplatePart( newTemplatePart );
+
+								// Re-apply format immediately so the change persists
+								if ( isActive && value.activeFormats ) {
+									const activeFormat = value.activeFormats.find(
+										( f ) => f.type === MODAL_FORMAT_NAME
+									);
+									if ( activeFormat?.attributes ) {
+										const updatedAttributes = {
+											...activeFormat.attributes,
+										};
+										if ( newTemplatePart ) {
+											updatedAttributes[ 'data-modal-template-part' ] = newTemplatePart;
+										} else {
+											delete updatedAttributes[ 'data-modal-template-part' ];
+										}
+										onChange(
+											applyFormat( value, {
+												type: MODAL_FORMAT_NAME,
+												attributes: updatedAttributes,
+											} )
+										);
+									}
+								}
+							} }
+						/>
+					) }
+					{ ! templateParts.isValidSelection( templatePart ) && (
+						<Notice
+							status="warning"
+							onRemove={ () => {
+								setTemplatePart( '' );
+								if ( isActive && value.activeFormats ) {
+									const activeFormat = value.activeFormats.find(
+										( f ) => f.type === MODAL_FORMAT_NAME
+									);
+									if ( activeFormat?.attributes ) {
+										const updatedAttributes = {
+											...activeFormat.attributes,
+										};
+										delete updatedAttributes[ 'data-modal-template-part' ];
+										onChange(
+											applyFormat( value, {
+												type: MODAL_FORMAT_NAME,
+												attributes: updatedAttributes,
+											} )
+										);
+									}
+								}
+							} }
+						>
+							{ sprintf(
+								/* translators: %s: template part slug */
+								__( 'The modal template "%s" no longer exists. The default template will be used.', 'pikari-gutenberg-modals' ),
+								templatePart
+							) }
+						</Notice>
+					) }
 				</Popover>
 			) }
 		</>

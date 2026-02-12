@@ -14,6 +14,10 @@ const editorConfig = {
 	...scriptConfig,
 	entry: {
 		'editor/index': path.resolve( __dirname, 'src/editor/index.js' ),
+		'blocks/close-button/index': path.resolve( __dirname, 'src/blocks/close-button/index.js' ),
+		'blocks/content-area/index': path.resolve( __dirname, 'src/blocks/content-area/index.js' ),
+		'blocks/modal-content/index': path.resolve( __dirname, 'src/blocks/modal-content/index.js' ),
+		'blocks/modal-dialog/index': path.resolve( __dirname, 'src/blocks/modal-dialog/index.js' ),
 	},
 	output: {
 		...scriptConfig.output,

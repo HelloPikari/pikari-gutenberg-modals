@@ -71,7 +71,6 @@ jobs:
 
           echo "Copying production files..."
           cp -r ${{ github.workspace }}/build .
-          cp -r ${{ github.workspace }}/includes .
           cp ${{ github.workspace }}/*.php .
           cp ${{ github.workspace }}/readme.txt .
           cp ${{ github.workspace }}/LICENSE .
@@ -80,7 +79,6 @@ jobs:
             cp -r ${{ github.workspace }}/includes .
           fi
 
-          # Copy languages if exists
           if [ -d "${{ github.workspace }}/languages" ]; then
             cp -r ${{ github.workspace }}/languages .
           fi
@@ -92,7 +90,7 @@ jobs:
             "type": "wordpress-plugin",
             "license": "GPL-2.0-or-later",
             "require": {
-              "php": ">=8.2"
+              "php": ">=8.4"
             },
             "extra": {
               "installer-name": "pikari-gutenberg-modals"

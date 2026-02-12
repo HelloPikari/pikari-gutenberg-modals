@@ -1,5 +1,6 @@
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
+commitish: main
 
 version-resolver:
   major:
@@ -42,7 +43,8 @@ categories:
       - 'ci'
     collapse-after: 3
   - title: '⬆️ Dependencies'
-    label: 'dependencies'
+    labels:
+      - 'dependencies'
     collapse-after: 3
 
 exclude-labels:
@@ -71,17 +73,17 @@ change-template: '- $TITLE @$AUTHOR (#$NUMBER)'
 
 template: |
   ## What's Changed
-  
+
   $CHANGES
-  
+
   ## Installation
-  
+
   ### Composer
   ```bash
   composer require pikari-inc/pikari-gutenberg-modals:$RESOLVED_VERSION
   ```
-  
+
   ### WordPress Plugin
   Download `pikari-gutenberg-modals-v$RESOLVED_VERSION.zip` from the assets below.
-  
+
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION

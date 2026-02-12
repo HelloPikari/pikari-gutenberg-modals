@@ -24,6 +24,13 @@ class BlockSupport
     private static bool $has_modal_triggers = false;
 
     /**
+     * Template part slugs used by triggers on this page.
+     *
+     * @var string[]
+     */
+    private static array $modal_template_slugs = [];
+
+    /**
      * Constructor
      */
     public function __construct()
@@ -86,14 +93,36 @@ class BlockSupport
     }
 
     /**
-     * Mark that modal triggers exist on this page.
+     * Mark that modal triggers exist on this page and enqueue all modal assets.
      *
-     * Called by other classes (e.g., GroupModalTriggerSupport) to ensure
-     * the modal container is rendered in the footer.
+     * Centralizes asset enqueuing so every trigger type (inline links, buttons,
+     * group blocks) loads the same set of styles and scripts. Block styles for
+     * the template part blocks (close-button, content-area) are enqueued here
+     * because they render late in wp_footer and WordPress won't auto-enqueue them.
+     *
+     * @param string $slug Template part slug used by this trigger (default: 'modal').
      */
-    public static function set_has_modal_triggers(): void
+    public static function set_has_modal_triggers( string $slug = 'modal' ): void
     {
+        // Track unique template part slugs for multi-container rendering
+        if ( ! in_array( $slug, self::$modal_template_slugs, true ) ) {
+            self::$modal_template_slugs[] = $slug;
+        }
+
+        if ( self::$has_modal_triggers ) {
+            return;
+        }
+
         self::$has_modal_triggers = true;
+
+        wp_enqueue_script_module( 'pikari-gutenberg-modals-frontend' );
+        wp_enqueue_style( 'pikari-gutenberg-modals-frontend' );
+
+        // Enqueue block styles for blocks rendered inside the modal template part.
+        // These render in wp_footer after WordPress's normal block style enqueuing.
+        wp_enqueue_style( 'pikari-gutenberg-modals-modal-dialog-style' );
+        wp_enqueue_style( 'pikari-gutenberg-modals-close-button-style' );
+        wp_enqueue_style( 'pikari-gutenberg-modals-content-area-style' );
     }
 
     /**
@@ -126,10 +155,8 @@ class BlockSupport
             return $block_content;
         }
 
-        // Enqueue frontend assets when modal trigger is detected
-        self::$has_modal_triggers = true;
-        wp_enqueue_script_module('pikari-gutenberg-modals-frontend');
-        wp_enqueue_style('pikari-gutenberg-modals-frontend');
+        // Enqueue frontend assets — slug is determined per-span in extract_modal_config()
+        self::set_has_modal_triggers();
 
         // Process modal links using regex with callback
         // Pattern breakdown:
@@ -167,6 +194,15 @@ class BlockSupport
             return $block_content;
         }
 
+        // Check content source: 'inline' for page content, 'link' (default) for URL
+        $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
+        $inline_anchor  = $block['attrs']['pikariModalInlineAnchor'] ?? '';
+        $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
+
+        if ( $content_source === 'inline' ) {
+            return $this->filter_button_block_inline( $block_content, $block, $inline_anchor, $template_part );
+        }
+
         // Get the URL - first try block attributes, then extract from HTML
         $url = $block['attrs']['url'] ?? '';
 
@@ -183,9 +219,8 @@ class BlockSupport
         }
 
         // Mark that we have modal triggers on this page
-        self::$has_modal_triggers = true;
-        wp_enqueue_script_module( 'pikari-gutenberg-modals-frontend' );
-        wp_enqueue_style( 'pikari-gutenberg-modals-frontend' );
+        $slug = ! empty( $template_part ) ? $template_part : 'modal';
+        self::set_has_modal_triggers( $slug );
 
         // Determine content type and ID
         $content_type = 'url';
@@ -204,10 +239,89 @@ class BlockSupport
             }
         }
 
+        // Get modal size setting
+        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
+
         // Generate unique trigger ID
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
         // Use WP_HTML_Tag_Processor to modify the anchor tag
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        // Build context data
+        $context = [
+            'postId'  => $content_id,
+            'modalId' => $content_type . '-' . $content_id,
+        ];
+
+        if ( ! empty( $modal_size ) ) {
+            $context['size'] = $modal_size;
+        }
+
+        if ( ! empty( $template_part ) ) {
+            $context['templatePart'] = $template_part;
+        }
+
+        // Find the anchor tag (button link)
+        if ( $processor->next_tag( 'a' ) ) {
+            $processor->set_attribute( 'id', $trigger_id );
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute(
+                'data-wp-context',
+                wp_json_encode( $context )
+            );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
+            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
+            $processor->set_attribute( 'aria-haspopup', 'dialog' );
+            $processor->set_attribute( 'aria-expanded', 'false' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            $processor->add_class( 'has-pikari-modal' );
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Handle button block with inline content source.
+     *
+     * When the button is configured to show inline page content (Modal Content block),
+     * we set up the trigger to reference the inline content anchor instead of a URL.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @param string $inline_anchor The anchor of the Modal Content block.
+     * @param string $template_part Template part slug (empty for default 'modal').
+     * @return string Modified block content.
+     */
+    private function filter_button_block_inline( string $block_content, array $block, string $inline_anchor, string $template_part = '' ): string
+    {
+        if ( empty( $inline_anchor ) ) {
+            return $block_content;
+        }
+
+        // Mark that we have modal triggers on this page
+        $slug = ! empty( $template_part ) ? $template_part : 'modal';
+        self::set_has_modal_triggers( $slug );
+
+        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
+        $trigger_id = 'modal-trigger-' . wp_unique_id();
+
+        // Build context data for inline content
+        $context = [
+            'contentSource' => 'inline',
+            'inlineAnchor'  => $inline_anchor,
+            'modalId'       => 'inline-' . $inline_anchor,
+        ];
+
+        if ( ! empty( $modal_size ) ) {
+            $context['size'] = $modal_size;
+        }
+
+        if ( ! empty( $template_part ) ) {
+            $context['templatePart'] = $template_part;
+        }
+
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
         // Find the anchor tag (button link)
@@ -216,19 +330,13 @@ class BlockSupport
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
                 'data-wp-context',
-                wp_json_encode(
-                    [
-                        'postId'  => $content_id,
-                        'modalId' => $content_type . '-' . $content_id,
-                    ]
-                )
+                wp_json_encode( $context )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
-            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isOpen' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            $processor->set_attribute( 'href', '#' . $inline_anchor );
             $processor->add_class( 'has-pikari-modal' );
         }
 
@@ -254,17 +362,25 @@ class BlockSupport
             return $full_tag;
         }
 
-        // Register post ID for speculative loading (prefetch)
+        // Register post ID for speculative loading (prefetch) — skip for inline content
         $content_id = $modal_config['content_id'];
-        if ( is_numeric( $content_id ) ) {
+        if ( $modal_config['content_type'] !== 'inline' && is_numeric( $content_id ) ) {
             SpeculativeLoading::register_modal_post_id( (int) $content_id );
+        }
+
+        // Register template part slug for container rendering
+        $template_part = $modal_config['template_part'] ?? '';
+        if ( ! empty( $template_part ) ) {
+            self::set_has_modal_triggers( $template_part );
         }
 
         // Return interactive trigger link with content data
         return $this->create_trigger_link(
             $modal_config['content_type'],
             $modal_config['content_id'],
-            $inner_html
+            $inner_html,
+            $modal_config['size'] ?? '',
+            $template_part
         );
     }
 
@@ -289,10 +405,20 @@ class BlockSupport
         // Decode JSON link data (handles HTML entities)
         $link_data = json_decode(html_entity_decode($link_match[1]), true) ?: [];
 
+        // Extract optional size attribute
+        preg_match('/data-modal-size="([^"]*)"/', $tag_html, $size_match);
+        $size = $size_match[1] ?? '';
+
+        // Extract optional template part attribute
+        preg_match('/data-modal-template-part="([^"]*)"/', $tag_html, $template_match);
+        $template_part = $template_match[1] ?? '';
+
         return [
-            'link_data' => $link_data,
-            'content_type' => $type_match[1],
-            'content_id' => $id_match[1],
+            'link_data'     => $link_data,
+            'content_type'  => $type_match[1],
+            'content_id'    => $id_match[1],
+            'size'          => $size,
+            'template_part' => $template_part,
         ];
     }
 
@@ -304,15 +430,50 @@ class BlockSupport
      * - Without JS: Navigates to the actual content
      * - Enables native browser prefetching via Speculation Rules API
      *
-     * @param string $content_type Content type (post/page/url)
-     * @param string $content_id Content ID or URL
-     * @param string $inner_html Original span content
+     * @param string $content_type  Content type (post/page/url)
+     * @param string $content_id   Content ID or URL
+     * @param string $inner_html   Original span content
+     * @param string $size         Modal size (small/large/fullscreen, empty for default)
+     * @param string $template_part Template part slug (empty for default 'modal')
      * @return string Trigger anchor HTML
      */
-    private function create_trigger_link( string $content_type, string $content_id, string $inner_html ): string
+    private function create_trigger_link( string $content_type, string $content_id, string $inner_html, string $size = '', string $template_part = '' ): string
     {
         // Generate unique ID for focus management
         $trigger_id = 'modal-trigger-' . wp_unique_id();
+
+        // Handle inline content (Modal Content block on the page)
+        if ( $content_type === 'inline' ) {
+            $context = [
+                'contentSource' => 'inline',
+                'inlineAnchor'  => $content_id,
+                'modalId'       => 'inline-' . $content_id,
+            ];
+
+            if ( ! empty( $size ) ) {
+                $context['size'] = $size;
+            }
+
+            if ( ! empty( $template_part ) ) {
+                $context['templatePart'] = $template_part;
+            }
+
+            return sprintf(
+                '<a
+                    id="%s"
+                    href="%s"
+                    class="has-modal-link modal-link-trigger"
+                    data-wp-interactive="pikari-modal"
+                    data-wp-context=\'%s\'
+                    data-wp-on--click="actions.handleTriggerClick"
+                    aria-haspopup="dialog"
+                >%s</a>',
+                esc_attr( $trigger_id ),
+                esc_attr( '#' . $content_id ),
+                wp_json_encode( $context ),
+                $inner_html
+            );
+        }
 
         // Determine the href based on content type
         if ( $content_type === 'url' ) {
@@ -327,13 +488,27 @@ class BlockSupport
             }
         }
 
+        // Build context data
+        $context = [
+            'postId'  => $content_id,
+            'modalId' => $content_type . '-' . $content_id,
+        ];
+
+        if ( ! empty( $size ) ) {
+            $context['size'] = $size;
+        }
+
+        if ( ! empty( $template_part ) ) {
+            $context['templatePart'] = $template_part;
+        }
+
         return sprintf(
             '<a
                 id="%s"
                 href="%s"
                 class="has-modal-link modal-link-trigger"
                 data-wp-interactive="pikari-modal"
-                data-wp-context=\'{"postId":"%s","modalId":"%s"}\'
+                data-wp-context=\'%s\'
                 data-wp-on--click="actions.handleTriggerClick"
                 data-wp-on--mouseenter="actions.handlePrefetchHover"
                 data-wp-on--mouseleave="actions.handlePrefetchLeave"
@@ -341,115 +516,9 @@ class BlockSupport
             >%s</a>',
             esc_attr( $trigger_id ),
             esc_url( $href ),
-            esc_attr( $content_id ),
-            esc_attr( $content_type . '-' . $content_id ),
+            wp_json_encode( $context ),
             $inner_html
         );
-    }
-
-
-    /**
-     * Get modal content based on type and ID.
-     *
-     * Handles three scenarios:
-     * 1. External URLs - Rendered in an iframe
-     * 2. WordPress posts/pages - Full content with title
-     * 3. Invalid content - Returns null with error logging
-     *
-     * @param string $content_type The content type (url/post/page/custom)
-     * @param string $content_id The content ID (post ID) or URL
-     * @return string|null The content HTML or null on failure
-     */
-    private function get_modal_content( string $content_type, string $content_id ): ?string
-    {
-        // Handle external URLs
-        if ( $content_type === 'url' ) {
-            return $this->get_url_content($content_id);
-        }
-
-        // Handle WordPress content (posts, pages, custom post types)
-        return $this->get_post_content($content_id);
-    }
-
-    /**
-     * Get content for external URLs.
-     *
-     * @param string $url The external URL
-     * @return string Iframe HTML
-     */
-    private function get_url_content( string $url ): string
-    {
-        // Validate URL
-        if ( ! filter_var($url, FILTER_VALIDATE_URL) ) {
-            error_log('Pikari Gutenberg Modals: Invalid URL provided: ' . $url);
-            return '<p>' . esc_html__('Invalid URL provided.', 'pikari-gutenberg-modals') . '</p>';
-        }
-
-        /**
-         * Filter to customize URL modal content.
-         *
-         * @param string $content The default iframe HTML
-         * @param string $url The URL being displayed
-         */
-        $content = sprintf(
-            '<iframe src="%s" style="width: 100%%; height: 80vh; border: none;" title="%s"></iframe>',
-            esc_url($url),
-            esc_attr__('External content', 'pikari-gutenberg-modals')
-        );
-
-        return apply_filters('pikari_gutenberg_modals_url_content', $content, $url);
-    }
-
-    /**
-     * Get content for WordPress posts.
-     *
-     * @param string $post_id The post ID
-     * @return string|null Post content HTML or null if not found
-     */
-    private function get_post_content( string $post_id ): ?string
-    {
-        // Get the post
-        $post = get_post( (int) $post_id);
-
-        if ( ! $post || $post->post_status !== 'publish' ) {
-            error_log('Pikari Gutenberg Modals: Post not found or not published: ' . $post_id);
-            return null;
-        }
-
-        // Get content with captured styles
-        $content_with_styles = $this->get_post_content_with_styles($post);
-
-        // Build CSS classes for the article element
-        $article_classes = array(
-            'modal-entry',
-            'type-' . $post->post_type,
-            'post-' . $post->ID,
-        );
-
-        // Build the complete modal content
-        $modal_content = sprintf(
-            '<article class="%s">
-                <header class="modal-entry-header">
-                    <h2>%s</h2>
-                </header>
-                <div class="modal-entry-content">
-                    %s
-                    %s
-                </div>
-            </article>',
-            esc_attr(implode(' ', $article_classes)),
-            esc_html(get_the_title($post)),
-            $content_with_styles['styles'], // Include captured styles
-            $content_with_styles['content']
-        );
-
-        /**
-         * Filter the modal post content.
-         *
-         * @param string $modal_content The complete modal content HTML
-         * @param WP_Post $post The post object
-         */
-        return apply_filters('pikari_gutenberg_modals_post_content', $modal_content, $post);
     }
 
     /**
@@ -674,9 +743,12 @@ class BlockSupport
         ];
     }
     /**
-     * Render a single modal container in the footer.
+     * Render modal containers in the footer.
      *
-     * This container will be populated dynamically via AJAX when triggers are clicked.
+     * Renders one container per unique template part slug used by triggers
+     * on this page. Each container is a separate modal overlay that can
+     * have its own dialog chrome and overlay styling.
+     *
      * Only renders if modal triggers were found during block rendering.
      */
     public function render_single_modal_container(): void
@@ -685,9 +757,44 @@ class BlockSupport
         if ( ! self::$has_modal_triggers ) {
             return;
         }
+
+        // Always render the default container as a fallback.
+        // If a trigger references a deleted template part, the JS store
+        // will fall back to this container so the modal still works.
+        if ( ! in_array( 'modal', self::$modal_template_slugs, true ) ) {
+            array_unshift( self::$modal_template_slugs, 'modal' );
+        }
+
+        foreach ( self::$modal_template_slugs as $slug ) {
+            $this->render_modal_container( $slug );
+        }
+    }
+
+    /**
+     * Render a single modal container for a given template part slug.
+     *
+     * The outer structural wrapper handles overlay positioning, ARIA, and
+     * Interactivity API scope. The inner content (modal-dialog block) owns
+     * the dialog chrome and overlay appearance.
+     *
+     * @param string $slug Template part slug.
+     */
+    private function render_modal_container( string $slug ): void
+    {
+        $inner_content = ModalTemplatePart::render( $slug );
+
+        // Skip non-default containers whose template part was deleted.
+        // The JS store will fall back to the default container instead.
+        if ( 'modal' !== $slug && empty( trim( $inner_content ) ) ) {
+            return;
+        }
+
+        $container_id = ( 'modal' === $slug ) ? 'pikari-modal' : 'pikari-modal--' . $slug;
+        $title_id     = 'modal-title--' . $slug;
+        $content_id   = 'modal-content--' . $slug;
         ?>
         <div
-            id="pikari-modal"
+            id="<?php echo esc_attr( $container_id ); ?>"
             class="modal-overlay"
             data-wp-interactive="pikari-modal"
             data-wp-on--click="actions.closeModalOnBackdrop"
@@ -695,52 +802,14 @@ class BlockSupport
             style="display: none;"
             role="dialog"
             aria-modal="true"
-            aria-labelledby="modal-title"
-            aria-describedby="modal-content"
+            aria-label="<?php esc_attr_e( 'Modal dialog', 'pikari-gutenberg-modals' ); ?>"
+            aria-labelledby="<?php echo esc_attr( $title_id ); ?>"
+            aria-describedby="<?php echo esc_attr( $content_id ); ?>"
         >
-            <div class="modal-content" data-wp-on--click="actions.stopPropagation">
-                <button
-                    class="modal-close"
-                    data-wp-on--click="actions.closeModal"
-                    aria-label="<?php esc_attr_e('Close modal', 'pikari-gutenberg-modals'); ?>"
-                >
-                    <span aria-hidden="true">&times;</span>
-                </button>
-
-                <!-- Screen reader announcements - always in DOM -->
-                <div class="sr-only" aria-live="polite" aria-atomic="true">
-                    <span data-wp-text="state.loading ? '<?php echo esc_js(__('Loading content...', 'pikari-gutenberg-modals')); ?>' : ''"></span>
-                </div>
-                <div class="sr-only" role="status" aria-live="assertive" aria-atomic="true">
-                    <span data-wp-text="state.hasError ? state.errorMessage : ''"></span>
-                </div>
-
-                <!-- Loading state (visual) -->
-                <div
-                    class="modal-loading"
-                    data-wp-class--hidden="!state.loading"
-                    aria-hidden="true"
-                >
-                    <div class="loading-spinner"></div>
-                    <p><?php esc_html_e('Loading...', 'pikari-gutenberg-modals'); ?></p>
-                </div>
-
-                <!-- Error state (visual) -->
-                <div
-                    class="modal-error"
-                    data-wp-class--hidden="!state.hasError"
-                    aria-hidden="true"
-                >
-                    <p data-wp-text="state.errorMessage"></p>
-                </div>
-
-                <!-- Content - innerHTML set directly via JS since data-wp-html doesn't exist -->
-                <div
-                    id="modal-content"
-                    class="modal-body"
-                    data-wp-class--hidden="state.loading || state.hasError"
-                ></div>
-            </div>
+        <?php
+        // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Template part content is processed by do_blocks().
+        echo $inner_content;
+        ?>
         </div>
         <?php
     }

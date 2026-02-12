@@ -1,0 +1,63 @@
+/*
+ * Close Button Block - Shared styles (editor + frontend).
+ *
+ * Base visual appearance. Block supports (color, border, padding)
+ * override these defaults via inline styles.
+ */
+.wp-block-pikari-gutenberg-modals-close-button {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: 1px solid #e5e7eb;
+	background-color: transparent;
+	color: #1e1e1e;
+	font-size: 36px;
+	line-height: 1;
+	cursor: pointer;
+	padding: 0;
+}
+.wp-block-pikari-gutenberg-modals-close-button span {
+	display: block;
+	line-height: 1;
+}
+
+/* Alignment */
+.wp-block-pikari-gutenberg-modals-close-button.alignright {
+	align-self: flex-end;
+	margin-left: auto;
+	margin-right: 0;
+}
+.wp-block-pikari-gutenberg-modals-close-button.aligncenter {
+	align-self: center;
+	margin-left: auto;
+	margin-right: auto;
+}
+.wp-block-pikari-gutenberg-modals-close-button.alignleft {
+	align-self: flex-start;
+	margin-left: 0;
+	margin-right: auto;
+}
+
+/* Modal context - z-index, transitions, hover/focus effects */
+.modal-close {
+	z-index: 10;
+	transition: var(--modal-transition, all 0.2s ease);
+}
+.modal-close:hover {
+	filter: brightness(0.92);
+	transform: scale(1.1);
+}
+.modal-close:focus {
+	outline: 2px solid var(--modal-focus-color, #3b82f6);
+	outline-offset: 2px;
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	.modal-close {
+		transition: none;
+	}
+}

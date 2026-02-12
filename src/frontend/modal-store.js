@@ -20,6 +20,22 @@ import { loadBlockStyles } from './block-style-loader';
 // Prefetch delay in milliseconds - filters out accidental mouse movements
 const PREFETCH_DELAY_MS = 200;
 
+// Module-scope DOM reference for the active modal container.
+// DOM refs should not live in reactive state.
+let activeContainer = null;
+let closeTimeoutId = null;
+
+/**
+ * Resolve the modal container element for a given template part slug.
+ *
+ * @param {string} slug - Template part slug (default: 'modal')
+ * @return {HTMLElement|null} The container element
+ */
+function getContainerElement( slug ) {
+	const id = slug === 'modal' ? 'pikari-modal' : `pikari-modal--${ slug }`;
+	return document.getElementById( id );
+}
+
 const { state, actions } = store( 'pikari-modal', {
 	state: {
 		isOpen: false,
@@ -31,6 +47,19 @@ const { state, actions } = store( 'pikari-modal', {
 		activeModalId: null, // Tracks which modal is open for aria-expanded binding
 		hasAnimated: false,
 		prefetchedPosts: {}, // Tracks prefetch status: { [postId]: 'pending' | 'complete' }
+
+		/**
+		 * Derived state: whether this specific trigger's modal is currently open.
+		 * Used for aria-expanded binding so only the active trigger shows expanded.
+		 */
+		get isExpanded() {
+			const context = getContext();
+			const contextModalId =
+				context.contentSource === 'inline'
+					? `inline-${ context.inlineAnchor }`
+					: context.modalId;
+			return state.activeModalId === contextModalId;
+		},
 	},
 
 	actions: {
@@ -43,40 +72,150 @@ const { state, actions } = store( 'pikari-modal', {
 		 */
 		*openModal() {
 			const context = getContext();
-			const { postId, modalId } = context;
+			const {
+				postId,
+				modalId,
+				size,
+				contentSource,
+				inlineAnchor,
+				templatePart,
+			} = context;
 
-			if ( ! postId || ! modalId ) {
+			// Validate required context based on content source
+			const isInline = contentSource === 'inline';
+
+			if ( isInline && ! inlineAnchor ) {
+				// eslint-disable-next-line no-console
+				console.error( 'Missing inlineAnchor in context for inline content' );
+				return;
+			}
+
+			if ( ! isInline && ( ! postId || ! modalId ) ) {
 				// eslint-disable-next-line no-console
 				console.error( 'Missing postId or modalId in context' );
 				return;
 			}
 
+			const activeModalId = isInline ? `inline-${ inlineAnchor }` : modalId;
+			const slug = templatePart || 'modal';
+
+			// Cancel any pending close animation from a previous modal
+			if ( closeTimeoutId ) {
+				clearTimeout( closeTimeoutId );
+				closeTimeoutId = null;
+
+				// Clean up accessibility state from the previous modal
+				removeFocusTrap();
+				if ( activeContainer ) {
+					setBackgroundInert( false, activeContainer );
+				}
+
+				// Immediately finish closing the previous container
+				if ( activeContainer ) {
+					activeContainer.style.display = 'none';
+					activeContainer.classList.remove( 'is-closing' );
+					activeContainer.removeAttribute( 'data-size' );
+					const prevBody = activeContainer.querySelector( '.modal-body' );
+					if ( prevBody ) {
+						prevBody.removeAttribute( 'id' );
+						prevBody.innerHTML = '';
+					}
+				}
+			}
+
+			// Resolve the container for this trigger's template part.
+			// Falls back to the default container if a custom template part
+			// was deleted — ensures the modal always works.
+			let modal = getContainerElement( slug );
+			if ( ! modal && slug !== 'modal' ) {
+				// eslint-disable-next-line no-console
+				console.warn( `Modal container not found for template part "${ slug }", falling back to default.` );
+				modal = getContainerElement( 'modal' );
+			}
+			if ( ! modal ) {
+				// eslint-disable-next-line no-console
+				console.error( 'Modal container not found.' );
+				return;
+			}
+			activeContainer = modal;
+
 			// Store the trigger element for focus management
 			// eslint-disable-next-line @wordpress/no-global-active-element
 			state.activeTriggerId = document.activeElement?.id || null;
 
-			// Set loading state
-			state.loading = true;
+			// Set initial state
 			state.isOpen = true;
-			state.activeModalId = modalId; // Track which modal is open for aria-expanded
+			state.activeModalId = activeModalId;
 			state.hasError = false;
 			state.errorMessage = '';
-			state.hasAnimated = false; // Start with entering animation
+			state.hasAnimated = false;
 
 			// Show modal and trigger enter animation
-			const modal = document.getElementById( 'pikari-modal' );
-			if ( modal ) {
-				modal.style.display = 'flex';
-				modal.classList.add( 'is-open' );
-				modal.classList.remove( 'is-closing' );
+			modal.style.display = 'flex';
+			modal.classList.add( 'is-open' );
+			modal.classList.remove( 'is-closing' );
 
-				// Set up accessibility features
-				setupFocusTrap( modal );
-				setBackgroundInert( true );
+			// Apply size from trigger context
+			if ( size ) {
+				modal.setAttribute( 'data-size', size );
+			} else {
+				modal.removeAttribute( 'data-size' );
 			}
+
+			// Set up accessibility features
+			setupFocusTrap( modal );
+			setBackgroundInert( true, modal );
 
 			// Prevent body scroll when modal is open
 			document.body.style.overflow = 'hidden';
+
+			// Set dynamic ARIA IDs scoped to this container's slug
+			const modalBody = modal.querySelector( '.modal-body' );
+			if ( modalBody ) {
+				modalBody.id = `modal-content--${ slug }`;
+			}
+
+			if ( isInline ) {
+				// Inline content: clone from hidden element on the page (no REST API call)
+				const sourceElement = document.querySelector(
+					`[data-modal-inline-content="${ inlineAnchor }"]`
+				);
+
+				if ( sourceElement ) {
+					if ( modalBody ) {
+						const titleText = sourceElement.getAttribute( 'data-modal-inline-title' ) || '';
+						const htmlContent = `
+							<article class="modal-entry">
+								<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( titleText ) }</h2>
+								<div class="modal-entry-content is-layout-constrained">
+									${ sourceElement.innerHTML }
+								</div>
+							</article>
+						`;
+						modalBody.innerHTML = htmlContent;
+					}
+					state.content = sourceElement.innerHTML;
+				} else {
+					state.hasError = true;
+					state.errorMessage = 'Inline modal content not found on this page.';
+					state.content = '';
+				}
+
+				state.loading = false;
+
+				// Focus first focusable element
+				// eslint-disable-next-line no-undef
+				requestAnimationFrame( () => {
+					if ( activeContainer ) {
+						focusFirstElement( activeContainer );
+					}
+				} );
+
+				return;
+			}
+
+			// Remote content: fetch via REST API
+			state.loading = true;
 
 			try {
 				// Yield the fetch promise - Interactivity API will handle awaiting
@@ -104,10 +243,8 @@ const { state, actions } = store( 'pikari-modal', {
 					const htmlContent = `
 						${ data.styles ? `<style>${ data.styles }</style>` : '' }
 						<article class="modal-entry type-${ escapeAttribute( String( data.type ) ) } post-${ escapeAttribute( String( data.id ) ) }">
-							<header class="modal-entry-header sr-only">
-								<h2 id="modal-title">${ escapeHTML( data.title ) }</h2>
-							</header>
-							<div class="modal-entry-content">
+							<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( data.title ) }</h2>
+							<div class="modal-entry-content is-layout-constrained">
 								${ data.content }
 							</div>
 						</article>
@@ -115,7 +252,6 @@ const { state, actions } = store( 'pikari-modal', {
 
 					// Directly set innerHTML since data-wp-html directive doesn't exist
 					// in the WordPress Interactivity API
-					const modalBody = document.getElementById( 'modal-content' );
 					if ( modalBody ) {
 						modalBody.innerHTML = htmlContent;
 					}
@@ -135,9 +271,8 @@ const { state, actions } = store( 'pikari-modal', {
 				// Focus first focusable element after content loads
 				// eslint-disable-next-line no-undef
 				requestAnimationFrame( () => {
-					const modalElement = document.getElementById( 'pikari-modal' );
-					if ( modalElement ) {
-						focusFirstElement( modalElement );
+					if ( activeContainer ) {
+						focusFirstElement( activeContainer );
 					}
 				} );
 			}
@@ -149,31 +284,39 @@ const { state, actions } = store( 'pikari-modal', {
 
 			// Remove accessibility features
 			removeFocusTrap();
-			setBackgroundInert( false );
+			if ( activeContainer ) {
+				setBackgroundInert( false, activeContainer );
+			}
 
 			// Trigger exit animation
-			const modal = document.getElementById( 'pikari-modal' );
+			const modal = activeContainer;
 			if ( modal ) {
 				modal.classList.remove( 'is-open' );
 				modal.classList.add( 'is-closing' );
 			}
 
 			// Delay hiding and content clearing to allow exit animation
-			setTimeout( () => {
+			closeTimeoutId = setTimeout( () => {
+				closeTimeoutId = null;
 				if ( modal ) {
 					modal.style.display = 'none';
 					modal.classList.remove( 'is-closing' );
+					modal.removeAttribute( 'data-size' );
 				}
 				state.content = '';
 				// Clear innerHTML directly since data-wp-html doesn't exist
-				const modalBody = document.getElementById( 'modal-content' );
-				if ( modalBody ) {
-					modalBody.innerHTML = '';
+				if ( modal ) {
+					const modalBody = modal.querySelector( '.modal-body' );
+					if ( modalBody ) {
+						modalBody.removeAttribute( 'id' );
+						modalBody.innerHTML = '';
+					}
 				}
 				state.loading = false;
 				state.hasError = false;
 				state.errorMessage = '';
 				state.hasAnimated = false;
+				activeContainer = null;
 			}, 200 ); // Match the leave animation duration
 
 			// Restore body scroll
@@ -250,7 +393,12 @@ const { state, actions } = store( 'pikari-modal', {
 		 */
 		*prefetchModal() {
 			const context = getContext();
-			const { postId, modalId } = context;
+			const { postId, modalId, contentSource } = context;
+
+			// Skip prefetch for inline content (already on the page)
+			if ( contentSource === 'inline' ) {
+				return;
+			}
 
 			// Skip if no postId or already prefetched/prefetching
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {

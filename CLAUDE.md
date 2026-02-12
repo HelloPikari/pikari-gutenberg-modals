@@ -119,10 +119,19 @@ pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: H
 pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs
 pikari_gutenberg_modals_blocked_domains        // Domain blocklist for external URLs
 
+// Editor
+pikari_gutenberg_modals_modal_sizes            // Add/modify modal size options in the editor dropdown
+
 // Prefetch
 pikari_gutenberg_modals_enable_prefetch_hints  // Enable auto <link rel="prefetch"> (default: false)
 pikari_gutenberg_modals_prefetch_urls          // Modify prefetch URL list
 ```
+
+## Documentation Rule
+
+When adding developer-facing customization points (PHP filters, CSS custom properties, JS hooks, etc.), always document them in **both** `CLAUDE.md` (Custom Hooks & Filters section) **and** the plugin's `readme.txt` (Developer section). This ensures developers can discover customizations through both the code reference and the plugin readme.
+
+`readme.txt` and `README.md` must be kept in sync — they contain the same content in WordPress readme format and GitHub markdown format respectively. When updating one, always update the other.
 
 ## Coding Standards
 
@@ -175,6 +184,7 @@ See monorepo `CLAUDE.md` for full command list, git workflow, branching strategy
 - Commit format: `type: Brief description` (types: feat, fix, docs, style, refactor, test, chore)
 - **Do NOT include `Co-Authored-By` lines or "Generated with Claude Code" in commits**
 - Pre-commit hooks: Husky + lint-staged auto-lint staged files and sync lock files
+- **Commit regularly:** When the user confirms changes are working and moves on to the next task, proactively suggest committing the current changes before starting new work
 
 ## Project Structure
 
