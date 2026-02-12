@@ -109,6 +109,15 @@ jobs:
           echo "Running composer audit..."
           composer audit --no-dev
 
+      - name: Validate block registration paths
+        run: |
+          echo "Checking for register_block_type calls using src/ paths..."
+          if grep -rn "register_block_type.*src/" --include="*.php" .; then
+            echo "::error::Found register_block_type() using src/ paths. Use build/blocks/ instead — src/ is excluded from distribution ZIPs."
+            exit 1
+          fi
+          echo "All block registration paths are correct"
+
   build:
     name: Build
     runs-on: ubuntu-latest
