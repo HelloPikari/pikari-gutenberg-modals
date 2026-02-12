@@ -1,6 +1,6 @@
 # Pikari Gutenberg Modals
 
-Beautiful modal windows for the WordPress block editor. Create engaging content with smooth animations and accessible modal dialogs.
+Accessible modal dialogs for the WordPress block editor. Display posts, pages, and external content in overlays triggered by inline links, buttons, or clickable cards.
 
 [![WordPress](https://img.shields.io/badge/WordPress-6.8%2B-blue.svg)](https://wordpress.org/)
 [![PHP](https://img.shields.io/badge/PHP-8.2%2B-purple.svg)](https://php.net/)
@@ -8,114 +8,74 @@ Beautiful modal windows for the WordPress block editor. Create engaging content 
 
 ## Description
 
-Create beautiful, accessible modal windows with this comprehensive WordPress Gutenberg block plugin. Perfect for showcasing content, images, forms, and improving user engagement.
+Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom post types, or external URLs) loads in overlays. Triggers are real links that work without JavaScript (progressive enhancement).
 
-### Key Features
+### Trigger Types
 
-- **Full Accessibility Support** - Complete ARIA attributes, keyboard navigation, and semantic HTML
-- **Smooth Animations** - Elegant CSS transitions for modal open/close effects
-- **WordPress Interactivity API** - Built on WordPress core Interactivity API for optimal performance
-- **WordPress Integration** - Full support for core layout features (spacing, colors, borders)
-- **Block Editor Native** - Seamlessly integrates with Gutenberg block editor
-- **Progressive Enhancement** - Works with JavaScript disabled (fallback behavior)
-- **Responsive Design** - Mobile-friendly modal windows
+- **Inline Modal Links** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+- **Button Block Modals** — Toggle "Open in Modal" on any core Button block
+- **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, auto-detecting the primary link inside
 
-### Perfect for
+### Features
 
-- Image galleries and lightboxes
-- Contact forms and lead generation
-- Product showcases
-- Video content
-- Call-to-action overlays
-- Any popup content needs
+- **Accessibility** — ARIA attributes, focus trapping, keyboard navigation (Escape to close, Tab cycling), screen reader support, inert background
+- **Template Part Customization** — Customize the modal dialog layout via the Site Editor template part system
+- **Multiple Modal Templates** — Create different modal designs and assign them per trigger
+- **Overlay Styling** — Solid colors, gradients, or images with alpha transparency
+- **Dialog Styling** — Background, border, padding, and box shadow via block supports
+- **Four Sizes** — Default, Small, Large, Fullscreen (extendable via filter)
+- **Hover Prefetch** — 200ms debounced prefetch warms the browser cache before click
+- **Dynamic Block Styles** — Loads stylesheets for blocks inside modal content on demand
+- **HTTP Caching** — REST API responses include ETag, Last-Modified, and Cache-Control headers
+- **Built on the Interactivity API** — Uses WordPress core Interactivity API for state management
+
+### Theme Support
+
+- **Block themes** — Full Site Editor template part support
+- **Hybrid themes** — Automatic fallback rendering via `do_blocks()`
 
 ## Installation
 
-1. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
-2. Activate the plugin through the 'Plugins' screen in WordPress
-3. In the block editor, add the "Modal" block
-4. Add content inside the Modal block
-5. Customize settings in the block inspector
+1. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
+2. Activate through the Plugins screen
+3. Use any of the three trigger types in the block editor
+
+### Block Themes
+
+The plugin registers a "Modal" template part area. Customize in **Appearance → Editor → Patterns → Template Parts → Modal**. Create additional template parts in the "Modal" area for different designs.
+
+### Hybrid Themes
+
+Modals work automatically with the plugin's default template. To customize:
+
+1. Create `parts/modal.html` in your theme directory with block markup
+2. For additional templates, use `parts/modal-{slug}.html` (e.g., `parts/modal-compact.html`)
+3. Or use the `pikari_gutenberg_modals_fallback_template` filter
+
+### Composer
+
+```bash
+composer require pikari-inc/pikari-gutenberg-modals
+```
 
 ## Development
 
-### Setup Development Environment
-
 ```bash
-# Install dependencies
-npm install
-composer install
-
-# Run development build
-npm start
-
-# Run tests
-npm test
+npm install && composer install   # Install dependencies
+npm start                         # Dev build with file watching
+npm run build                     # Production build
+npm run lint:all                  # Run all linters
+npm run lint:fix                  # Auto-fix lint issues
+npm test                          # Run tests
 ```
-
-### Available Scripts
-
-- `npm run lint:all` - Run all linters
-- `npm run lint:fix` - Fix all auto-fixable issues
-- `npm run build` - Create production build
-- `npm test` - Run tests
-
-## Frequently Asked Questions
-
-### Is this plugin fully accessible?
-
-Yes! We follow WCAG guidelines with proper ARIA attributes, keyboard navigation support, and semantic HTML structure. The plugin is compatible with screen readers and other assistive technologies.
-
-### Does it work with my theme?
-
-Yes! The plugin uses WordPress core layout features and follows coding standards for broad theme compatibility. It respects your theme's typography and color schemes.
-
-### What is the WordPress Interactivity API?
-
-The WordPress Interactivity API is a new framework introduced in WordPress 6.8 that provides a standard way to add interactive behavior to blocks. Our plugin uses this API for optimal performance and compatibility.
-
-### Does it work without JavaScript?
-
-Yes! The plugin uses progressive enhancement, so it will provide fallback behavior when JavaScript is disabled, ensuring content remains accessible.
-
-### Can I customize the modal appearance?
-
-Yes! The plugin respects WordPress core layout features including spacing, colors, and borders. You can customize the appearance through the block inspector.
 
 ## Developer Filters
-
-The plugin provides several filters for developers to customize behavior:
-
-### Cache & Performance
-
-#### `pikari_gutenberg_modals_cache_duration`
-
-Customize the browser cache duration for modal content REST API responses.
-
-```php
-add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
-    return 2 * HOUR_IN_SECONDS; // Cache for 2 hours instead of 1
-} );
-```
-
-Default: `HOUR_IN_SECONDS` (3600 seconds)
-
-#### `pikari_gutenberg_modals_prefetch_urls`
-
-Modify the REST API URLs to prefetch for modal content.
-
-```php
-add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
-    // Add additional URLs or filter existing ones
-    return $urls;
-}, 10, 2 );
-```
 
 ### Content & Display
 
 #### `pikari_gutenberg_modals_supported_blocks`
 
-Customize which block types support the modal link format.
+Customize which block types support the inline modal link format.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_supported_blocks', function( $blocks ) {
@@ -137,24 +97,37 @@ add_filter( 'pikari_gutenberg_modals_content_response', function( $response_data
 }, 10, 2 );
 ```
 
-#### `pikari_gutenberg_modals_post_content`
+### Cache & Performance
 
-Filter the rendered post content before it's returned in the modal.
+#### `pikari_gutenberg_modals_cache_duration`
+
+Customize the browser cache duration for modal content REST API responses.
 
 ```php
-add_filter( 'pikari_gutenberg_modals_post_content', function( $content, $post ) {
-    return $content . '<p>Additional content</p>';
-}, 10, 2 );
+add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
+    return 2 * HOUR_IN_SECONDS;
+} );
 ```
 
-#### `pikari_gutenberg_modals_url_content`
+Default: `HOUR_IN_SECONDS` (3600 seconds)
 
-Filter content loaded from external URLs.
+#### `pikari_gutenberg_modals_enable_prefetch_hints`
+
+Enable automatic `<link rel="prefetch">` resource hints for modal content URLs detected on the page.
 
 ```php
-add_filter( 'pikari_gutenberg_modals_url_content', function( $content, $url ) {
-    // Modify external URL content
-    return $content;
+add_filter( 'pikari_gutenberg_modals_enable_prefetch_hints', '__return_true' );
+```
+
+Default: `false` (hover-based prefetch still works regardless)
+
+#### `pikari_gutenberg_modals_prefetch_urls`
+
+Modify the REST API URLs included in prefetch resource hints.
+
+```php
+add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
+    return $urls;
 }, 10, 2 );
 ```
 
@@ -162,11 +135,11 @@ add_filter( 'pikari_gutenberg_modals_url_content', function( $content, $url ) {
 
 #### `pikari_gutenberg_modals_search_args`
 
-Modify the WP_Query arguments for the modal content search endpoint.
+Modify the WP_Query arguments for the editor search endpoint.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term ) {
-    $args['post_type'] = array( 'post', 'page' ); // Limit to specific post types
+    $args['post_type'] = array( 'post', 'page' );
     return $args;
 }, 10, 2 );
 ```
@@ -175,7 +148,7 @@ add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term
 
 #### `pikari_gutenberg_modals_modal_sizes`
 
-Add or modify the modal size options available in the editor dropdown. Each entry needs a `label` (display text) and `value` (slug used as the `data-size` attribute). Custom sizes require matching CSS.
+Add or modify modal size options. Each entry needs a `label` and `value` (slug used as the `data-size` attribute). Custom sizes require matching CSS.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_modal_sizes', function( $sizes ) {
@@ -186,8 +159,6 @@ add_filter( 'pikari_gutenberg_modals_modal_sizes', function( $sizes ) {
     return $sizes;
 } );
 ```
-
-Then add the CSS for your custom size:
 
 ```css
 .modal-overlay[data-size='medium'] .modal-content {
@@ -201,7 +172,7 @@ Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 
 #### `pikari_gutenberg_modals_allowed_domains`
 
-Specify domains allowed for external URL content (allowlist).
+Allowlist for external URL content. When set, only these domains are permitted.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_allowed_domains', function( $domains ) {
@@ -211,7 +182,7 @@ add_filter( 'pikari_gutenberg_modals_allowed_domains', function( $domains ) {
 
 #### `pikari_gutenberg_modals_blocked_domains`
 
-Specify domains blocked from external URL content (blocklist).
+Blocklist for external URL content.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_blocked_domains', function( $domains ) {
@@ -219,17 +190,24 @@ add_filter( 'pikari_gutenberg_modals_blocked_domains', function( $domains ) {
 } );
 ```
 
-#### `pikari_gutenberg_modals_allowed_domains_list`
+### Theme Customization
 
-Filter the final computed allowed domains list.
+#### `pikari_gutenberg_modals_fallback_template`
 
-#### `pikari_gutenberg_modals_blocked_domains_list`
+Override the modal template markup for hybrid themes. Return block markup to bypass the default theme file and plugin template resolution.
 
-Filter the final computed blocked domains list.
+```php
+add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $slug ) {
+    if ( 'compact' === $slug ) {
+        return '<!-- wp:pikari-gutenberg-modals/modal-dialog -->...<!-- /wp:pikari-gutenberg-modals/modal-dialog -->';
+    }
+    return $content;
+}, 10, 2 );
+```
 
 ## CSS Custom Properties
 
-The plugin exposes CSS custom properties on `:root` for easy theming without filters or PHP:
+The plugin exposes CSS custom properties on `:root` for theming:
 
 ```css
 /* Modal appearance */
@@ -248,26 +226,34 @@ The plugin exposes CSS custom properties on `:root` for easy theming without fil
 --modal-transition: all 0.2s ease;
 ```
 
-Override any of these in your theme's CSS to customize the modal appearance.
+Override in your theme's CSS:
 
-## Contributing
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+```css
+:root {
+	--modal-border-radius: 8px;
+	--modal-max-width: 800px;
+	--modal-content-bg: #f9f9f9;
+}
+```
 
 ## Changelog
 
 ### 1.0.0
 
-- Initial release
-- Full modal functionality with accessibility features
-- WordPress Interactivity API integration
-- Smooth animation support
-- Progressive enhancement with JavaScript fallback
-- Block Editor native integration
+- Three trigger types: inline modal links, button block modals, clickable group cards
+- Template part system with per-trigger assignment
+- Overlay styling: solid colors, gradients, images with alpha transparency
+- Dialog styling: background, border, padding, box shadow via block supports
+- Four sizes: Default, Small, Large, Fullscreen
+- Hybrid theme support via `do_blocks()` fallback
+- Theme file overrides (`parts/modal.html`, `parts/modal-{slug}.html`)
+- `pikari_gutenberg_modals_fallback_template` filter
+- Hover prefetch, dynamic block style loading, HTTP caching
+- WCAG accessibility: focus trap, keyboard navigation, ARIA, inert background
+- Progressive enhancement: triggers are real links without JavaScript
+- CSS custom properties for theming
+- Domain allowlist/blocklist for external URLs
+- 12 developer filters
 
 ## License
 
@@ -275,6 +261,4 @@ GPL-2.0-or-later - see [LICENSE](LICENSE) for details.
 
 ## Author
 
-**Pikari Inc.**
-
-- Homepage: <https://pikari.io>
+**Pikari Inc.** — [pikari.io](https://pikari.io)

@@ -783,9 +783,9 @@ class BlockSupport
     {
         $inner_content = ModalTemplatePart::render( $slug );
 
-        // Skip non-default containers whose template part was deleted.
-        // The JS store will fall back to the default container instead.
-        if ( 'modal' !== $slug && empty( trim( $inner_content ) ) ) {
+        // Skip containers with no rendered content (e.g. deleted template part
+        // or missing parts/modal.html). JS store falls back to default container.
+        if ( empty( trim( $inner_content ) ) ) {
             return;
         }
 

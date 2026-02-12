@@ -1,6 +1,8 @@
 const defaultConfig = require( '@wordpress/scripts/config/webpack.config' );
 // eslint-disable-next-line import/no-extraneous-dependencies -- Available via @wordpress/scripts
 const DependencyExtractionWebpackPlugin = require( '@wordpress/dependency-extraction-webpack-plugin' );
+// eslint-disable-next-line import/no-extraneous-dependencies -- Available via @wordpress/scripts
+const CopyWebpackPlugin = require( 'copy-webpack-plugin' );
 const path = require( 'path' );
 
 // When using --experimental-modules, defaultConfig is an array: [scriptConfig, moduleConfig]
@@ -23,6 +25,22 @@ const editorConfig = {
 		...scriptConfig.output,
 		path: path.resolve( __dirname, 'build' ),
 	},
+	// Extend plugins to copy block CSS files (style.css, editor.css) to build/.
+	// The default @wordpress/scripts CopyPlugin only copies block.json and *.php.
+	// Standalone CSS referenced in block.json ("style": "file:./style.css") must
+	// be copied separately.
+	plugins: [
+		...scriptConfig.plugins,
+		new CopyWebpackPlugin( {
+			patterns: [
+				{
+					from: 'blocks/**/*.css',
+					context: 'src',
+					noErrorOnMissing: true,
+				},
+			],
+		} ),
+	],
 };
 
 // Frontend uses ES module output (required for Interactivity API)
