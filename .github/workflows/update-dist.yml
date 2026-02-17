@@ -83,6 +83,10 @@ jobs:
             cp -r ${{ github.workspace }}/languages .
           fi
 
+          if [ -d "${{ github.workspace }}/parts" ]; then
+            cp -r ${{ github.workspace }}/parts .
+          fi
+
           cat > composer.json << INNEREOF
           {
             "name": "pikari-inc/pikari-gutenberg-modals",
