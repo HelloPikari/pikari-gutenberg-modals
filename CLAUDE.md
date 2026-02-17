@@ -209,9 +209,27 @@ pikari-gutenberg-modals/
 
 ## Testing
 
-No test files exist yet. Infrastructure is configured:
+See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands, and example patterns.
 
-- `npm test` → Jest via `@wordpress/scripts`
-- `composer test` → PHPUnit
-- `npm run test:e2e` → Playwright
-- ESLint config includes test environment overrides
+### Plugin-Specific Test Guidance
+
+**PHP classes to prioritize for testing:**
+
+- `ModalHandler` — URL validation (`validate_url`), content processing, cache duration
+- `RestApi` — Search endpoint response format, modal-content endpoint, ETag generation
+- `BlockStyleCollector` — Block detection in content, stylesheet URL collection
+- `SpeculativeLoading` — Prefetch URL generation, filter hooks
+
+**JavaScript modules to prioritize for testing:**
+
+- `modal-a11y.js` — Focus trap, inert background, focusable element detection (pure DOM)
+- `block-style-loader.js` — Duplicate detection, stylesheet loading (pure DOM)
+- `modal-store.js` — State transitions, context validation, generator function flow
+
+**Common Brain\Monkey mocks needed:**
+
+- `esc_url_raw`, `wp_parse_url`, `esc_attr`, `esc_html`, `esc_html__` — ModalHandler, BlockSupport
+- `apply_filters` — Content processing pipeline
+- `register_rest_route` — RestApi route registration
+- `get_post`, `get_the_title`, `get_permalink` — RestApi content retrieval
+- `home_url`, `wp_get_environment_type` — URL validation
