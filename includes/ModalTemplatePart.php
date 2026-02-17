@@ -170,21 +170,39 @@ class ModalTemplatePart
     /**
      * Render a modal template part by slug.
      *
-     * Block themes use the native block_template_part() function.
-     * Hybrid themes fall back to do_blocks() with template content
-     * resolved via get_fallback_content().
+     * Two rendering paths based on theme type:
+     * - Block themes: trust block_template_part() completely.
+     * - Hybrid themes (classic + block-template-parts): try block_template_part()
+     *   first, fall back to do_blocks() if empty — block_template_part() may not
+     *   fully resolve plugin-provided templates on hybrid themes.
      *
      * @param string $slug Template part slug (default: 'modal').
      * @return string Rendered template part HTML, or empty string.
      */
     public static function render( string $slug = self::SLUG ): string
     {
-        if ( self::is_supported() ) {
+        // Block themes: trust block_template_part() fully, including
+        // intentionally blank user-customized template parts.
+        if ( wp_is_block_theme() ) {
             ob_start();
             block_template_part( $slug );
             return ob_get_clean();
         }
 
+        // Hybrid themes: try block_template_part() but fall back to
+        // do_blocks() if it returns empty — the template part resolution
+        // infrastructure may not fully resolve plugin-provided parts.
+        if ( current_theme_supports( 'block-template-parts' ) ) {
+            ob_start();
+            block_template_part( $slug );
+            $output = ob_get_clean();
+
+            if ( ! empty( trim( $output ) ) ) {
+                return $output;
+            }
+        }
+
+        // Hybrid fallback: resolve content manually.
         $content = self::get_fallback_content( $slug );
         if ( empty( $content ) ) {
             return '';
