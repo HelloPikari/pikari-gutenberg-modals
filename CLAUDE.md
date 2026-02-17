@@ -12,6 +12,7 @@ Always use these agents proactively:
 
 - **`wordpress-core-expert`** — Review all PHP and JavaScript code changes
 - **`accessibility-expert`** — Review modal functionality, keyboard navigation, focus management, ARIA attributes
+- - **`update-claude-md`** — Update CLAUDE.md to reflect changes since the last git tag or initial commit.
 
 ## Architecture
 
@@ -47,6 +48,7 @@ Always use these agents proactively:
 | `BlockStyleCollector`      | ~185  | Detects blocks in modal content, collects stylesheet URLs for dynamic loading       |
 | `SpeculativeLoading`       | ~155  | Hover-based prefetch (200ms delay), optional `<link rel="prefetch">` hints          |
 | `EditorIntegration`        | ~115  | Editor asset enqueuing, localized config via `pikariGutenbergModals` JS object      |
+| `ModalTemplatePart`        | ~285  | Template part area registration, default template, hybrid theme fallback rendering  |
 | `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                      |
 
 ### JavaScript Files
@@ -72,9 +74,9 @@ Always use these agents proactively:
 | `index.js`              | ~9    | Entry point                                                                     |
 | `style.scss`            | ~370  | Full modal UI — overlay, content, animations, responsive, print, reduced motion |
 
-### Single Modal Container Pattern
+### Modal Container Pattern
 
-One `<div id="pikari-modal">` is rendered in `wp_footer` (only if triggers are detected on the page). Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
+One or more modal containers are rendered in `wp_footer` (only if triggers are detected on the page) — one per unique template part slug used by triggers. The default container ID is `pikari-modal`; custom template parts produce `pikari-modal--{slug}`. Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
 
 ### REST API Endpoints
 
@@ -195,6 +197,7 @@ pikari-gutenberg-modals/
 ├── src/editor/                   # Block editor JS + SCSS
 ├── src/frontend/                 # Frontend Interactivity API JS + SCSS
 ├── build/                        # Compiled assets (gitignored)
+├── parts/                        # Block template parts (modal.html — default modal template)
 ├── languages/                    # Translation files (.pot, .po, .mo)
 ├── _playground/                  # WordPress Playground blueprints
 ├── docs/                         # Documentation
