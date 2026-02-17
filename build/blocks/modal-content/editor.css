@@ -1,0 +1,49 @@
+/*
+ * Modal Content Block - Editor-only styles.
+ *
+ * Distinct visual treatment to separate inline modal content
+ * from regular page content in the editor.
+ */
+.wp-block-pikari-gutenberg-modals-modal-content {
+	border: 2px dashed #8b5cf6;
+	border-radius: 8px;
+	padding: 16px;
+	position: relative;
+}
+.wp-block-pikari-gutenberg-modals-modal-content .modal-content-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+	padding-bottom: 8px;
+	border-bottom: 1px solid #e5e7eb;
+}
+.wp-block-pikari-gutenberg-modals-modal-content .modal-content-label {
+	font-size: 11px;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.5px;
+	color: #8b5cf6;
+	background: rgba(139, 92, 246, 0.1);
+	padding: 2px 8px;
+	border-radius: 4px;
+}
+.wp-block-pikari-gutenberg-modals-modal-content .modal-content-title {
+	flex: 1;
+	border: none;
+	background: none;
+	font-size: 14px;
+	font-weight: 500;
+	color: #374151;
+	padding: 2px 4px;
+	outline: none;
+}
+.wp-block-pikari-gutenberg-modals-modal-content .modal-content-title:focus {
+	box-shadow: 0 0 0 1px #8b5cf6;
+	border-radius: 3px;
+}
+.wp-block-pikari-gutenberg-modals-modal-content .modal-content-anchor {
+	font-size: 11px;
+	color: #9ca3af;
+	font-family: monospace;
+}

@@ -1,0 +1,127 @@
+/*
+ * Content Area Block - Shared styles (editor + frontend).
+ *
+ * Styles for the screen reader, loading, error, and content body
+ * elements rendered by the content-area block.
+ */
+
+/* Screen reader only - visually hidden but accessible */
+.sr-only {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	padding: 0;
+	margin: -1px;
+	overflow: hidden;
+	clip: rect(0, 0, 0, 0);
+	white-space: nowrap;
+	border-width: 0;
+}
+
+/* Modal body - scrollable content area */
+.modal-body {
+	overflow-y: auto;
+	flex: 1;
+}
+.modal-body > *:first-child {
+	margin-top: 0;
+}
+.modal-body > *:last-child {
+	margin-bottom: 0;
+}
+.modal-body iframe {
+	width: 100%;
+	height: 100%;
+	min-height: 500px;
+	border: none;
+}
+
+/* Columns block vertical alignment (may not be loaded in modal context) */
+.modal-body .wp-block-columns.are-vertically-aligned-top {
+	align-items: flex-start;
+}
+.modal-body .wp-block-columns.are-vertically-aligned-center {
+	align-items: center;
+}
+.modal-body .wp-block-columns.are-vertically-aligned-bottom {
+	align-items: flex-end;
+}
+.modal-body .wp-block-column.is-vertically-aligned-top {
+	align-self: flex-start;
+}
+.modal-body .wp-block-column.is-vertically-aligned-center {
+	align-self: center;
+}
+.modal-body .wp-block-column.is-vertically-aligned-bottom {
+	align-self: flex-end;
+}
+.modal-body .wp-block-column.is-vertically-aligned-stretch {
+	align-self: stretch;
+}
+
+/* Loading state */
+.modal-loading {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 2rem;
+	text-align: center;
+}
+.modal-loading.hidden {
+	display: none;
+}
+.modal-loading .loading-spinner {
+	width: 40px;
+	height: 40px;
+	border: 4px solid #f3f3f4;
+	border-top-color: var(--modal-focus-color, #3b82f6);
+	border-radius: 50%;
+	animation: spin 1s linear infinite;
+	margin-bottom: 1rem;
+}
+.modal-loading p {
+	color: #6b7280;
+	margin: 0;
+	font-size: 1.125rem;
+}
+
+/* Error state */
+.modal-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 3rem 2rem;
+	text-align: center;
+}
+.modal-error.hidden {
+	display: none;
+}
+.modal-error p {
+	color: #dc2626;
+	margin: 0;
+	font-size: 1.125rem;
+	background: #fef2f2;
+	border: 1px solid #fecaca;
+	border-radius: 8px;
+	padding: 1rem;
+}
+
+/* Spinner animation */
+@keyframes spin {
+	0% {
+		transform: rotate(0deg);
+	}
+	100% {
+		transform: rotate(360deg);
+	}
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+	.loading-spinner {
+		animation: none;
+		border: 4px solid var(--modal-focus-color, #3b82f6);
+	}
+}
