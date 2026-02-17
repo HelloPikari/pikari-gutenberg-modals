@@ -134,7 +134,7 @@ class ModalTemplatePart
      */
     private function build_template_object(): ?\WP_Block_Template
     {
-        $content = $this->get_default_content();
+        $content = self::get_default_content();
         if ( empty( $content ) ) {
             return null;
         }
@@ -170,20 +170,101 @@ class ModalTemplatePart
     /**
      * Render a modal template part by slug.
      *
-     * Falls back to empty string for classic themes without template part support.
+     * Block themes use the native block_template_part() function.
+     * Hybrid themes fall back to do_blocks() with template content
+     * resolved via get_fallback_content().
      *
      * @param string $slug Template part slug (default: 'modal').
      * @return string Rendered template part HTML, or empty string.
      */
     public static function render( string $slug = self::SLUG ): string
     {
-        if ( ! self::is_supported() ) {
+        if ( self::is_supported() ) {
+            ob_start();
+            block_template_part( $slug );
+            return ob_get_clean();
+        }
+
+        $content = self::get_fallback_content( $slug );
+        if ( empty( $content ) ) {
             return '';
         }
 
-        ob_start();
-        block_template_part( $slug );
-        return ob_get_clean();
+        return do_blocks( $content );
+    }
+
+    /**
+     * Get fallback template content for non-block themes.
+     *
+     * Resolution order:
+     * 1. `pikari_gutenberg_modals_fallback_template` filter
+     * 2. Theme file: child theme parts/modal-{slug}.html → parts/modal.html → parent theme (same)
+     * 3. Plugin default: parts/modal.html
+     *
+     * @param string $slug Template part slug.
+     * @return string Block markup, or empty string.
+     */
+    public static function get_fallback_content( string $slug = self::SLUG ): string
+    {
+        /**
+         * Filters the fallback template content for non-block themes.
+         *
+         * Return non-empty string to override the default resolution.
+         *
+         * @since 1.0.0
+         *
+         * @param string $content Empty string (return markup to override).
+         * @param string $slug    Template part slug.
+         */
+        $filtered = apply_filters( 'pikari_gutenberg_modals_fallback_template', '', $slug );
+        if ( ! empty( $filtered ) ) {
+            return $filtered;
+        }
+
+        // Search theme directories for a matching template file.
+        $theme_content = self::get_theme_template_content( $slug );
+        if ( ! empty( $theme_content ) ) {
+            return $theme_content;
+        }
+
+        // Fall back to plugin default.
+        return self::get_default_content();
+    }
+
+    /**
+     * Search theme directories for a modal template file.
+     *
+     * Checks child theme first, then parent theme. Looks for
+     * parts/modal-{slug}.html first, then parts/modal.html for the default slug.
+     *
+     * @param string $slug Template part slug.
+     * @return string Block markup from theme file, or empty string.
+     */
+    private static function get_theme_template_content( string $slug ): string
+    {
+        $filenames = [];
+
+        // Slug-specific file first (e.g., parts/modal-compact.html).
+        if ( self::SLUG !== $slug ) {
+            $filenames[] = 'parts/modal-' . $slug . '.html';
+        }
+
+        // Default file (parts/modal.html).
+        $filenames[] = 'parts/modal.html';
+
+        foreach ( $filenames as $filename ) {
+            // locate_template checks child theme first, then parent theme.
+            $path = locate_template( $filename );
+            if ( ! empty( $path ) ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents -- Reading local theme file.
+                $content = (string) file_get_contents( $path );
+                if ( ! empty( $content ) ) {
+                    return $content;
+                }
+            }
+        }
+
+        return '';
     }
 
     /**
@@ -191,7 +272,7 @@ class ModalTemplatePart
      *
      * @return string Block markup.
      */
-    private function get_default_content(): string
+    public static function get_default_content(): string
     {
         $path = PIKARI_GUTENBERG_MODALS_DIR . 'parts/modal.html';
 

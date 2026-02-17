@@ -1,6 +1,13 @@
 {
+	"phpVersion": "8.4",
 	"plugins": [
 		".",
 		"https://github.com/OllieWP/ollie-menu-designer/releases/download/v0.2.4/menu-designer.zip"
-	]
+	],
+	"port": 5888,
+	"env": {
+		"tests": {
+			"port": 5889
+		}
+	}
 }

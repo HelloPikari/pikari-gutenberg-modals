@@ -18,6 +18,7 @@ import {
 	ToggleControl,
 	Button,
 } from '@wordpress/components';
+import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 const INNER_BLOCKS_TEMPLATE = [
@@ -33,6 +34,25 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		focalPoint,
 		hasParallax,
 	} = attributes;
+
+	// WordPress block supports override the block.json "style" attribute default,
+	// so we apply default padding on first insertion when style is undefined.
+	useEffect( () => {
+		if ( ! attributes.style ) {
+			setAttributes( {
+				style: {
+					spacing: {
+						padding: {
+							top: '1.5rem',
+							right: '1.5rem',
+							bottom: '1.5rem',
+							left: '1.5rem',
+						},
+					},
+				},
+			} );
+		}
+	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps -- Only on mount.
 
 	const blockProps = useBlockProps();
 	const colorGradientSettings = useMultipleOriginColorsAndGradients();
