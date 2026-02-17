@@ -24,7 +24,7 @@
 	flex-shrink: 0;
 }
 
-/* Alignment */
+/* Alignment — editor context (flex child of block editor layout) */
 .wp-block-pikari-gutenberg-modals-close-button.alignright {
 	align-self: flex-end;
 	margin-left: auto;
@@ -41,14 +41,25 @@
 	margin-right: auto;
 }
 
-/* Modal context - z-index, transitions, hover/focus effects */
+/* Modal context — absolute positioning overlapping content */
 .modal-close {
+	position: absolute;
+	top: 0.75rem;
 	z-index: 10;
 	transition: var(--modal-transition, all 0.2s ease);
 }
+.modal-close.alignright {
+	right: 0.75rem;
+}
+.modal-close.alignleft {
+	left: 0.75rem;
+}
+.modal-close.aligncenter {
+	left: 50%;
+	transform: translateX(-50%);
+}
 .modal-close:hover {
 	filter: brightness(0.92);
-	transform: scale(1.1);
 }
 .modal-close:focus {
 	outline: 2px solid var(--modal-focus-color, #3b82f6);

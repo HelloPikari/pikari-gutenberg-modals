@@ -237,6 +237,17 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
+= 1.1.0 =
+* Hybrid theme support: modals render via `do_blocks()` fallback when `block_template_part()` is unavailable
+* Theme file overrides for hybrid themes (`parts/modal.html`, `parts/modal-{slug}.html`)
+* `pikari_gutenberg_modals_fallback_template` filter for programmatic template customization
+* Close button uses absolute positioning to overlap content instead of taking a flex row
+* Close button alignment (right/center/left) now maps to position offsets
+* SVG close icon for consistent rendering across theme fonts
+* Dialog content scrolls when taller than the viewport (flex chain fix)
+* Webpack fix: block CSS files now copied to build directory
+* Default padding persists correctly (block supports override workaround)
+
 = 1.0.0 =
 * Three trigger types: inline modal links, button block modals, clickable group cards
 * Template part system for customizable modal dialog layout

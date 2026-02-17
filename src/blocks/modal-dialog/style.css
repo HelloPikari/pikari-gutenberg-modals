@@ -104,6 +104,15 @@
 	);
 }
 
+/* Content area — flex chain for scrolling.
+   Bridges .modal-content (90vh cap) → .modal-body (overflow-y: auto). */
+.modal-content .wp-block-pikari-gutenberg-modals-content-area {
+	flex: 1;
+	min-height: 0;
+	display: flex;
+	flex-direction: column;
+}
+
 /* Size variations — applied via data-size on .modal-overlay */
 .modal-overlay[data-size="small"] .modal-content {
 	max-width: var(--modal-max-width-small, 500px);
