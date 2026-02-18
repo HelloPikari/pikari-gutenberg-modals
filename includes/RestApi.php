@@ -34,17 +34,81 @@ class RestApi
                 'callback'            => [$this, 'get_modal_content'],
                 'permission_callback' => '__return_true', // Public endpoint for frontend use
                 'args'                => array(
-                    'id' => array(
+                    'id'       => array(
                         'required'          => true,
                         'type'              => 'integer',
                         'sanitize_callback' => 'absint',
-                        'validate_callback' => function ( $param ) {
-                            return is_numeric($param);
-                        },
-                        'description'       => __('Post ID to retrieve content for.', 'pikari-gutenberg-modals'),
+                        'description'       => __( 'Post ID to retrieve content for.', 'pikari-gutenberg-modals' ),
+                    ),
+                    'modal_id' => array(
+                        'required'          => false,
+                        'type'              => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
+                        'description'       => __( 'Unique modal identifier for HTTP cache differentiation.', 'pikari-gutenberg-modals' ),
                     ),
                 ),
+                'schema'              => [ $this, 'get_item_schema' ],
             )
+        );
+    }
+
+    /**
+     * Get the REST schema for the modal-content endpoint.
+     *
+     * Enables schema discovery via OPTIONS requests per WP REST API best practices.
+     *
+     * @return array The JSON Schema for a modal content response.
+     */
+    public function get_item_schema()
+    {
+        return array(
+            '$schema'    => 'http://json-schema.org/draft-04/schema#',
+            'title'      => 'pikari-modal-content',
+            'type'       => 'object',
+            'properties' => array(
+                'id'          => array(
+                    'type'        => 'integer',
+                    'description' => __( 'The post ID.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'title'       => array(
+                    'type'        => 'string',
+                    'description' => __( 'The post title (plain text, no HTML).', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'content'     => array(
+                    'type'        => 'string',
+                    'description' => __( 'The rendered post content HTML.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'styles'      => array(
+                    'type'        => 'string',
+                    'description' => __( 'Block support CSS for the rendered content.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'blockStyles' => array(
+                    'type'        => 'object',
+                    'description' => __( 'Block stylesheet URLs for dynamic loading.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                    'properties'  => array(
+                        'urls' => array(
+                            'type'  => 'array',
+                            'items' => array( 'type' => 'string' ),
+                        ),
+                    ),
+                ),
+                'type'        => array(
+                    'type'        => 'string',
+                    'description' => __( 'The post type slug.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+            ),
         );
     }
 
@@ -83,17 +147,19 @@ class RestApi
             return $cached_response;
         }
 
-        // Use the Block_Support class method to get content with properly captured styles
+        // Instantiating BlockSupport here is safe: its constructor registers render_block
+        // filters and a wp_footer action, but these are request-scoped — the render_block
+        // filters only affect the do_blocks() call below, and wp_footer never fires in
+        // REST context. No persistent side effects.
         $block_support = new BlockSupport();
+        $content_data  = $block_support->get_post_content_with_styles( $post );
 
-        // Get content and styles using the working method
-        $content_data = $block_support->get_post_content_with_styles($post);
-
-        // Extract CSS from style tag if present
+        // Extract raw CSS from the <style> tag returned by get_post_content_with_styles().
+        // preg_match is safe here because the input is always a single <style> tag generated
+        // by BlockSupport (not arbitrary HTML), so the regex reliably captures the CSS content.
         $styles = '';
-        if ( ! empty($content_data['styles']) ) {
-            // Extract content between style tags
-            if ( preg_match('/<style[^>]*>(.*?)<\/style>/s', $content_data['styles'], $matches) ) {
+        if ( ! empty( $content_data['styles'] ) ) {
+            if ( preg_match( '/<style[^>]*>(.*?)<\/style>/s', $content_data['styles'], $matches ) ) {
                 $styles = $matches[1];
             }
         }
@@ -105,7 +171,7 @@ class RestApi
         // Prepare response data
         $response_data = array(
             'id'          => $post->ID,
-            'title'       => get_the_title($post),
+            'title'       => wp_strip_all_tags( get_the_title( $post ) ),
             'content'     => $content_data['content'],
             'styles'      => $styles,
             'blockStyles' => $block_styles,
@@ -181,9 +247,11 @@ class RestApi
      */
     private function create_304_response( $etag, $last_modified )
     {
-        $response = new \WP_REST_Response(null, 304);
-        $response->header('ETag', $etag);
-        $response->header('Last-Modified', gmdate('D, d M Y H:i:s', $last_modified) . ' GMT');
+        // WP_REST_Response(null, 304) is correct for WP 6.8+: serve_request()
+        // checks `null !== $result` and skips body output when data is null.
+        $response = new \WP_REST_Response( null, 304 );
+        $response->header( 'ETag', $etag );
+        $response->header( 'Last-Modified', gmdate( 'D, d M Y H:i:s', $last_modified ) . ' GMT' );
         return $response;
     }
 

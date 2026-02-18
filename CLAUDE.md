@@ -93,7 +93,9 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 **Modal Content** — `GET /pikari-gutenberg-modals/v1/modal-content/{id}`
 
 - Permission: public
+- Params: `id` (required, integer path param), `modal_id` (optional, string query param for HTTP cache key)
 - HTTP cached: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support
+- Schema: discoverable via `OPTIONS` request
 - Returns: `{ id, title, content, styles, blockStyles: { urls: [...] }, type }`
 
 ### Key Design Patterns
