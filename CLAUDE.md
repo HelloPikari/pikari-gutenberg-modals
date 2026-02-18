@@ -31,11 +31,21 @@ Always use these agents proactively:
    - Editor: `src/editor/button-modal-extension.js`
    - Server: `BlockSupport::filter_button_block()` adds Interactivity API attributes
 
-3. **Group Block Modal Triggers** — makes entire group blocks clickable (card pattern)
+3. **Group Block Modal Triggers** — makes entire group blocks clickable (card pattern) _(deprecated — use Modal Trigger block instead)_
+
    - Adds `pikariModalTrigger` + `pikariModalTriggerBlockId` attributes
    - Editor: `src/editor/group-modal-trigger-extension.js` — recursively detects links in inner blocks
    - Server: `includes/GroupModalTriggerSupport.php` — two-phase rendering for Query Loop support
    - Supported link sources: button, image, navigation-link, heading/paragraph (inline links), post-title, post-featured-image, post-date, read-more, post-excerpt
+
+4. **Modal Trigger Block** — dedicated block for clickable card pattern (replaces group trigger)
+   - Block: `pikari-gutenberg-modals/modal-trigger` in `src/blocks/modal-trigger/`
+   - Three content source modes: Detected Link, Custom URL, Page Content (inline)
+   - Editor: `edit.js` — InspectorControls with mode-specific UI
+   - Server: `render.php` — adds Interactivity API attributes, keyboard support, domain validation
+   - Transforms: `transforms.js` — bidirectional transforms between `core/group` and modal-trigger
+   - Shared utility: `src/editor/find-links-in-blocks.js` — link detection used by both group extension and modal trigger
+   - No visual block supports — styling is done on inner blocks
 
 ### PHP Classes (`includes/`)
 

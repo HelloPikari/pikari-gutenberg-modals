@@ -1,7 +1,7 @@
 /**
  * WordPress dependencies
  */
-import { registerBlockType, createBlock } from '@wordpress/blocks';
+import { registerBlockType } from '@wordpress/blocks';
 import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 
 /**
@@ -10,6 +10,7 @@ import { InnerBlocks, useBlockProps } from '@wordpress/block-editor';
 import edit from './edit';
 import metadata from './block.json';
 import icon from './icon';
+import transforms from './transforms';
 
 registerBlockType( metadata.name, {
 	icon,
@@ -22,31 +23,5 @@ registerBlockType( metadata.name, {
 			</div>
 		);
 	},
-	transforms: {
-		from: [
-			{
-				type: 'block',
-				blocks: [ 'core/group' ],
-				isMatch: ( attributes ) =>
-					attributes.pikariModalTrigger === true,
-				transform: ( attributes, innerBlocks ) => {
-					return createBlock(
-						'pikari-gutenberg-modals/modal-trigger',
-						{
-							contentSource:
-								attributes.pikariModalContentSource || 'link',
-							primaryLinkId:
-								attributes.pikariModalTriggerBlockId || '',
-							modalSize: attributes.pikariModalSize || '',
-							inlineAnchor:
-								attributes.pikariModalInlineAnchor || '',
-							templatePart:
-								attributes.pikariModalTemplatePart || '',
-						},
-						innerBlocks
-					);
-				},
-			},
-		],
-	},
+	transforms,
 } );
