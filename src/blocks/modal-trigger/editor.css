@@ -1,22 +1,7 @@
 /**
  * Editor styles for the Modal Trigger block.
+ *
+ * No editor-specific visual indicator — the block renders identically to the
+ * frontend, matching WordPress Core patterns (Group, Query Loop, Navigation).
+ * Block identification relies on the toolbar name and List View.
  */
-.wp-block-pikari-gutenberg-modals-modal-trigger {
-	position: relative;
-	outline: 1px dashed #8332e6;
-	outline-offset: -1px;
-	min-height: 48px;
-}
-.wp-block-pikari-gutenberg-modals-modal-trigger::before {
-	content: "Modal Trigger";
-	position: absolute;
-	top: -10px;
-	left: 8px;
-	padding: 0 4px;
-	font-size: 10px;
-	line-height: 1.4;
-	color: #8332e6;
-	background: #fff;
-	z-index: 1;
-	pointer-events: none;
-}

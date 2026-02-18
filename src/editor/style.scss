@@ -57,6 +57,16 @@ span.modal-link-trigger,
 		gap: 1em;
 	}
 
+	// Remove LinkControl's built-in margin (popover uses gap for spacing)
+	.block-editor-link-control__field {
+		margin: 0;
+	}
+
+	// Remove padding from search items for a cleaner look
+	.block-editor-link-control__search-item {
+		padding: 0;
+	}
+
 	// Ensure search results are visible
 	.block-editor-link-control__search-results {
 		max-height: 300px;
