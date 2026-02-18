@@ -131,19 +131,6 @@ add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids 
 }, 10, 2 );
 ```
 
-### Search
-
-#### `pikari_gutenberg_modals_search_args`
-
-Modify the WP_Query arguments for the editor search endpoint.
-
-```php
-add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term ) {
-    $args['post_type'] = array( 'post', 'page' );
-    return $args;
-}, 10, 2 );
-```
-
 ### Editor
 
 #### `pikari_gutenberg_modals_modal_sizes`

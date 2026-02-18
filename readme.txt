@@ -140,16 +140,6 @@ Modify the REST API URLs included in prefetch resource hints.
     return $urls;
 }, 10, 2 );`
 
-= Search =
-
-**pikari_gutenberg_modals_search_args**
-Modify the WP_Query arguments for the modal content search endpoint (used in the editor link picker).
-
-`add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term ) {
-    $args['post_type'] = array( 'post', 'page' ); // Limit to specific post types
-    return $args;
-}, 10, 2 );`
-
 = Editor =
 
 **pikari_gutenberg_modals_modal_sizes**

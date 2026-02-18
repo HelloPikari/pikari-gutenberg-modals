@@ -53,7 +53,7 @@ Always use these agents proactively:
 | -------------------------- | ----- | ----------------------------------------------------------------------------------- |
 | `BlockSupport`             | ~750  | Core block rendering, trigger transformation, single modal container in `wp_footer` |
 | `GroupModalTriggerSupport` | ~350  | Group block clickable cards, two-phase rendering for Query Loop                     |
-| `RestApi`                  | ~340  | Search endpoint (editor) + modal-content endpoint (frontend, HTTP cached)           |
+| `RestApi`                  | ~250  | Modal-content REST endpoint (frontend, HTTP cached)                                 |
 | `ModalHandler`             | ~230  | Content processing pipeline, URL validation, domain allow/block lists               |
 | `BlockStyleCollector`      | ~185  | Detects blocks in modal content, collects stylesheet URLs for dynamic loading       |
 | `SpeculativeLoading`       | ~155  | Hover-based prefetch (200ms delay), optional `<link rel="prefetch">` hints          |
@@ -90,12 +90,6 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 
 ### REST API Endpoints
 
-**Search** — `GET /pikari-gutenberg-modals/v1/search`
-
-- Permission: `edit_posts`
-- Params: `search` (required), `per_page`, `page`
-- Returns posts with pagination headers (`X-WP-Total`, `X-WP-TotalPages`)
-
 **Modal Content** — `GET /pikari-gutenberg-modals/v1/modal-content/{id}`
 
 - Permission: public
@@ -123,7 +117,6 @@ pikari_gutenberg_modals_url_content            // Filter external URL content
 pikari_gutenberg_modals_content                // General content filter
 
 // REST API
-pikari_gutenberg_modals_search_args            // Modify WP_Query args for search endpoint
 pikari_gutenberg_modals_content_response       // Modify modal-content REST response
 pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: HOUR_IN_SECONDS)
 
@@ -230,7 +223,7 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 **PHP classes to prioritize for testing:**
 
 - `ModalHandler` — URL validation (`validate_url`), content processing, cache duration
-- `RestApi` — Search endpoint response format, modal-content endpoint, ETag generation
+- `RestApi` — Modal-content endpoint, ETag generation, cache headers
 - `BlockStyleCollector` — Block detection in content, stylesheet URL collection
 - `SpeculativeLoading` — Prefetch URL generation, filter hooks
 
