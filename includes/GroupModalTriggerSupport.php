@@ -4,6 +4,9 @@
  *
  * Handles server-side rendering for modal trigger functionality on core/group blocks.
  *
+ * @deprecated Use the Modal Trigger block (pikari-gutenberg-modals/modal-trigger) instead.
+ *             This class is retained for backward compatibility with existing content.
+ *
  * @package PikariGutenbergModals
  */
 

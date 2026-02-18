@@ -118,6 +118,15 @@ class BlockSupport
         wp_enqueue_script_module( 'pikari-gutenberg-modals-frontend' );
         wp_enqueue_style( 'pikari-gutenberg-modals-frontend' );
 
+        // Pass REST API base URL to the frontend store.
+        // Uses rest_url() so it works with any permalink structure (including Plain).
+        wp_interactivity_config(
+            'pikari-modal',
+            [
+                'restUrl' => rest_url( 'pikari-gutenberg-modals/v1/' ),
+            ]
+        );
+
         // Enqueue block styles for blocks rendered inside the modal template part.
         // These render in wp_footer after WordPress's normal block style enqueuing.
         wp_enqueue_style( 'pikari-gutenberg-modals-modal-dialog-style' );

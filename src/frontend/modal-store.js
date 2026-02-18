@@ -4,6 +4,7 @@
 
 import {
 	store,
+	getConfig,
 	getContext,
 	withScope,
 	withSyncEvent,
@@ -218,10 +219,17 @@ const { state, actions } = store( 'pikari-modal', {
 			state.loading = true;
 
 			try {
+				// Build the REST URL dynamically so it works with any permalink structure.
+				// getConfig() reads the restUrl set by wp_interactivity_config() in PHP.
+				// String concatenation is used instead of the URL constructor because
+				// plain permalinks put the route in ?rest_route= query param, and the
+				// URL constructor resolves relative paths against the pathname only.
+				const { restUrl } = getConfig();
+				const separator = restUrl.includes( '?' ) ? '&' : '?';
+				const fetchUrl = `${ restUrl }modal-content/${ postId }${ separator }modal_id=${ modalId }`;
+
 				// Yield the fetch promise - Interactivity API will handle awaiting
-				const response = yield fetch(
-					`/wp-json/pikari-gutenberg-modals/v1/modal-content/${ postId }?modal_id=${ modalId }`
-				);
+				const response = yield fetch( fetchUrl );
 
 				if ( ! response.ok ) {
 					throw new Error( `HTTP error! status: ${ response.status }` );
@@ -426,13 +434,14 @@ const { state, actions } = store( 'pikari-modal', {
 
 			try {
 				// URL must match openModal() exactly for browser HTTP cache to work
-				const response = yield fetch(
-					`/wp-json/pikari-gutenberg-modals/v1/modal-content/${ postId }?modal_id=${ modalId }`,
-					{
-						priority: 'low',
-						credentials: 'same-origin',
-					}
-				);
+				const { restUrl } = getConfig();
+				const separator = restUrl.includes( '?' ) ? '&' : '?';
+				const fetchUrl = `${ restUrl }modal-content/${ postId }${ separator }modal_id=${ modalId }`;
+
+				const response = yield fetch( fetchUrl, {
+					priority: 'low',
+					credentials: 'same-origin',
+				} );
 
 				if ( response.ok ) {
 					// Success - mark as complete
