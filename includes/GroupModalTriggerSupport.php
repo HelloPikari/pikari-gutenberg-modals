@@ -108,14 +108,14 @@ class GroupModalTriggerSupport
         $primary_link_json = $block['attrs']['pikariModalTriggerBlockId'] ?? '';
 
         if ( empty( $primary_link_json ) ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         // Parse the JSON identifier
         $link_identifier = json_decode( $primary_link_json, true );
 
         if ( ! $link_identifier ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         // Determine matching strategy based on link type
@@ -141,7 +141,7 @@ class GroupModalTriggerSupport
     private function handle_url_based_link( string $block_content, array $block, array $link_identifier, string $template_part = '' ): string
     {
         if ( empty( $link_identifier['linkUrl'] ) ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         // Sanitize the URL from block attributes
@@ -198,14 +198,14 @@ class GroupModalTriggerSupport
 
         // If we didn't find the primary link, return unchanged
         if ( ! $found_primary_link ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         // Get the updated content with the modified anchor
         $block_content = $processor->get_updated_html();
 
         // Clean up any post-link markers
-        $block_content = $this->cleanup_post_link_markers( $block_content );
+        $block_content = self::cleanup_post_link_markers( $block_content );
 
         // Get modal size setting
         $modal_size = $block['attrs']['pikariModalSize'] ?? '';
@@ -266,7 +266,7 @@ class GroupModalTriggerSupport
         $target_block_name = $link_identifier['blockName'] ?? '';
 
         if ( empty( $target_block_name ) ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         $processor          = new \WP_HTML_Tag_Processor( $block_content );
@@ -312,13 +312,13 @@ class GroupModalTriggerSupport
 
         if ( ! $found_primary_link ) {
             // Clean up any remaining markers that weren't used
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         $block_content = $processor->get_updated_html();
 
         // Clean up other markers not used as primary link
-        $block_content = $this->cleanup_post_link_markers( $block_content );
+        $block_content = self::cleanup_post_link_markers( $block_content );
 
         // Get modal size setting
         $modal_size = $block['attrs']['pikariModalSize'] ?? '';
@@ -372,7 +372,7 @@ class GroupModalTriggerSupport
         $inline_anchor = $block['attrs']['pikariModalInlineAnchor'] ?? '';
 
         if ( empty( $inline_anchor ) ) {
-            return $this->cleanup_post_link_markers( $block_content );
+            return self::cleanup_post_link_markers( $block_content );
         }
 
         // Mark that we have modal triggers on this page
@@ -380,7 +380,7 @@ class GroupModalTriggerSupport
         BlockSupport::set_has_modal_triggers( $slug );
 
         // Clean up any post-link markers
-        $block_content = $this->cleanup_post_link_markers( $block_content );
+        $block_content = self::cleanup_post_link_markers( $block_content );
 
         $modal_size = $block['attrs']['pikariModalSize'] ?? '';
 
@@ -429,7 +429,7 @@ class GroupModalTriggerSupport
      * @param string $content The HTML content to clean.
      * @return string Cleaned HTML content.
      */
-    private function cleanup_post_link_markers( string $content ): string
+    public static function cleanup_post_link_markers( string $content ): string
     {
         $processor = new \WP_HTML_Tag_Processor( $content );
 

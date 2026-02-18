@@ -75,6 +75,7 @@ function pikari_gutenberg_modals_init() {
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/content-area' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-content' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-dialog' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-trigger' );
 
     // Initialize main components.
     new \Pikari\GutenbergModals\ModalHandler();

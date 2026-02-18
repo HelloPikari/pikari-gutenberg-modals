@@ -1,0 +1,56 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pikari-gutenberg-modals/modal-trigger",
+	"version": "0.1.0",
+	"title": "Modal Trigger",
+	"category": "design",
+	"description": "A clickable card that opens a modal dialog. Wrap any blocks inside to create an interactive trigger.",
+	"textdomain": "pikari-gutenberg-modals",
+	"keywords": ["modal", "popup", "dialog", "trigger", "card", "clickable"],
+	"attributes": {
+		"contentSource": {
+			"type": "string",
+			"default": "link"
+		},
+		"primaryLinkId": {
+			"type": "string",
+			"default": ""
+		},
+		"directUrl": {
+			"type": "string",
+			"default": ""
+		},
+		"inlineAnchor": {
+			"type": "string",
+			"default": ""
+		},
+		"modalSize": {
+			"type": "string",
+			"default": ""
+		},
+		"templatePart": {
+			"type": "string",
+			"default": ""
+		},
+		"anchor": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"anchor": true,
+		"layout": {
+			"allowSizingOnChildren": true,
+			"default": {
+				"type": "flex",
+				"orientation": "vertical"
+			}
+		}
+	},
+	"editorScript": "file:../../../build/blocks/modal-trigger/index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css",
+	"render": "file:./render.php"
+}
