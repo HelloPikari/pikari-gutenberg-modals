@@ -1,0 +1,7 @@
+/**
+ * Editor styles for the Modal Trigger block.
+ *
+ * No editor-specific visual indicator — the block renders identically to the
+ * frontend, matching WordPress Core patterns (Group, Query Loop, Navigation).
+ * Block identification relies on the toolbar name and List View.
+ */

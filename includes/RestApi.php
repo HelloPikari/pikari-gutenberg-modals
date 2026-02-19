@@ -25,39 +25,6 @@ class RestApi
      */
     public function register_routes()
     {
-        // Register search endpoint
-        register_rest_route(
-            'pikari-gutenberg-modals/v1',
-            '/search',
-            array(
-                'methods'             => 'GET',
-                'callback'            => [$this, 'search_modal_content'],
-                'permission_callback' => function () {
-                    return current_user_can('edit_posts');
-                },
-                'args'                => array(
-                    'search'   => array(
-                        'required'          => true,
-                        'type'              => 'string',
-                        'sanitize_callback' => 'sanitize_text_field',
-                        'description'       => __('Search term to find posts.', 'pikari-gutenberg-modals'),
-                    ),
-                    'per_page' => array(
-                        'default'           => 20,
-                        'type'              => 'integer',
-                        'sanitize_callback' => 'absint',
-                        'description'       => __('Number of results per page.', 'pikari-gutenberg-modals'),
-                    ),
-                    'page' => array(
-                        'default'           => 1,
-                        'type'              => 'integer',
-                        'sanitize_callback' => 'absint',
-                        'description'       => __('Page number for pagination.', 'pikari-gutenberg-modals'),
-                    ),
-                ),
-            )
-        );
-
         // Register modal content endpoint
         register_rest_route(
             'pikari-gutenberg-modals/v1',
@@ -67,107 +34,82 @@ class RestApi
                 'callback'            => [$this, 'get_modal_content'],
                 'permission_callback' => '__return_true', // Public endpoint for frontend use
                 'args'                => array(
-                    'id' => array(
+                    'id'       => array(
                         'required'          => true,
                         'type'              => 'integer',
                         'sanitize_callback' => 'absint',
-                        'validate_callback' => function ( $param ) {
-                            return is_numeric($param);
-                        },
-                        'description'       => __('Post ID to retrieve content for.', 'pikari-gutenberg-modals'),
+                        'description'       => __( 'Post ID to retrieve content for.', 'pikari-gutenberg-modals' ),
+                    ),
+                    'modal_id' => array(
+                        'required'          => false,
+                        'type'              => 'string',
+                        'sanitize_callback' => 'sanitize_text_field',
+                        'description'       => __( 'Unique modal identifier for HTTP cache differentiation.', 'pikari-gutenberg-modals' ),
                     ),
                 ),
+                'schema'              => [ $this, 'get_item_schema' ],
             )
         );
     }
 
     /**
-     * Search function for modal content.
+     * Get the REST schema for the modal-content endpoint.
      *
-     * Provides a REST API endpoint for searching WordPress content
-     * to be displayed in modals. Returns formatted results suitable
-     * for the LinkControl component.
+     * Enables schema discovery via OPTIONS requests per WP REST API best practices.
      *
-     * @param \WP_REST_Request $request The REST request object.
-     * @return \WP_REST_Response The search results with pagination info.
+     * @return array The JSON Schema for a modal content response.
      */
-    public function search_modal_content( $request )
+    public function get_item_schema()
     {
-        $search   = $request->get_param('search');
-        $per_page = $request->get_param('per_page');
-        $page     = $request->get_param('page') ?: 1;
-
-        // Build query arguments
-        $args = array(
-            's'              => $search,
-            'posts_per_page' => $per_page,
-            'paged'          => $page,
-            'post_type'      => get_post_types(array( 'public' => true )),
-            'post_status'    => 'publish',
-            'orderby'        => 'relevance date',
-            'order'          => 'DESC',
-        );
-
-        /**
-         * Filter the search query arguments.
-         *
-         * @param array $args WP_Query arguments
-         * @param string $search The search term
-         */
-        $args = apply_filters('pikari_gutenberg_modals_search_args', $args, $search);
-
-        // Execute search query
-        $query = new \WP_Query($args);
-
-        // Format results for LinkControl
-        $results = array();
-        foreach ( $query->posts as $post ) {
-            // Get post type object for label
-            $post_type_obj = get_post_type_object($post->post_type);
-
-            $results[] = array(
-                'id'      => $post->ID,
-                'title'   => html_entity_decode(get_the_title($post), ENT_QUOTES, 'UTF-8'),
-                'type'    => $post->post_type,
-                'subtype' => $post->post_type, // For LinkControl compatibility
-                'url'     => get_permalink($post),
-                'kind'    => 'post-type',
-                'date'    => get_the_date('c', $post), // ISO 8601 format
-                // Additional metadata for display
-                '_embedded' => array(
-                    'self' => array(
-                        array(
-                            'post_type_label' => $post_type_obj->labels->singular_name,
-                            'excerpt'         => wp_trim_words($post->post_excerpt ?: $post->post_content, 20),
+        return array(
+            '$schema'    => 'http://json-schema.org/draft-04/schema#',
+            'title'      => 'pikari-modal-content',
+            'type'       => 'object',
+            'properties' => array(
+                'id'          => array(
+                    'type'        => 'integer',
+                    'description' => __( 'The post ID.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'title'       => array(
+                    'type'        => 'string',
+                    'description' => __( 'The post title (plain text, no HTML).', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'content'     => array(
+                    'type'        => 'string',
+                    'description' => __( 'The rendered post content HTML.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'styles'      => array(
+                    'type'        => 'string',
+                    'description' => __( 'Block support CSS for the rendered content.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+                'blockStyles' => array(
+                    'type'        => 'object',
+                    'description' => __( 'Block stylesheet URLs for dynamic loading.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                    'properties'  => array(
+                        'urls' => array(
+                            'type'  => 'array',
+                            'items' => array( 'type' => 'string' ),
                         ),
                     ),
                 ),
-            );
-        }
-
-        // Prepare response with pagination headers
-        $response = rest_ensure_response($results);
-
-        // Add pagination headers
-        $response->header('X-WP-Total', $query->found_posts);
-        $response->header('X-WP-TotalPages', $query->max_num_pages);
-
-        // Add Link header for pagination
-        $links = array();
-
-        if ( $page > 1 ) {
-            $links['prev'] = add_query_arg('page', $page - 1, $request->get_route());
-        }
-
-        if ( $page < $query->max_num_pages ) {
-            $links['next'] = add_query_arg('page', $page + 1, $request->get_route());
-        }
-
-        if ( ! empty($links) ) {
-            $response->link_header('Link', $links);
-        }
-
-        return $response;
+                'type'        => array(
+                    'type'        => 'string',
+                    'description' => __( 'The post type slug.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                ),
+            ),
+        );
     }
 
     /**
@@ -205,17 +147,19 @@ class RestApi
             return $cached_response;
         }
 
-        // Use the Block_Support class method to get content with properly captured styles
+        // Instantiating BlockSupport here is safe: its constructor registers render_block
+        // filters and a wp_footer action, but these are request-scoped — the render_block
+        // filters only affect the do_blocks() call below, and wp_footer never fires in
+        // REST context. No persistent side effects.
         $block_support = new BlockSupport();
+        $content_data  = $block_support->get_post_content_with_styles( $post );
 
-        // Get content and styles using the working method
-        $content_data = $block_support->get_post_content_with_styles($post);
-
-        // Extract CSS from style tag if present
+        // Extract raw CSS from the <style> tag returned by get_post_content_with_styles().
+        // preg_match is safe here because the input is always a single <style> tag generated
+        // by BlockSupport (not arbitrary HTML), so the regex reliably captures the CSS content.
         $styles = '';
-        if ( ! empty($content_data['styles']) ) {
-            // Extract content between style tags
-            if ( preg_match('/<style[^>]*>(.*?)<\/style>/s', $content_data['styles'], $matches) ) {
+        if ( ! empty( $content_data['styles'] ) ) {
+            if ( preg_match( '/<style[^>]*>(.*?)<\/style>/s', $content_data['styles'], $matches ) ) {
                 $styles = $matches[1];
             }
         }
@@ -227,7 +171,7 @@ class RestApi
         // Prepare response data
         $response_data = array(
             'id'          => $post->ID,
-            'title'       => get_the_title($post),
+            'title'       => wp_strip_all_tags( get_the_title( $post ) ),
             'content'     => $content_data['content'],
             'styles'      => $styles,
             'blockStyles' => $block_styles,
@@ -303,9 +247,11 @@ class RestApi
      */
     private function create_304_response( $etag, $last_modified )
     {
-        $response = new \WP_REST_Response(null, 304);
-        $response->header('ETag', $etag);
-        $response->header('Last-Modified', gmdate('D, d M Y H:i:s', $last_modified) . ' GMT');
+        // WP_REST_Response(null, 304) is correct for WP 6.8+: serve_request()
+        // checks `null !== $result` and skips body output when data is null.
+        $response = new \WP_REST_Response( null, 304 );
+        $response->header( 'ETag', $etag );
+        $response->header( 'Last-Modified', gmdate( 'D, d M Y H:i:s', $last_modified ) . ' GMT' );
         return $response;
     }
 
