@@ -20,6 +20,7 @@ const editorConfig = {
 		'blocks/content-area/index': path.resolve( __dirname, 'src/blocks/content-area/index.js' ),
 		'blocks/modal-content/index': path.resolve( __dirname, 'src/blocks/modal-content/index.js' ),
 		'blocks/modal-dialog/index': path.resolve( __dirname, 'src/blocks/modal-dialog/index.js' ),
+		'blocks/modal-trigger/index': path.resolve( __dirname, 'src/blocks/modal-trigger/index.js' ),
 	},
 	output: {
 		...scriptConfig.output,

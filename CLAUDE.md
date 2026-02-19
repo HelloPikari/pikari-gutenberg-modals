@@ -12,16 +12,17 @@ Always use these agents proactively:
 
 - **`wordpress-core-expert`** — Review all PHP and JavaScript code changes
 - **`accessibility-expert`** — Review modal functionality, keyboard navigation, focus management, ARIA attributes
+- - **`update-claude-md`** — Update CLAUDE.md to reflect changes since the last git tag or initial commit.
 
 ## Architecture
 
 ### Three Trigger Types
 
-1. **Inline Modal Links** — RichText format applied to text in supported blocks
+1. **Inline Modal Triggers** — RichText format applied to text in supported blocks
 
-   - Format: `modal-toolbar-button/modal-link` (Cmd/Ctrl+M shortcut)
-   - Editor: `src/editor/modal-format.js` + `src/editor/modal-link-edit.js`
-   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-link-trigger">` into interactive `<a>` tags
+   - Format: `modal-toolbar-button/modal-trigger` (Cmd/Ctrl+M shortcut)
+   - Editor: `src/editor/modal-format.js` + `src/editor/modal-trigger-edit.js`
+   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-trigger">` into interactive `<a>` tags
    - Supported blocks: paragraph, heading, list, list-item, quote, verse, preformatted, navigation-link
 
 2. **Button Block Modals** — extends core/button with a toggle
@@ -30,11 +31,21 @@ Always use these agents proactively:
    - Editor: `src/editor/button-modal-extension.js`
    - Server: `BlockSupport::filter_button_block()` adds Interactivity API attributes
 
-3. **Group Block Modal Triggers** — makes entire group blocks clickable (card pattern)
+3. **Group Block Modal Triggers** — makes entire group blocks clickable (card pattern) _(deprecated — use Modal Trigger block instead)_
+
    - Adds `pikariModalTrigger` + `pikariModalTriggerBlockId` attributes
    - Editor: `src/editor/group-modal-trigger-extension.js` — recursively detects links in inner blocks
    - Server: `includes/GroupModalTriggerSupport.php` — two-phase rendering for Query Loop support
    - Supported link sources: button, image, navigation-link, heading/paragraph (inline links), post-title, post-featured-image, post-date, read-more, post-excerpt
+
+4. **Modal Trigger Block** — dedicated block for clickable card pattern (replaces group trigger)
+   - Block: `pikari-gutenberg-modals/modal-trigger` in `src/blocks/modal-trigger/`
+   - Three content source modes: Detected Link, Custom URL, Page Content (inline)
+   - Editor: `edit.js` — InspectorControls with mode-specific UI
+   - Server: `render.php` — adds Interactivity API attributes, keyboard support, domain validation
+   - Transforms: `transforms.js` — bidirectional transforms between `core/group` and modal-trigger
+   - Shared utility: `src/editor/find-links-in-blocks.js` — link detection used by both group extension and modal trigger
+   - No visual block supports — styling is done on inner blocks
 
 ### PHP Classes (`includes/`)
 
@@ -42,11 +53,12 @@ Always use these agents proactively:
 | -------------------------- | ----- | ----------------------------------------------------------------------------------- |
 | `BlockSupport`             | ~750  | Core block rendering, trigger transformation, single modal container in `wp_footer` |
 | `GroupModalTriggerSupport` | ~350  | Group block clickable cards, two-phase rendering for Query Loop                     |
-| `RestApi`                  | ~340  | Search endpoint (editor) + modal-content endpoint (frontend, HTTP cached)           |
+| `RestApi`                  | ~250  | Modal-content REST endpoint (frontend, HTTP cached)                                 |
 | `ModalHandler`             | ~230  | Content processing pipeline, URL validation, domain allow/block lists               |
 | `BlockStyleCollector`      | ~185  | Detects blocks in modal content, collects stylesheet URLs for dynamic loading       |
 | `SpeculativeLoading`       | ~155  | Hover-based prefetch (200ms delay), optional `<link rel="prefetch">` hints          |
 | `EditorIntegration`        | ~115  | Editor asset enqueuing, localized config via `pikariGutenbergModals` JS object      |
+| `ModalTemplatePart`        | ~285  | Template part area registration, default template, hybrid theme fallback rendering  |
 | `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                      |
 
 ### JavaScript Files
@@ -56,11 +68,11 @@ Always use these agents proactively:
 | File                               | Lines | Purpose                                                                  |
 | ---------------------------------- | ----- | ------------------------------------------------------------------------ |
 | `group-modal-trigger-extension.js` | ~365  | HOC for group block — link detection, auto-selection, Query Loop support |
-| `modal-link-edit.js`               | ~290  | RichText format toolbar UI, LinkControl popover, post search             |
+| `modal-trigger-edit.js`            | ~290  | RichText format toolbar UI, LinkControl popover, post search             |
 | `button-modal-extension.js`        | ~115  | HOC for button block — modal toggle in InspectorControls                 |
 | `modal-format.js`                  | ~20   | RichText format type registration                                        |
 | `index.js`                         | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`         |
-| `style.scss`                       | ~65   | Editor visual indicators (dashed purple underline on modal links)        |
+| `style.scss`                       | ~65   | Editor visual indicators (dashed purple underline on modal triggers)     |
 
 **Frontend (`src/frontend/`):**
 
@@ -72,22 +84,18 @@ Always use these agents proactively:
 | `index.js`              | ~9    | Entry point                                                                     |
 | `style.scss`            | ~370  | Full modal UI — overlay, content, animations, responsive, print, reduced motion |
 
-### Single Modal Container Pattern
+### Modal Container Pattern
 
-One `<div id="pikari-modal">` is rendered in `wp_footer` (only if triggers are detected on the page). Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
+One or more modal containers are rendered in `wp_footer` (only if triggers are detected on the page) — one per unique template part slug used by triggers. The default container ID is `pikari-modal`; custom template parts produce `pikari-modal--{slug}`. Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
 
 ### REST API Endpoints
-
-**Search** — `GET /pikari-gutenberg-modals/v1/search`
-
-- Permission: `edit_posts`
-- Params: `search` (required), `per_page`, `page`
-- Returns posts with pagination headers (`X-WP-Total`, `X-WP-TotalPages`)
 
 **Modal Content** — `GET /pikari-gutenberg-modals/v1/modal-content/{id}`
 
 - Permission: public
+- Params: `id` (required, integer path param), `modal_id` (optional, string query param for HTTP cache key)
 - HTTP cached: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support
+- Schema: discoverable via `OPTIONS` request
 - Returns: `{ id, title, content, styles, blockStyles: { urls: [...] }, type }`
 
 ### Key Design Patterns
@@ -105,13 +113,12 @@ One `<div id="pikari-modal">` is rendered in `wp_footer` (only if triggers are d
 
 ```php
 // Content processing
-pikari_gutenberg_modals_supported_blocks       // Customize blocks supporting inline modal links
+pikari_gutenberg_modals_supported_blocks       // Customize blocks supporting inline modal triggers
 pikari_gutenberg_modals_post_content           // Filter post content before modal rendering
 pikari_gutenberg_modals_url_content            // Filter external URL content
 pikari_gutenberg_modals_content                // General content filter
 
 // REST API
-pikari_gutenberg_modals_search_args            // Modify WP_Query args for search endpoint
 pikari_gutenberg_modals_content_response       // Modify modal-content REST response
 pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: HOUR_IN_SECONDS)
 
@@ -195,6 +202,7 @@ pikari-gutenberg-modals/
 ├── src/editor/                   # Block editor JS + SCSS
 ├── src/frontend/                 # Frontend Interactivity API JS + SCSS
 ├── build/                        # Compiled assets (gitignored)
+├── parts/                        # Block template parts (modal.html — default modal template)
 ├── languages/                    # Translation files (.pot, .po, .mo)
 ├── _playground/                  # WordPress Playground blueprints
 ├── docs/                         # Documentation
@@ -217,7 +225,7 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 **PHP classes to prioritize for testing:**
 
 - `ModalHandler` — URL validation (`validate_url`), content processing, cache duration
-- `RestApi` — Search endpoint response format, modal-content endpoint, ETag generation
+- `RestApi` — Modal-content endpoint, ETag generation, cache headers
 - `BlockStyleCollector` — Block detection in content, stylesheet URL collection
 - `SpeculativeLoading` — Prefetch URL generation, filter hooks
 

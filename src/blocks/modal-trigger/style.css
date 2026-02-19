@@ -1,0 +1,39 @@
+/**
+ * Frontend styles for the Modal Trigger block.
+ *
+ * The modal trigger uses a pseudo-element overlay pattern
+ * to make the entire block clickable while preserving
+ * interactive child elements.
+ */
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger {
+	position: relative;
+	cursor: pointer;
+}
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger[role="button"]:focus-visible {
+	outline: 2px solid var(--wp--preset--color--primary, #007cba);
+	outline-offset: 2px;
+}
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger
+	.is-primary-link {
+	text-decoration: none;
+}
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger
+	.is-primary-link::after {
+	content: "";
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	bottom: 0;
+	z-index: 1;
+}
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger
+	a:not(.is-primary-link),
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger button,
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger input,
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger select,
+.wp-block-pikari-gutenberg-modals-modal-trigger.has-pikari-modal-trigger
+	textarea {
+	position: relative;
+	z-index: 2;
+}

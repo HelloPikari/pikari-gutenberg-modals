@@ -16,7 +16,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 **Three Trigger Types:**
 
-* **Inline Modal Links** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+* **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
 * **Button Block Modals** — Toggle the "Open in Modal" option on any core Button block
 * **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, automatically detecting the primary link inside
 
@@ -44,7 +44,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 1. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Use any of the three trigger types in the block editor to create modal links
+3. Use any of the three trigger types in the block editor to create modal triggers
 
 = Block Themes =
 
@@ -80,7 +80,7 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 = What are the three trigger types? =
 
-1. **Inline Modal Links** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
+1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
 2. **Button Block Modals** — Add a core Button block, toggle "Open in Modal" in the inspector, and set the button URL to a post/page
 3. **Clickable Group Cards** — Enable "Modal Trigger" on a Group block; the plugin detects the primary link inside (from buttons, images, headings, etc.) and makes the whole card clickable
 
@@ -97,7 +97,7 @@ Yes. Set the trigger URL to an external page. Use the domain allowlist/blocklist
 = Content & Display =
 
 **pikari_gutenberg_modals_supported_blocks**
-Customize which block types support the inline modal link format.
+Customize which block types support the inline modal trigger format.
 
 `add_filter( 'pikari_gutenberg_modals_supported_blocks', function( $blocks ) {
     $blocks[] = 'my-plugin/custom-block';
@@ -138,16 +138,6 @@ Modify the REST API URLs included in prefetch resource hints.
 `add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
     // Add additional URLs or filter existing ones
     return $urls;
-}, 10, 2 );`
-
-= Search =
-
-**pikari_gutenberg_modals_search_args**
-Modify the WP_Query arguments for the modal content search endpoint (used in the editor link picker).
-
-`add_filter( 'pikari_gutenberg_modals_search_args', function( $args, $search_term ) {
-    $args['post_type'] = array( 'post', 'page' ); // Limit to specific post types
-    return $args;
 }, 10, 2 );`
 
 = Editor =
@@ -229,7 +219,7 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Screenshots ==
 
-1. Inline modal link in the editor with link picker
+1. Inline modal trigger in the editor with link picker
 2. Button block with "Open in Modal" toggle
 3. Clickable group card pattern
 4. Live modal with smooth animations
@@ -249,7 +239,7 @@ Override any of these in your theme's CSS to customize the modal appearance:
 * Default padding persists correctly (block supports override workaround)
 
 = 1.0.0 =
-* Three trigger types: inline modal links, button block modals, clickable group cards
+* Three trigger types: inline modal triggers, button block modals, clickable group cards
 * Template part system for customizable modal dialog layout
 * Multiple modal template support with per-trigger assignment
 * Overlay styling: solid colors, gradients, and images with alpha transparency
