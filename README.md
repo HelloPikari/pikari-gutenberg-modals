@@ -12,7 +12,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 ### Trigger Types
 
-- **Inline Modal Links** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+- **Inline Modal Triggers** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
 - **Button Block Modals** — Toggle "Open in Modal" on any core Button block
 - **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, auto-detecting the primary link inside
 
@@ -75,7 +75,7 @@ npm test                          # Run tests
 
 #### `pikari_gutenberg_modals_supported_blocks`
 
-Customize which block types support the inline modal link format.
+Customize which block types support the inline modal trigger format.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_supported_blocks', function( $blocks ) {
@@ -239,7 +239,7 @@ Override in your theme's CSS:
 
 ### 1.0.0
 
-- Three trigger types: inline modal links, button block modals, clickable group cards
+- Three trigger types: inline modal triggers, button block modals, clickable group cards
 - Template part system with per-trigger assignment
 - Overlay styling: solid colors, gradients, images with alpha transparency
 - Dialog styling: background, border, padding, box shadow via block supports

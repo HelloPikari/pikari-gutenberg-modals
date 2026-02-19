@@ -3,19 +3,19 @@
  */
 import { registerFormatType } from '@wordpress/rich-text';
 import { __ } from '@wordpress/i18n';
-import ModalLinkEdit from './modal-link-edit';
+import ModalTriggerEdit from './modal-trigger-edit';
 
-// Register the modal link format as a span with data attributes
-registerFormatType( 'modal-toolbar-button/modal-link', {
-	title: __( 'Modal Link', 'pikari-gutenberg-modals' ),
+// Register the modal trigger format as a span with data attributes
+registerFormatType( 'modal-toolbar-button/modal-trigger', {
+	title: __( 'Modal Trigger', 'pikari-gutenberg-modals' ),
 	tagName: 'span',
-	className: 'modal-link-trigger',
+	className: 'modal-trigger',
 	attributes: {
-		'data-modal-link': 'data-modal-link',
+		'data-modal-trigger': 'data-modal-trigger',
 		'data-modal-content-type': 'data-modal-content-type',
 		'data-modal-content-id': 'data-modal-content-id',
 		'data-modal-size': 'data-modal-size',
 		'data-modal-template-part': 'data-modal-template-part',
 	},
-	edit: ModalLinkEdit,
+	edit: ModalTriggerEdit,
 } );

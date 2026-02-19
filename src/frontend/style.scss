@@ -1,7 +1,7 @@
 // Frontend modal trigger styles
 // Applied to anchor tags that open modals
-a.has-modal-link,
-a.modal-link-trigger {
+a.has-modal-trigger,
+a.modal-trigger {
 	// Inherit text color from parent instead of default link blue
 	color: inherit;
 	cursor: pointer;

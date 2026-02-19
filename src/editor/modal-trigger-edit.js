@@ -19,26 +19,26 @@ import {
 } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { __, sprintf } from '@wordpress/i18n';
-import { external } from '@wordpress/icons';
+import modalTriggerIcon from '../blocks/modal-trigger/icon';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 import useModalContentBlocks from './use-modal-content-blocks';
 import useIsModalTemplatePart from './use-is-modal-template-part';
 import useModalTemplateParts from './use-modal-template-parts';
 
-const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-link';
+const MODAL_FORMAT_NAME = 'modal-toolbar-button/modal-trigger';
 
 // Format settings for useAnchor hook
-const modalLinkFormatSettings = {
+const modalTriggerFormatSettings = {
 	name: MODAL_FORMAT_NAME,
 	tagName: 'span',
-	className: 'modal-link-trigger',
+	className: 'modal-trigger',
 };
 
 /**
- * Modal Link Edit Component
+ * Modal Trigger Edit Component
  *
- * Provides the UI for adding/editing modal links in the block editor.
- * Integrates with WordPress's RichText format API to apply modal link
+ * Provides the UI for adding/editing modal triggers in the block editor.
+ * Integrates with WordPress's RichText format API to apply modal trigger
  * formatting to selected text.
  *
  * @param {Object}   props            - Component properties
@@ -46,7 +46,7 @@ const modalLinkFormatSettings = {
  * @param {Object}   props.value      - RichText value object
  * @param {Function} props.onChange   - Callback to update the RichText value
  * @param {Object}   props.contentRef - Reference to the content element
- * @return {JSX.Element} The modal link edit UI
+ * @return {JSX.Element} The modal trigger edit UI
  */
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
@@ -56,7 +56,7 @@ const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
 	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
 ];
 
-const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
+const ModalTriggerEdit = ( { isActive, value, onChange, contentRef } ) => {
 	const [ addingLink, setAddingLink ] = useState( false );
 	// Track what opened the popover: 'toolbar' or 'click'
 	const [ openedBy, setOpenedBy ] = useState( null );
@@ -70,7 +70,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	const popoverAnchor = useAnchor( {
 		editableContentElement: contentRef.current,
 		settings: {
-			...modalLinkFormatSettings,
+			...modalTriggerFormatSettings,
 			isActive,
 		},
 	} );
@@ -95,7 +95,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	// Check if editing context is inside the modal template part
 	const isInsideModalTemplatePart = useIsModalTemplatePart( null );
 
-	// Check if the current block supports modal links
+	// Check if the current block supports modal triggers
 	const isBlockSupported =
 		selectedBlock && supportedBlocks.includes( selectedBlock.name );
 
@@ -119,7 +119,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	}, [ isActive, openedBy, stopAddingLink ] );
 
 	/**
-	 * Compute existing modal link data synchronously during render.
+	 * Compute existing modal trigger data synchronously during render.
 	 * Uses useMemo instead of useEffect to ensure the value is available
 	 * immediately when the popover first renders.
 	 */
@@ -139,12 +139,12 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		try {
 			// Try to parse the JSON data stored in the format
 			return JSON.parse(
-				activeFormat.attributes[ 'data-modal-link' ] || '{}'
+				activeFormat.attributes[ 'data-modal-trigger' ] || '{}'
 			);
 		} catch ( error ) {
 			// Fallback for legacy format or corrupted data
 			// eslint-disable-next-line no-console
-			console.warn( 'Failed to parse modal link data:', error );
+			console.warn( 'Failed to parse modal trigger data:', error );
 			return {
 				url: activeFormat.attributes[ 'data-modal-content-id' ] || '',
 				type:
@@ -154,7 +154,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		}
 	}, [ isActive, value.activeFormats ] );
 
-	// Sync size and content source state when editing an existing modal link
+	// Sync size and content source state when editing an existing modal trigger
 	useEffect( () => {
 		if ( isActive && value.activeFormats ) {
 			const activeFormat = value.activeFormats.find(
@@ -180,7 +180,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 
 		function handleClick( event ) {
 			// Find if the click target is within a modal trigger
-			const modalTrigger = event.target.closest( '.modal-link-trigger' );
+			const modalTrigger = event.target.closest( '.modal-trigger' );
 
 			if ( ! modalTrigger ) {
 				return;
@@ -197,7 +197,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 		};
 	}, [ contentRef, stopAddingLink ] );
 
-	// Don't render anything if the block doesn't support modal links
+	// Don't render anything if the block doesn't support modal triggers
 	// or if we're inside the modal template part
 	if ( ! isBlockSupported || isInsideModalTemplatePart ) {
 		return null;
@@ -255,7 +255,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 
 		// Create the format object with all necessary attributes
 		const formatAttributes = {
-			'data-modal-link': JSON.stringify( linkData ), // Full data for editor display
+			'data-modal-trigger': JSON.stringify( linkData ), // Full data for editor display
 			'data-modal-content-type': contentType, // Quick access for backend
 			'data-modal-content-id': String( contentId ), // ID or URL for backend
 			href: '#', // Prevents default link behavior
@@ -292,8 +292,8 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 	return (
 		<>
 			<RichTextToolbarButton
-				icon={ external }
-				title={ __( 'Modal Link', 'pikari-gutenberg-modals' ) }
+				icon={ modalTriggerIcon }
+				title={ __( 'Modal Trigger', 'pikari-gutenberg-modals' ) }
 				onClick={ openFromToolbar }
 				isActive={ isActive }
 				className="modal-toolbar-button"
@@ -311,12 +311,12 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 					shift
 					focusOnMount={ openedBy === 'toolbar' ? 'firstElement' : false }
 					constrainTabbing
-					className="modal-link-popover"
+					className="modal-trigger-popover"
 				>
 					<Heading level={ 4 }>
 						{ ! isActive
-							? __( 'Add Modal Link', 'pikari-gutenberg-modals' )
-							: __( 'Edit Modal Link', 'pikari-gutenberg-modals' ) }
+							? __( 'Add Modal Trigger', 'pikari-gutenberg-modals' )
+							: __( 'Edit Modal Trigger', 'pikari-gutenberg-modals' ) }
 					</Heading>
 					<SelectControl
 						__nextHasNoMarginBottom
@@ -399,7 +399,7 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 									( b ) => b.anchor === anchor
 								);
 								const formatAttributes = {
-									'data-modal-link': JSON.stringify( {
+									'data-modal-trigger': JSON.stringify( {
 										title:
 											block?.title ||
 											__(
@@ -533,4 +533,4 @@ const ModalLinkEdit = ( { isActive, value, onChange, contentRef } ) => {
 
 // Format type registration moved to modal-format.js
 
-export default ModalLinkEdit;
+export default ModalTriggerEdit;

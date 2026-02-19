@@ -10,7 +10,7 @@ namespace Pikari\GutenbergModals;
 class BlockSupport
 {
     /**
-     * List of blocks that support modal links
+     * List of blocks that support modal triggers
      *
      * @var array
      */
@@ -65,7 +65,7 @@ class BlockSupport
         ];
 
         /**
-         * Filter the list of blocks that support modal links
+         * Filter the list of blocks that support modal triggers
          *
          * Note: Button blocks are excluded by default because they render as
          * interactive elements (button or anchor tags). Adding modal format
@@ -145,10 +145,10 @@ class BlockSupport
     }
 
     /**
-     * Filter block content to convert modal link format spans into interactive triggers.
+     * Filter block content to convert modal trigger format spans into interactive triggers.
      *
      * This method:
-     * 1. Finds spans with modal link data attributes
+     * 1. Finds spans with modal trigger data attributes
      * 2. Extracts the modal configuration
      * 3. Schedules modal HTML rendering in the footer
      * 4. Replaces the span with an interactive trigger element
@@ -159,23 +159,23 @@ class BlockSupport
      */
     public function filter_block( string $block_content, array $block ): string
     {
-        // Early return if no modal links detected
-        if ( ! str_contains($block_content, 'data-modal-link') ) {
+        // Early return if no modal triggers detected
+        if ( ! str_contains($block_content, 'data-modal-trigger') ) {
             return $block_content;
         }
 
         // Enqueue frontend assets — slug is determined per-span in extract_modal_config()
         self::set_has_modal_triggers();
 
-        // Process modal links using regex with callback
+        // Process modal triggers using regex with callback
         // Pattern breakdown:
         // - <span[^>]* - Match opening span tag
-        // - class="[^"]*modal-link-trigger[^"]*" - Must have modal-link-trigger class
+        // - class="[^"]*modal-trigger[^"]*" - Must have modal-trigger class
         // - [^>]* - Any other attributes
         // - >(.*?)</span> - Capture inner content until closing tag
         // - /s flag allows . to match newlines
         $block_content = preg_replace_callback(
-            '/<span[^>]*class="[^"]*modal-link-trigger[^"]*"[^>]*>(.*?)<\/span>/s',
+            '/<span[^>]*class="[^"]*modal-trigger[^"]*"[^>]*>(.*?)<\/span>/s',
             [$this, 'process_modal_span'],
             $block_content
         );
@@ -402,7 +402,7 @@ class BlockSupport
     private function extract_modal_config( string $tag_html ): ?array
     {
         // Extract each required attribute
-        preg_match('/data-modal-link="([^"]*)"/', $tag_html, $link_match);
+        preg_match('/data-modal-trigger="([^"]*)"/', $tag_html, $link_match);
         preg_match('/data-modal-content-type="([^"]*)"/', $tag_html, $type_match);
         preg_match('/data-modal-content-id="([^"]*)"/', $tag_html, $id_match);
 
@@ -471,7 +471,7 @@ class BlockSupport
                 '<a
                     id="%s"
                     href="%s"
-                    class="has-modal-link modal-link-trigger"
+                    class="has-modal-trigger modal-trigger"
                     data-wp-interactive="pikari-modal"
                     data-wp-context=\'%s\'
                     data-wp-on--click="actions.handleTriggerClick"
@@ -515,7 +515,7 @@ class BlockSupport
             '<a
                 id="%s"
                 href="%s"
-                class="has-modal-link modal-link-trigger"
+                class="has-modal-trigger modal-trigger"
                 data-wp-interactive="pikari-modal"
                 data-wp-context=\'%s\'
                 data-wp-on--click="actions.handleTriggerClick"

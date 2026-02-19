@@ -18,11 +18,11 @@ Always use these agents proactively:
 
 ### Three Trigger Types
 
-1. **Inline Modal Links** — RichText format applied to text in supported blocks
+1. **Inline Modal Triggers** — RichText format applied to text in supported blocks
 
-   - Format: `modal-toolbar-button/modal-link` (Cmd/Ctrl+M shortcut)
-   - Editor: `src/editor/modal-format.js` + `src/editor/modal-link-edit.js`
-   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-link-trigger">` into interactive `<a>` tags
+   - Format: `modal-toolbar-button/modal-trigger` (Cmd/Ctrl+M shortcut)
+   - Editor: `src/editor/modal-format.js` + `src/editor/modal-trigger-edit.js`
+   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-trigger">` into interactive `<a>` tags
    - Supported blocks: paragraph, heading, list, list-item, quote, verse, preformatted, navigation-link
 
 2. **Button Block Modals** — extends core/button with a toggle
@@ -68,11 +68,11 @@ Always use these agents proactively:
 | File                               | Lines | Purpose                                                                  |
 | ---------------------------------- | ----- | ------------------------------------------------------------------------ |
 | `group-modal-trigger-extension.js` | ~365  | HOC for group block — link detection, auto-selection, Query Loop support |
-| `modal-link-edit.js`               | ~290  | RichText format toolbar UI, LinkControl popover, post search             |
+| `modal-trigger-edit.js`            | ~290  | RichText format toolbar UI, LinkControl popover, post search             |
 | `button-modal-extension.js`        | ~115  | HOC for button block — modal toggle in InspectorControls                 |
 | `modal-format.js`                  | ~20   | RichText format type registration                                        |
 | `index.js`                         | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`         |
-| `style.scss`                       | ~65   | Editor visual indicators (dashed purple underline on modal links)        |
+| `style.scss`                       | ~65   | Editor visual indicators (dashed purple underline on modal triggers)     |
 
 **Frontend (`src/frontend/`):**
 
@@ -113,7 +113,7 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 
 ```php
 // Content processing
-pikari_gutenberg_modals_supported_blocks       // Customize blocks supporting inline modal links
+pikari_gutenberg_modals_supported_blocks       // Customize blocks supporting inline modal triggers
 pikari_gutenberg_modals_post_content           // Filter post content before modal rendering
 pikari_gutenberg_modals_url_content            // Filter external URL content
 pikari_gutenberg_modals_content                // General content filter
