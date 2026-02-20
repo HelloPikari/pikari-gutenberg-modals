@@ -263,6 +263,10 @@ class BlockSupport
             'modalId' => $content_type . '-' . $content_id,
         ];
 
+        if ( $content_type === 'url' ) {
+            $context['contentSource'] = 'url';
+        }
+
         if ( ! empty( $modal_size ) ) {
             $context['size'] = $modal_size;
         }
@@ -502,6 +506,10 @@ class BlockSupport
             'postId'  => $content_id,
             'modalId' => $content_type . '-' . $content_id,
         ];
+
+        if ( $content_type === 'url' ) {
+            $context['contentSource'] = 'url';
+        }
 
         if ( ! empty( $size ) ) {
             $context['size'] = $size;

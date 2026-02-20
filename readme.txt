@@ -90,7 +90,7 @@ Yes. All triggers render as standard `<a href="...">` links. Without JavaScript,
 
 = Can I load external URLs in modals? =
 
-Yes. Set the trigger URL to an external page. Use the domain allowlist/blocklist filters to control which external domains are permitted.
+Yes. External URLs are loaded in a sandboxed iframe inside the modal. Set the trigger URL to an external page and it will display within the modal dialog. Note that some sites block being embedded in iframes via X-Frame-Options or Content-Security-Policy headers — those sites will show a blank frame. Use the domain allowlist/blocklist filters to control which external domains are permitted.
 
 == Developer Filters ==
 
@@ -164,7 +164,7 @@ Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 = Domain Restrictions =
 
 **pikari_gutenberg_modals_allowed_domains**
-Specify domains allowed for external URL content (allowlist). When set, only these domains are permitted.
+Restrict which domains are allowed for external URL content (allowlist). By default, all domains are allowed (the blocklist and private IP checks still apply). When this filter returns a non-empty array, only those domains are permitted.
 
 `add_filter( 'pikari_gutenberg_modals_allowed_domains', function( $domains ) {
     return array( 'example.com', 'trusted-site.org' );
@@ -226,6 +226,12 @@ Override any of these in your theme's CSS to customize the modal appearance:
 5. Template part customization in the Site Editor
 
 == Changelog ==
+
+= 1.3.0 =
+* External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
+* Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
+* Fixed external URL triggers failing with REST API 404 errors
+* Prefetch skipped for external URL triggers (cross-origin iframe content cannot be prefetched)
 
 = 1.2.0 =
 * New Modal Trigger block — dedicated clickable card wrapper with three content source modes (detected link, custom URL, page content)

@@ -159,7 +159,7 @@ Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 
 #### `pikari_gutenberg_modals_allowed_domains`
 
-Allowlist for external URL content. When set, only these domains are permitted.
+Restrict which domains are allowed for external URL content (allowlist). By default, all domains are allowed (the blocklist and private IP checks still apply). When this filter returns a non-empty array, only those domains are permitted.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_allowed_domains', function( $domains ) {
@@ -224,6 +224,13 @@ Override in your theme's CSS:
 ```
 
 ## Changelog
+
+### 1.3.0
+
+- External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
+- Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
+- Fixed external URL triggers failing with REST API 404 errors
+- Prefetch skipped for external URL triggers (cross-origin iframe content cannot be prefetched)
 
 ### 1.2.0
 

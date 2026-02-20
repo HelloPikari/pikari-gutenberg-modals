@@ -108,6 +108,7 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 6. **Lazy asset loading** — Frontend JS/CSS only enqueued when `BlockSupport::$has_modal_triggers` is true
 7. **Dynamic block styles** — `BlockStyleCollector` finds blocks in modal content, `block-style-loader.js` loads their stylesheets on-demand
 8. **Hover prefetch** — 200ms debounced prefetch warms browser HTTP cache before click
+9. **External URL iframe** — External URLs load in a sandboxed iframe; internal URLs use REST API. Sites blocking iframes (X-Frame-Options/CSP) will show a blank page; progressive enhancement provides fallback navigation
 
 ## Custom Hooks & Filters
 
@@ -123,7 +124,7 @@ pikari_gutenberg_modals_content_response       // Modify modal-content REST resp
 pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: HOUR_IN_SECONDS)
 
 // Security
-pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs
+pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs (default: empty = all allowed)
 pikari_gutenberg_modals_blocked_domains        // Domain blocklist for external URLs
 
 // Editor
