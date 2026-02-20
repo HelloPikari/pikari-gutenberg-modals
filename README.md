@@ -225,7 +225,7 @@ Override in your theme's CSS:
 
 ## Changelog
 
-### 1.3.0
+### 1.2.1
 
 - External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
 - Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
