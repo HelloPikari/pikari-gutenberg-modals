@@ -5,3 +5,20 @@
  * frontend, matching WordPress Core patterns (Group, Query Loop, Navigation).
  * Block identification relies on the toolbar name and List View.
  */
+.block-editor-link-control {
+	min-width: 100%;
+}
+.block-editor-link-control__field {
+	margin: 0;
+}
+
+@media (min-width: 600px) {
+	.block-editor-link-control__field {
+		min-width: auto;
+	}
+}
+.block-editor-link-control__search-item.is-current {
+	padding-top: 0;
+	padding-left: 0;
+	padding-right: 0;
+}

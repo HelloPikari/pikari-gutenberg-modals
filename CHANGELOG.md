@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.0]
+
+### Added
+
+- External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
+- `contentSource: 'url'` context property identifies external URL triggers on the frontend
+
+### Fixed
+
+- External URLs no longer blocked by default domain allowlist (allowlist now defaults to empty, permitting all domains)
+- External URL triggers now render correctly instead of failing with REST API 404 errors
+
+### Changed
+
+- Domain allowlist defaults to empty array (all domains allowed); blocklist and private IP checks still apply
+- Prefetch skipped for external URL triggers (cross-origin iframe content cannot be prefetched)
+
+## [1.2.0]
+
+### Added
+
+- Modal Trigger block — dedicated clickable card wrapper with three content source modes (detected link, custom URL, page content)
+- Bidirectional transforms between Modal Trigger block and core/group
+- SVG icon indicator for inline triggers in the editor
+
+### Changed
+
+- Renamed "Modal Link" to "Modal Trigger" for consistent terminology across all trigger types
+- Unified block icons across all modal blocks
+- Improved modal-content REST endpoint with schema and argument validation
+- Dynamic REST URL for plain permalink compatibility
+
+### Removed
+
+- Unused search REST endpoint
+
 ## [1.1.0]
 
 ### Added

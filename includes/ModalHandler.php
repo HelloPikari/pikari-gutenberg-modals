@@ -116,12 +116,9 @@ class ModalHandler
      */
     public function get_allowed_domains(): array
     {
-        $allowed = [
-            // Add commonly trusted domains
-            parse_url(home_url(), PHP_URL_HOST),
-        ];
-
-        return apply_filters('pikari_gutenberg_modals_allowed_domains_list', $allowed);
+        // Default empty: all domains allowed (blocklist + private IP checks still apply).
+        // Developers can restrict to specific domains via the filter.
+        return apply_filters( 'pikari_gutenberg_modals_allowed_domains_list', [] );
     }
 
     /**

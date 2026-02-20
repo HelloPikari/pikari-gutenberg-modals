@@ -70,6 +70,11 @@ switch ( $content_source ) {
             'modalId' => $modal_id,
         ];
 
+        // Mark external URLs so the frontend renders an iframe instead of fetching via REST API.
+        if ( $content_type === 'url' ) {
+            $context['contentSource'] = 'url';
+        }
+
         $modal_size = $attributes['modalSize'] ?? '';
         if ( ! empty( $modal_size ) ) {
             $context['size'] = $modal_size;
@@ -311,6 +316,10 @@ switch ( $content_source ) {
             'postId'  => $content_id,
             'modalId' => $modal_id,
         ];
+
+        if ( $content_type === 'url' ) {
+            $context['contentSource'] = 'url';
+        }
 
         if ( ! empty( $modal_size ) ) {
             $context['size'] = $modal_size;
