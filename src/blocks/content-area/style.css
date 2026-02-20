@@ -36,6 +36,21 @@
 	border: none;
 }
 
+/* Iframe content fills available modal height via flex chain */
+.modal-body:has(.modal-entry--iframe) {
+	display: flex;
+	flex-direction: column;
+}
+.modal-entry--iframe {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	min-height: 0;
+}
+.modal-entry--iframe iframe {
+	flex: 1;
+}
+
 /* Columns block vertical alignment (may not be loaded in modal context) */
 .modal-body .wp-block-columns.are-vertically-aligned-top {
 	align-items: flex-start;

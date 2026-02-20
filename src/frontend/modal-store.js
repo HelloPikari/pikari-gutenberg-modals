@@ -215,6 +215,59 @@ const { state, actions } = store( 'pikari-modal', {
 				return;
 			}
 
+			// External URL: render iframe instead of REST API fetch
+			const isExternalUrl = contentSource === 'url';
+			if ( isExternalUrl ) {
+				const iframeSrc = postId;
+
+				// Extract hostname for accessible iframe title
+				let iframeTitle = '';
+				try {
+					iframeTitle = new URL( iframeSrc ).hostname;
+				} catch {
+					iframeTitle = iframeSrc;
+				}
+
+				const iframeHtml = `
+					<article class="modal-entry modal-entry--iframe">
+						<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( iframeTitle ) }</h2>
+						<iframe
+							src="${ escapeAttribute( iframeSrc ) }"
+							title="${ escapeAttribute( iframeTitle ) }"
+							sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+						></iframe>
+					</article>
+				`;
+
+				if ( modalBody ) {
+					modalBody.innerHTML = iframeHtml;
+
+					// Clear loading state when iframe finishes loading
+					const iframe = modalBody.querySelector( 'iframe' );
+					if ( iframe ) {
+						iframe.addEventListener(
+							'load',
+							withScope( () => {
+								state.loading = false;
+							} ),
+							{ once: true }
+						);
+					}
+				}
+				state.content = iframeHtml;
+				state.loading = true;
+
+				// Focus close button after iframe is inserted
+				// eslint-disable-next-line no-undef
+				requestAnimationFrame( () => {
+					if ( activeContainer ) {
+						focusFirstElement( activeContainer );
+					}
+				} );
+
+				return;
+			}
+
 			// Remote content: fetch via REST API
 			state.loading = true;
 
@@ -424,6 +477,11 @@ const { state, actions } = store( 'pikari-modal', {
 				return;
 			}
 
+			// Skip prefetch for external URLs (loaded via iframe, not REST API)
+			if ( contentSource === 'url' ) {
+				return;
+			}
+
 			// Skip if no postId or already prefetched/prefetching
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {
 				return;
@@ -466,6 +524,11 @@ const { state, actions } = store( 'pikari-modal', {
 		handlePrefetchHover: withSyncEvent( ( event ) => {
 			const context = getContext();
 			const { postId } = context;
+
+			// Skip prefetch for external URLs (loaded via iframe, not REST API)
+			if ( context.contentSource === 'url' ) {
+				return;
+			}
 
 			// Skip if no postId or already prefetched
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {

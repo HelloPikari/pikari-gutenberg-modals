@@ -219,6 +219,10 @@ class GroupModalTriggerSupport
             'modalId' => $modal_id,
         ];
 
+        if ( $content_type === 'url' ) {
+            $context['contentSource'] = 'url';
+        }
+
         if ( ! empty( $modal_size ) ) {
             $context['size'] = $modal_size;
         }
