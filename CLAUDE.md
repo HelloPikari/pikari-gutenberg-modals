@@ -58,7 +58,7 @@ Always use these agents proactively:
 | `BlockStyleCollector`      | ~185  | Detects blocks in modal content, collects stylesheet URLs for dynamic loading       |
 | `SpeculativeLoading`       | ~155  | Hover-based prefetch (200ms delay), optional `<link rel="prefetch">` hints          |
 | `EditorIntegration`        | ~115  | Editor asset enqueuing, localized config via `pikariGutenbergModals` JS object      |
-| `ModalTemplatePart`        | ~285  | Template part area registration, default template, hybrid theme fallback rendering  |
+| `ModalTemplatePart`        | ~285  | Template part area registration (block themes only), file-based fallback rendering  |
 | `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                      |
 
 ### JavaScript Files

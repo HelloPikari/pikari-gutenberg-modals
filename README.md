@@ -32,7 +32,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 ### Theme Support
 
 - **Block themes** — Full Site Editor template part support
-- **Hybrid themes** — Automatic fallback rendering via `do_blocks()`
+- **Hybrid themes** — File-based template rendering via `do_blocks()`
 
 ## Installation
 
