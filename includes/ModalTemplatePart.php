@@ -44,6 +44,12 @@ class ModalTemplatePart
      */
     public function register_area( array $areas ): array
     {
+        // Only register the modal area for block themes with full Site Editor support.
+        // Hybrid themes render modals from file-based templates and don't use the area system.
+        if ( ! wp_is_block_theme() ) {
+            return $areas;
+        }
+
         $areas[] = [
             'area'        => self::AREA,
             'area_tag'    => 'div',
@@ -65,6 +71,12 @@ class ModalTemplatePart
      */
     public function provide_default_template( array $query_result, array $query, string $template_type ): array
     {
+        // Only provide synthetic templates for block themes.
+        // Hybrid themes use file-based rendering and should not see phantom template parts.
+        if ( ! wp_is_block_theme() ) {
+            return $query_result;
+        }
+
         if ( 'wp_template_part' !== $template_type ) {
             return $query_result;
         }
@@ -109,6 +121,11 @@ class ModalTemplatePart
      */
     public function provide_individual_template( ?\WP_Block_Template $block_template, string $id, string $template_type ): ?\WP_Block_Template
     {
+        // Only provide synthetic templates for block themes.
+        if ( ! wp_is_block_theme() ) {
+            return $block_template;
+        }
+
         if ( 'wp_template_part' !== $template_type ) {
             return $block_template;
         }
@@ -171,10 +188,8 @@ class ModalTemplatePart
      * Render a modal template part by slug.
      *
      * Two rendering paths based on theme type:
-     * - Block themes: trust block_template_part() completely.
-     * - Hybrid themes (classic + block-template-parts): try block_template_part()
-     *   first, fall back to do_blocks() if empty — block_template_part() may not
-     *   fully resolve plugin-provided templates on hybrid themes.
+     * - Block themes: block_template_part() with full Site Editor support.
+     * - Non-block themes (hybrid/classic): file-based fallback via do_blocks().
      *
      * @param string $slug Template part slug (default: 'modal').
      * @return string Rendered template part HTML, or empty string.
@@ -189,20 +204,9 @@ class ModalTemplatePart
             return ob_get_clean();
         }
 
-        // Hybrid themes: try block_template_part() but fall back to
-        // do_blocks() if it returns empty — the template part resolution
-        // infrastructure may not fully resolve plugin-provided parts.
-        if ( current_theme_supports( 'block-template-parts' ) ) {
-            ob_start();
-            block_template_part( $slug );
-            $output = ob_get_clean();
-
-            if ( ! empty( trim( $output ) ) ) {
-                return $output;
-            }
-        }
-
-        // Hybrid fallback: resolve content manually.
+        // Non-block themes: resolve content from theme files or plugin default.
+        // We skip block_template_part() because the plugin does not inject
+        // synthetic templates for non-block themes (see filter guards above).
         $content = self::get_fallback_content( $slug );
         if ( empty( $content ) ) {
             return '';

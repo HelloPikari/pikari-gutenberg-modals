@@ -38,7 +38,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 **Works With:**
 
 * Block themes (full Site Editor support)
-* Hybrid themes (automatic fallback rendering)
+* Hybrid themes (file-based template rendering)
 
 == Installation ==
 
@@ -70,7 +70,7 @@ Yes. The plugin follows WCAG guidelines with proper ARIA attributes, focus trapp
 
 = Does it work with hybrid themes? =
 
-Yes. Block themes get full Site Editor template part support. Hybrid themes (classic PHP templates with block editor for content) use an automatic fallback that renders the modal dialog via `do_blocks()`. Theme authors can customize by placing `parts/modal.html` in their theme directory.
+Yes. Block themes get full Site Editor template part support. Hybrid themes (classic PHP templates with block editor for content) render the modal dialog from theme files via `do_blocks()`. The Site Editor template part system is not used for hybrid themes. Theme authors can customize by placing `parts/modal.html` in their theme directory.
 
 = How do I create different modal designs? =
 
@@ -227,7 +227,7 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
-= 1.3.0 =
+= 1.2.1 =
 * External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
 * Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
 * Fixed external URL triggers failing with REST API 404 errors

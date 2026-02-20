@@ -7,7 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [1.3.0]
+### Fixed
+
+- Hybrid themes no longer see a phantom modal template part in the admin that cannot be meaningfully edited
+- Template part area registration and synthetic template injection now limited to block themes only
+- Hybrid theme editor routing uses file-based scanning instead of querying the block template system
+
+### Changed
+
+- Simplified hybrid theme rendering: `render()` goes directly to file-based fallback instead of attempting `block_template_part()` first
+
+## [1.2.1]
 
 ### Added
 

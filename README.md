@@ -32,7 +32,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 ### Theme Support
 
 - **Block themes** — Full Site Editor template part support
-- **Hybrid themes** — Automatic fallback rendering via `do_blocks()`
+- **Hybrid themes** — File-based template rendering via `do_blocks()`
 
 ## Installation
 
@@ -225,7 +225,7 @@ Override in your theme's CSS:
 
 ## Changelog
 
-### 1.3.0
+### 1.2.1
 
 - External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
 - Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
