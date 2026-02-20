@@ -227,7 +227,7 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
-= 1.3.0 =
+= 1.2.1 =
 * External URL support: external URLs now load in a sandboxed iframe inside the modal dialog
 * Fixed external URLs being blocked by default domain allowlist (now defaults to allowing all domains)
 * Fixed external URL triggers failing with REST API 404 errors
