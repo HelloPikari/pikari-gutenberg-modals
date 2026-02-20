@@ -227,6 +227,16 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
+= 1.2.0 =
+* New Modal Trigger block — dedicated clickable card wrapper with three content source modes (detected link, custom URL, page content)
+* Bidirectional transforms between Modal Trigger block and core/group
+* Renamed "Modal Link" to "Modal Trigger" for consistent terminology across all trigger types
+* Unified block icons across all modal blocks
+* SVG icon indicator replaces Unicode character for inline triggers in the editor
+* Removed unused search REST endpoint
+* Improved modal-content REST endpoint with schema and argument validation
+* Fixed dynamic REST URL for plain permalink compatibility
+
 = 1.1.0 =
 * Hybrid theme support: modals render via `do_blocks()` fallback when `block_template_part()` is unavailable
 * Theme file overrides for hybrid themes (`parts/modal.html`, `parts/modal-{slug}.html`)
