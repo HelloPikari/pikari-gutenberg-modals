@@ -150,7 +150,7 @@ class EditorIntegration
      */
     private function get_modal_template_parts(): array
     {
-        if ( ModalTemplatePart::is_supported() ) {
+        if ( wp_is_block_theme() ) {
             $parts = $this->get_block_theme_template_parts();
         } else {
             $parts = $this->scan_theme_modal_templates();
