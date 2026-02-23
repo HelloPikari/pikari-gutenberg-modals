@@ -7,6 +7,7 @@
 	"category": "design",
 	"description": "The area where modal content is dynamically loaded. Place inside the modal template part.",
 	"textdomain": "pikari-gutenberg-modals",
+	"ancestor": ["pikari-gutenberg-modals/modal-dialog"],
 	"supports": {
 		"html": false,
 		"multiple": false,
