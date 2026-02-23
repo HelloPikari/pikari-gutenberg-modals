@@ -159,13 +159,19 @@ class BlockSupport
      */
     public function filter_block( string $block_content, array $block ): string
     {
-        // Early return if no modal triggers detected
-        if ( ! str_contains($block_content, 'data-modal-trigger') ) {
+        // Early return if no modal trigger spans detected.
+        // Checks for the CSS class name which is present on both open-mode
+        // (data-modal-trigger) and close-mode (data-modal-action="close") spans.
+        if ( ! str_contains( $block_content, 'modal-trigger' ) ) {
             return $block_content;
         }
 
-        // Enqueue frontend assets — slug is determined per-span in extract_modal_config()
-        self::set_has_modal_triggers();
+        // Enqueue frontend assets only for open-mode triggers.
+        // Close-mode triggers exist inside modal template parts where assets
+        // are already enqueued by the opening trigger.
+        if ( str_contains( $block_content, 'data-modal-trigger' ) ) {
+            self::set_has_modal_triggers();
+        }
 
         // Process modal triggers using regex with callback
         // Pattern breakdown:
@@ -364,10 +370,20 @@ class BlockSupport
      */
     private function process_modal_span( array $matches ): string
     {
-        $full_tag = $matches[0];
+        $full_tag   = $matches[0];
         $inner_html = $matches[1];
 
-        // Extract modal configuration from data attributes
+        // Close-mode: convert span to a button that closes the modal.
+        if ( str_contains( $full_tag, 'data-modal-action="close"' ) ) {
+            return sprintf(
+                '<button type="button" class="modal-close-trigger modal-close-trigger--inline"'
+                . ' data-wp-interactive="pikari-modal"'
+                . ' data-wp-on--click="actions.closeModal">%s</button>',
+                $inner_html
+            );
+        }
+
+        // Open-mode: extract modal configuration from data attributes.
         $modal_config = $this->extract_modal_config($full_tag);
 
         if ( ! $modal_config ) {

@@ -7,15 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
+- Modal Trigger block close mode with whole-wrapper and targeted child element options
+- Inline close triggers inside modal template parts (toolbar button in RichText editor)
+- Automatic sr-only fallback close button when no close trigger detected in modal dialog
+- `handleCloseClick` and `handleCloseKeydown` frontend actions for close triggers
+- Close trigger styles with focus-visible outline
+
+### Changed
+
+- Default modal template now uses Modal Trigger block (close mode) wrapping a core/button instead of the close-button block
+- `findLinksInBlocks` extended with `includeButtonsWithoutUrl` option for close-mode element detection
+- Simplified hybrid theme rendering: `render()` goes directly to file-based fallback instead of attempting `block_template_part()` first
+
+### Deprecated
+
+- Close Button block hidden from inserter; replaced by Modal Trigger block with close action
+
 ### Fixed
 
 - Hybrid themes no longer see a phantom modal template part in the admin that cannot be meaningfully edited
 - Template part area registration and synthetic template injection now limited to block themes only
 - Hybrid theme editor routing uses file-based scanning instead of querying the block template system
-
-### Changed
-
-- Simplified hybrid theme rendering: `render()` goes directly to file-based fallback instead of attempting `block_template_part()` first
 
 ## [1.2.1]
 

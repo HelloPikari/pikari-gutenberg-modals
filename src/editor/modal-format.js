@@ -16,6 +16,7 @@ registerFormatType( 'modal-toolbar-button/modal-trigger', {
 		'data-modal-content-id': 'data-modal-content-id',
 		'data-modal-size': 'data-modal-size',
 		'data-modal-template-part': 'data-modal-template-part',
+		'data-modal-action': 'data-modal-action',
 	},
 	edit: ModalTriggerEdit,
 } );

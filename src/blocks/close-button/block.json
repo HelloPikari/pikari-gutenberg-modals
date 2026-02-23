@@ -15,6 +15,7 @@
 		}
 	},
 	"supports": {
+		"inserter": false,
 		"html": false,
 		"multiple": false,
 		"reusable": false,

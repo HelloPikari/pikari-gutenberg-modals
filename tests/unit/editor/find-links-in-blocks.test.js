@@ -360,6 +360,89 @@ describe( 'findLinksInBlocks', () => {
 		} );
 	} );
 
+	describe( 'close mode: buttons without URLs', () => {
+		it( 'should not detect buttons without URL by default', () => {
+			const blocks = [
+				createBlock( 'core/button', { text: 'Cancel' } ),
+			];
+			expect( findLinksInBlocks( blocks ) ).toEqual( [] );
+		} );
+
+		it( 'should detect buttons without URL when includeButtonsWithoutUrl is true', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', { text: 'Cancel' } ),
+					clientId: 'abc-123',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier ).toEqual( {
+				blockPath: '0',
+				blockName: 'core/button',
+				clientId: 'abc-123',
+			} );
+			expect( result[ 0 ].label ).toContain( 'Cancel' );
+		} );
+
+		it( 'should use fallback label when button text is empty', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {} ),
+					clientId: 'def-456',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].label ).toContain( 'Button' );
+		} );
+
+		it( 'should still detect buttons with URL when includeButtonsWithoutUrl is true', () => {
+			const blocks = [
+				createBlock( 'core/button', {
+					url: 'https://example.com',
+					text: 'Open',
+				} ),
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier.linkUrl ).toBe(
+				'https://example.com'
+			);
+		} );
+
+		it( 'should detect both URL and non-URL buttons together', () => {
+			const blocks = [
+				createBlock( 'core/button', {
+					url: 'https://example.com',
+					text: 'Submit',
+				} ),
+				{
+					...createBlock( 'core/button', { text: 'Cancel' } ),
+					clientId: 'cancel-btn',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 2 );
+			expect( result[ 0 ].identifier.linkUrl ).toBe(
+				'https://example.com'
+			);
+			expect( result[ 1 ].identifier.clientId ).toBe( 'cancel-btn' );
+		} );
+	} );
+
 	describe( 'unrecognized block types', () => {
 		it( 'should ignore unknown block types', () => {
 			const blocks = [

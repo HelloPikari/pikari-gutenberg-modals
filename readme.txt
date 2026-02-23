@@ -14,11 +14,12 @@ Accessible modal dialogs for the WordPress block editor. Display posts, pages, a
 
 Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block editor. Content — posts, pages, custom post types, or external URLs — is displayed in overlays with smooth animations. Triggers are real links that work without JavaScript (progressive enhancement).
 
-**Three Trigger Types:**
+**Trigger Types:**
 
 * **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
 * **Button Block Modals** — Toggle the "Open in Modal" option on any core Button block
-* **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, automatically detecting the primary link inside
+* **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
+* **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
 
 **Key Features:**
 
@@ -226,6 +227,15 @@ Override any of these in your theme's CSS to customize the modal appearance:
 5. Template part customization in the Site Editor
 
 == Changelog ==
+
+= Unreleased =
+* Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
+* Modal Trigger block close mode with whole-wrapper and targeted child element options
+* Inline close triggers inside modal template parts
+* Automatic sr-only fallback close button when no close trigger detected in modal dialog
+* Default modal template now uses Modal Trigger block (close mode) instead of the close-button block
+* Close Button block deprecated (hidden from inserter, replaced by Modal Trigger close mode)
+* Fixed hybrid themes seeing phantom modal template parts in the admin
 
 = 1.2.1 =
 * External URL support: external URLs now load in a sandboxed iframe inside the modal dialog

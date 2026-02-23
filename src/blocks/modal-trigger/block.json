@@ -9,6 +9,10 @@
 	"textdomain": "pikari-gutenberg-modals",
 	"keywords": ["modal", "popup", "dialog", "trigger", "card", "clickable"],
 	"attributes": {
+		"triggerAction": {
+			"type": "string",
+			"default": "open"
+		},
 		"contentSource": {
 			"type": "string",
 			"default": "link"
