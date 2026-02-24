@@ -13,7 +13,6 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 ### Trigger Types
 
 - **Inline Modal Triggers** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
-- **Button Block Modals** — Toggle "Open in Modal" on any core Button block
 - **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
 - **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
 
@@ -39,7 +38,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 1. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 2. Activate through the Plugins screen
-3. Use any of the three trigger types in the block editor
+3. Use any of the trigger types in the block editor
 
 ### Block Themes
 

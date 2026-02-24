@@ -17,7 +17,6 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 **Trigger Types:**
 
 * **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
-* **Button Block Modals** — Toggle the "Open in Modal" option on any core Button block
 * **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
 * **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
 
@@ -45,7 +44,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 1. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Use any of the three trigger types in the block editor to create modal triggers
+3. Use any of the trigger types in the block editor to create modal triggers
 
 = Block Themes =
 
@@ -79,11 +78,11 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 **Hybrid themes:** Create `parts/modal-{slug}.html` files in your theme. For example, `parts/modal-compact.html` appears as "Compact" in the template selector.
 
-= What are the three trigger types? =
+= What are the trigger types? =
 
 1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
-2. **Button Block Modals** — Add a core Button block, toggle "Open in Modal" in the inspector, and set the button URL to a post/page
-3. **Modal Trigger Block** — Add a Modal Trigger block, place any content inside, and the plugin detects the primary link (from buttons, images, headings, etc.) to make the whole card clickable. Also supports custom URL and inline content modes.
+2. **Modal Trigger Block** — Add a Modal Trigger block, place any content inside, and the plugin detects the primary link (from buttons, images, headings, etc.) to make the whole card clickable. Also supports custom URL and inline content modes.
+3. **Close Triggers** — Set the Modal Trigger block or inline trigger to "Close modal" action. Use inside modal template parts to create custom close buttons with full design flexibility.
 
 = Does it work without JavaScript? =
 
