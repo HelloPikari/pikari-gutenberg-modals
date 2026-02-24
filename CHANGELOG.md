@@ -36,6 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Close-mode element selection now persists across page refreshes using anchor attribute instead of ephemeral clientId
 - Buttons with URLs now appear correctly in close trigger element dropdown
 
+## [1.2.2]
+
+### Fixed
+
+- Hybrid themes seeing a non-functional modal template part in the admin that could not be meaningfully edited
+
 ## [1.2.1]
 
 ### Added
@@ -106,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - 12 developer filters
 
 [1.3.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.2...v1.3.0
+[1.2.2]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.1...v1.2.2
 [1.2.1]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.0.0...v1.1.0

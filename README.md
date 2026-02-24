@@ -226,15 +226,23 @@ Override in your theme's CSS:
 
 ## Changelog
 
-### Unreleased
+### 1.3.0
 
 - Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
 - Modal Trigger block close mode with whole-wrapper and targeted child element options
 - Inline close triggers inside modal template parts
 - Automatic sr-only fallback close button when no close trigger detected in modal dialog
+- Block context restrictions: Close Button and Content Area restricted to Modal Dialog; Modal Content and Modal Trigger hidden in Site Editor
 - Default modal template now uses Modal Trigger block (close mode) instead of the close-button block
 - Close Button block deprecated (hidden from inserter, replaced by Modal Trigger close mode)
+- Fixed theme per-block styles and layout CSS missing from modal content
+- Fixed close-mode element selection not persisting across page refreshes
+- Fixed buttons with URLs not appearing in close trigger element dropdown
 - Fixed hybrid themes seeing phantom modal template parts in the admin
+
+### 1.2.2
+
+- Fixed hybrid themes seeing a non-functional modal template part in the admin
 
 ### 1.2.1
 
