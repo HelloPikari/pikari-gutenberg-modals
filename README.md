@@ -37,9 +37,10 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 ## Installation
 
-1. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
-2. Activate through the Plugins screen
-3. Use any of the three trigger types in the block editor
+1. Download the latest release or clone this repository
+2. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
+3. Activate through the Plugins screen
+4. Use any of the three trigger types in the block editor
 
 ### Block Themes
 
