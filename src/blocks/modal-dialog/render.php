@@ -96,5 +96,16 @@ $wrapper_attrs = get_block_wrapper_attributes(
     <?php
     // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- Inner block content is pre-escaped by WordPress block rendering.
     echo $content;
+
+    // Inject sr-only fallback close button when no close trigger exists in the dialog content.
+    // Detects: legacy close-button (actions.closeModal), block close triggers (actions.handleCloseClick),
+    // and inline close triggers (actions.closeModal on <button>).
+    if ( ! str_contains( $content, 'actions.closeModal' ) && ! str_contains( $content, 'actions.handleCloseClick' ) ) {
+        printf(
+            '<button class="modal-close-fallback sr-only" data-wp-interactive="pikari-modal" data-wp-on--click="actions.closeModal" type="button" aria-label="%s">%s</button>',
+            esc_attr__( 'Close dialog', 'pikari-gutenberg-modals' ),
+            esc_html__( 'Close', 'pikari-gutenberg-modals' )
+        );
+    }
     ?>
 </div>

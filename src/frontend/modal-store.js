@@ -457,6 +457,30 @@ const { state, actions } = store( 'pikari-modal', {
 			}
 		} ),
 
+		/**
+		 * Handle click on a close trigger element.
+		 *
+		 * Used by Modal Trigger blocks in close mode. Prevents default
+		 * behavior (e.g. anchor navigation) before closing.
+		 */
+		handleCloseClick: withSyncEvent( ( event ) => {
+			event.preventDefault();
+			actions.closeModal();
+		} ),
+
+		/**
+		 * Handle keyboard activation on close trigger wrappers.
+		 *
+		 * For wrapper divs with role="button" that close the modal.
+		 * Must respond to Enter and Space per ARIA button pattern.
+		 */
+		handleCloseKeydown: withSyncEvent( ( event ) => {
+			if ( event.key === 'Enter' || event.key === ' ' ) {
+				event.preventDefault();
+				actions.closeModal();
+			}
+		} ),
+
 		stopPropagation: withSyncEvent( ( event ) => {
 			event.stopPropagation();
 		} ),

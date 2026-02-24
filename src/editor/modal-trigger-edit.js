@@ -20,6 +20,7 @@ import {
 import { useSelect } from '@wordpress/data';
 import { __, sprintf } from '@wordpress/i18n';
 import modalTriggerIcon from '../blocks/modal-trigger/icon';
+import { close as closeIcon } from '@wordpress/icons';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 import useModalContentBlocks from './use-modal-content-blocks';
 import useIsModalTemplatePart from './use-is-modal-template-part';
@@ -46,7 +47,7 @@ const modalTriggerFormatSettings = {
  * @param {Object}   props.value      - RichText value object
  * @param {Function} props.onChange   - Callback to update the RichText value
  * @param {Object}   props.contentRef - Reference to the content element
- * @return {JSX.Element} The modal trigger edit UI
+ * @return {Element} The modal trigger edit UI
  */
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
@@ -197,10 +198,35 @@ const ModalTriggerEdit = ( { isActive, value, onChange, contentRef } ) => {
 		};
 	}, [ contentRef, stopAddingLink ] );
 
-	// Don't render anything if the block doesn't support modal triggers
-	// or if we're inside the modal template part
-	if ( ! isBlockSupported || isInsideModalTemplatePart ) {
+	// Don't render if the block doesn't support modal triggers
+	if ( ! isBlockSupported ) {
 		return null;
+	}
+
+	// Inside a modal template part: show close trigger toggle (no popover/link picker)
+	if ( isInsideModalTemplatePart ) {
+		return (
+			<RichTextToolbarButton
+				icon={ closeIcon }
+				title={ __( 'Close Trigger', 'pikari-gutenberg-modals' ) }
+				onClick={ () => {
+					if ( isActive ) {
+						onChange( removeFormat( value, MODAL_FORMAT_NAME ) );
+					} else {
+						onChange(
+							applyFormat( value, {
+								type: MODAL_FORMAT_NAME,
+								attributes: {
+									'data-modal-action': 'close',
+								},
+							} )
+						);
+					}
+				} }
+				isActive={ isActive }
+				className="modal-toolbar-button"
+			/>
+		);
 	}
 
 	/**

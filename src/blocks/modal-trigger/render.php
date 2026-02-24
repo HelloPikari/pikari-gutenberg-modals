@@ -17,11 +17,81 @@ use Pikari\GutenbergModals\GroupModalTriggerSupport;
 use Pikari\GutenbergModals\ModalHandler;
 use Pikari\GutenbergModals\SpeculativeLoading;
 
+$trigger_action = $attributes['triggerAction'] ?? 'open';
 $content_source = $attributes['contentSource'] ?? 'link';
 $template_part  = $attributes['templatePart'] ?? '';
 $slug           = ! empty( $template_part ) ? $template_part : 'modal';
 
-// Route to the appropriate handler based on content source.
+// Close mode: make the block (or a specific child element) close the modal.
+// No asset enqueuing — close triggers exist inside modal template parts
+// where assets are already loaded by the opening trigger.
+if ( 'close' === $trigger_action ) {
+    $primary_link_json = $attributes['primaryLinkId'] ?? '';
+    $close_trigger_id  = '';
+
+    // Check if a specific child element was selected as the close trigger.
+    if ( ! empty( $primary_link_json ) ) {
+        $identifier       = json_decode( $primary_link_json, true );
+        $close_trigger_id = $identifier['closeTriggerId'] ?? '';
+    }
+
+    if ( ! empty( $close_trigger_id ) ) {
+        // Targeted close: add close action to the specific child element by anchor ID.
+        $processor = new WP_HTML_Tag_Processor( $content );
+
+        while ( $processor->next_tag() ) {
+            if ( $processor->get_attribute( 'id' ) !== $close_trigger_id ) {
+                continue;
+            }
+
+            $tag_name = strtolower( $processor->get_tag() );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+            $processor->add_class( 'modal-close-trigger' );
+
+            // <a> tags need role="button" and tabindex when href is removed.
+            if ( 'a' === $tag_name ) {
+                $processor->remove_attribute( 'href' );
+                $processor->set_attribute( 'role', 'button' );
+                $processor->set_attribute( 'tabindex', '0' );
+                $processor->set_attribute(
+                    'aria-label',
+                    esc_attr__( 'Close dialog', 'pikari-gutenberg-modals' )
+                );
+            }
+
+            break;
+        }
+
+        // Add data-wp-interactive to wrapper for Interactivity API scope.
+        $content   = $processor->get_updated_html();
+        $processor = new WP_HTML_Tag_Processor( $content );
+        if ( $processor->next_tag() ) {
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+        }
+
+        echo $processor->get_updated_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    } else {
+        // Whole-wrapper close: make the entire block the close trigger.
+        $processor = new WP_HTML_Tag_Processor( $content );
+        if ( $processor->next_tag() ) {
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+            $processor->set_attribute( 'role', 'button' );
+            $processor->set_attribute( 'tabindex', '0' );
+            $processor->set_attribute(
+                'aria-label',
+                esc_attr__( 'Close dialog', 'pikari-gutenberg-modals' )
+            );
+            $processor->add_class( 'modal-close-trigger' );
+        }
+        echo $processor->get_updated_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
+    }
+    return;
+}
+
+// Open mode: route to the appropriate handler based on content source.
 switch ( $content_source ) {
     case 'url':
         $direct_url = $attributes['directUrl'] ?? '';

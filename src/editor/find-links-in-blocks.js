@@ -4,14 +4,17 @@
  * Shared utility used by both the Modal Trigger block and the
  * legacy Group Modal Trigger extension to detect links in child blocks.
  *
- * @param {Array}  blocks     Array of blocks to search.
- * @param {string} parentPath Path to the parent block (e.g., "0.2").
+ * @param {Array}   blocks                           Array of blocks to search.
+ * @param {string}  parentPath                       Path to the parent block (e.g., "0.2").
+ * @param {Object}  options                          Optional detection configuration.
+ * @param {boolean} options.includeButtonsWithoutUrl Include buttons without URLs (for close mode).
  * @return {Array} Array of detected link objects.
  */
 
 import { __ } from '@wordpress/i18n';
 
-export default function findLinksInBlocks( blocks, parentPath = '' ) {
+export default function findLinksInBlocks( blocks, parentPath = '', options = {} ) {
+	const { includeButtonsWithoutUrl = false } = options;
 	const links = [];
 
 	blocks.forEach( ( block, index ) => {
@@ -20,7 +23,19 @@ export default function findLinksInBlocks( blocks, parentPath = '' ) {
 		// Check for links based on block type
 		switch ( block.name ) {
 			case 'core/button':
-				if ( block.attributes.url ) {
+				if ( includeButtonsWithoutUrl ) {
+					// Close mode: include ALL buttons with clientId + anchor.
+					links.push( {
+						identifier: {
+							blockPath: currentPath,
+							blockName: block.name,
+							clientId: block.clientId,
+							anchor: block.attributes.anchor || '',
+						},
+						label: `${ __( 'Button', 'pikari-gutenberg-modals' ) }: ${ block.attributes.text || block.attributes.url || __( '(no text)', 'pikari-gutenberg-modals' ) }`,
+					} );
+				} else if ( block.attributes.url ) {
+					// Open mode: only buttons with URLs.
 					links.push( {
 						identifier: {
 							blockPath: currentPath,
@@ -141,7 +156,7 @@ export default function findLinksInBlocks( blocks, parentPath = '' ) {
 
 		// Recursively search inner blocks
 		if ( block.innerBlocks && block.innerBlocks.length > 0 ) {
-			links.push( ...findLinksInBlocks( block.innerBlocks, currentPath ) );
+			links.push( ...findLinksInBlocks( block.innerBlocks, currentPath, options ) );
 		}
 	} );
 

@@ -22,9 +22,9 @@ class BlockStyleCollector
      */
     public function get_block_styles_for_content( string $content ): array
     {
-        $blocks = parse_blocks( $content );
+        $blocks      = parse_blocks( $content );
         $block_names = $this->extract_block_names_recursive( $blocks );
-        $style_urls = $this->get_style_urls_for_blocks( $block_names );
+        $style_urls  = $this->get_style_urls_for_blocks( $block_names );
 
         return array(
             'urls' => array_values( array_unique( $style_urls ) ),
@@ -71,8 +71,8 @@ class BlockStyleCollector
     private function get_style_urls_for_blocks( array $block_names ): array
     {
         $style_urls = array();
-        $registry = \WP_Block_Type_Registry::get_instance();
-        $wp_styles = wp_styles();
+        $registry   = \WP_Block_Type_Registry::get_instance();
+        $wp_styles  = wp_styles();
 
         // Check if WordPress is loading separate block assets (block themes)
         // or combined assets (classic themes)
@@ -133,20 +133,81 @@ class BlockStyleCollector
     }
 
     /**
+     * Collect styles enqueued during block rendering (e.g., theme per-block styles).
+     *
+     * Theme styles registered via wp_enqueue_block_style() are enqueued into
+     * wp_styles()->queue during do_blocks() via render_block filters. This method
+     * captures those by comparing the queue before and after rendering.
+     *
+     * @param array $before_queue The wp_styles()->queue snapshot taken before rendering.
+     * @return array {
+     *     @type string[] $urls Stylesheet URLs for dynamic loading.
+     *     @type string   $css  Inline CSS from path-based styles.
+     * }
+     */
+    public function collect_render_enqueued_styles( array $before_queue ): array
+    {
+        $wp_styles   = wp_styles();
+        $new_handles = array_diff( $wp_styles->queue, $before_queue );
+
+        $urls = array();
+        $css  = '';
+
+        foreach ( $new_handles as $handle ) {
+            if ( ! isset( $wp_styles->registered[ $handle ] ) ) {
+                continue;
+            }
+
+            $dep = $wp_styles->registered[ $handle ];
+
+            // Handle with a URL source.
+            if ( ! empty( $dep->src ) ) {
+                $url = $this->get_style_url_from_handle( $handle, $wp_styles );
+                if ( $url ) {
+                    $urls[] = $url;
+                }
+            }
+
+            // Path-based inlining (wp_style_add_data with 'path').
+            if ( ! empty( $dep->extra['path'] ) && file_exists( $dep->extra['path'] ) ) {
+                // phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+                $file_css = file_get_contents( $dep->extra['path'] );
+                if ( $file_css !== false ) {
+                    $css .= $file_css;
+                }
+            }
+
+            // Inline CSS from wp_add_inline_style() (stored in 'after' extra).
+            if ( ! empty( $dep->extra['after'] ) && is_array( $dep->extra['after'] ) ) {
+                foreach ( $dep->extra['after'] as $inline ) {
+                    if ( ! empty( $inline ) ) {
+                        $css .= $inline;
+                    }
+                }
+            }
+        }
+
+        return array(
+            'urls' => array_values( array_unique( $urls ) ),
+            'css'  => $css,
+        );
+    }
+
+    /**
      * Get the URL for a style handle from wp_styles().
      *
-     * @param string     $handle    The style handle to look up.
-     * @param \WP_Styles $wp_styles The WordPress styles object.
+     * @param string $handle    The style handle to look up.
+     * @param object $wp_styles The WordPress styles object.
      * @return string|null The stylesheet URL or null if not found.
      */
-    private function get_style_url_from_handle( string $handle, \WP_Styles $wp_styles ): ?string
+    public function get_style_url_from_handle( string $handle, object $wp_styles ): ?string
     {
         if ( ! isset( $wp_styles->registered[ $handle ] ) ) {
             return null;
         }
 
         $style = $wp_styles->registered[ $handle ];
-        $src = $style->src;
+        $src   = $style->src;
 
         if ( empty( $src ) ) {
             return null;

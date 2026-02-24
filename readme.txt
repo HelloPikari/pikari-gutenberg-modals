@@ -14,11 +14,11 @@ Accessible modal dialogs for the WordPress block editor. Display posts, pages, a
 
 Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block editor. Content — posts, pages, custom post types, or external URLs — is displayed in overlays with smooth animations. Triggers are real links that work without JavaScript (progressive enhancement).
 
-**Three Trigger Types:**
+**Trigger Types:**
 
 * **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
-* **Button Block Modals** — Toggle the "Open in Modal" option on any core Button block
-* **Clickable Group Cards** — Make an entire Group block clickable as a card pattern, automatically detecting the primary link inside
+* **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
+* **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
 
 **Key Features:**
 
@@ -44,7 +44,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 1. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 2. Activate the plugin through the 'Plugins' screen in WordPress
-3. Use any of the three trigger types in the block editor to create modal triggers
+3. Use any of the trigger types in the block editor to create modal triggers
 
 = Block Themes =
 
@@ -78,11 +78,11 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 **Hybrid themes:** Create `parts/modal-{slug}.html` files in your theme. For example, `parts/modal-compact.html` appears as "Compact" in the template selector.
 
-= What are the three trigger types? =
+= What are the trigger types? =
 
 1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
-2. **Button Block Modals** — Add a core Button block, toggle "Open in Modal" in the inspector, and set the button URL to a post/page
-3. **Clickable Group Cards** — Enable "Modal Trigger" on a Group block; the plugin detects the primary link inside (from buttons, images, headings, etc.) and makes the whole card clickable
+2. **Modal Trigger Block** — Add a Modal Trigger block, place any content inside, and the plugin detects the primary link (from buttons, images, headings, etc.) to make the whole card clickable. Also supports custom URL and inline content modes.
+3. **Close Triggers** — Set the Modal Trigger block or inline trigger to "Close modal" action. Use inside modal template parts to create custom close buttons with full design flexibility.
 
 = Does it work without JavaScript? =
 
@@ -226,6 +226,22 @@ Override any of these in your theme's CSS to customize the modal appearance:
 5. Template part customization in the Site Editor
 
 == Changelog ==
+
+= 1.3.0 =
+* Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
+* Modal Trigger block close mode with whole-wrapper and targeted child element options
+* Inline close triggers inside modal template parts
+* Automatic sr-only fallback close button when no close trigger detected in modal dialog
+* Block context restrictions: Close Button and Content Area restricted to Modal Dialog; Modal Content and Modal Trigger hidden in Site Editor
+* Default modal template now uses Modal Trigger block (close mode) instead of the close-button block
+* Close Button block deprecated (hidden from inserter, replaced by Modal Trigger close mode)
+* Fixed theme per-block styles and layout CSS missing from modal content
+* Fixed close-mode element selection not persisting across page refreshes
+* Fixed buttons with URLs not appearing in close trigger element dropdown
+* Fixed hybrid themes seeing phantom modal template parts in the admin
+
+= 1.2.2 =
+* Fixed hybrid themes seeing a non-functional modal template part in the admin
 
 = 1.2.1 =
 * External URL support: external URLs now load in a sandboxed iframe inside the modal dialog

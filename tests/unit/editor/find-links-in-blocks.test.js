@@ -360,6 +360,115 @@ describe( 'findLinksInBlocks', () => {
 		} );
 	} );
 
+	describe( 'close mode: buttons without URLs', () => {
+		it( 'should not detect buttons without URL by default', () => {
+			const blocks = [
+				createBlock( 'core/button', { text: 'Cancel' } ),
+			];
+			expect( findLinksInBlocks( blocks ) ).toEqual( [] );
+		} );
+
+		it( 'should detect buttons without URL when includeButtonsWithoutUrl is true', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', { text: 'Cancel' } ),
+					clientId: 'abc-123',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier ).toEqual( {
+				blockPath: '0',
+				blockName: 'core/button',
+				clientId: 'abc-123',
+				anchor: '',
+			} );
+			expect( result[ 0 ].label ).toContain( 'Cancel' );
+		} );
+
+		it( 'should use fallback label when button text is empty', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {} ),
+					clientId: 'def-456',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].label ).toContain( 'Button' );
+		} );
+
+		it( 'should still detect buttons with URL when includeButtonsWithoutUrl is true', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {
+						url: 'https://example.com',
+						text: 'Open',
+					} ),
+					clientId: 'open-btn',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier.clientId ).toBe( 'open-btn' );
+			expect( result[ 0 ].identifier.anchor ).toBe( '' );
+			expect( result[ 0 ].label ).toContain( 'Open' );
+		} );
+
+		it( 'should detect both URL and non-URL buttons together', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {
+						url: 'https://example.com',
+						text: 'Submit',
+					} ),
+					clientId: 'submit-btn',
+				},
+				{
+					...createBlock( 'core/button', { text: 'Cancel' } ),
+					clientId: 'cancel-btn',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 2 );
+			expect( result[ 0 ].identifier.clientId ).toBe( 'submit-btn' );
+			expect( result[ 0 ].label ).toContain( 'Submit' );
+			expect( result[ 1 ].identifier.clientId ).toBe( 'cancel-btn' );
+			expect( result[ 1 ].label ).toContain( 'Cancel' );
+		} );
+
+		it( 'should include anchor attribute in close-mode identifier', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {
+						text: 'Close',
+						anchor: 'modal-close-abc12345',
+					} ),
+					clientId: 'close-btn',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier.anchor ).toBe( 'modal-close-abc12345' );
+			expect( result[ 0 ].identifier.clientId ).toBe( 'close-btn' );
+		} );
+	} );
+
 	describe( 'unrecognized block types', () => {
 		it( 'should ignore unknown block types', () => {
 			const blocks = [

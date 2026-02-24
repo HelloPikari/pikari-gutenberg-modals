@@ -147,6 +147,11 @@ class RestApi
             return $cached_response;
         }
 
+        // Snapshot the styles queue before rendering so we can detect theme
+        // per-block styles enqueued during do_blocks() via render_block filters
+        // (e.g., styles registered with wp_enqueue_block_style()).
+        $before_queue = wp_styles()->queue;
+
         // Instantiating BlockSupport here is safe: its constructor registers render_block
         // filters and a wp_footer action, but these are request-scoped — the render_block
         // filters only affect the do_blocks() call below, and wp_footer never fires in
@@ -164,9 +169,21 @@ class RestApi
             }
         }
 
-        // Get block stylesheet URLs for dynamic loading
+        // Collect block styles from two sources:
+        // 1. Registry-based: block type style_handles (core block stylesheets)
+        // 2. Render-enqueued: theme per-block styles added during do_blocks()
         $block_style_collector = new BlockStyleCollector();
-        $block_styles          = $block_style_collector->get_block_styles_for_content($post->post_content);
+        $block_styles          = $block_style_collector->get_block_styles_for_content( $post->post_content );
+        $render_styles         = $block_style_collector->collect_render_enqueued_styles( $before_queue );
+
+        // Merge render-enqueued URLs with registry-based URLs (deduplicated).
+        $merged_urls = array_merge( $block_styles['urls'], $render_styles['urls'] );
+        $all_urls    = array_values( array_unique( $merged_urls ) );
+
+        // Append render-enqueued inline CSS (path-based theme styles) to block support styles.
+        if ( ! empty( $render_styles['css'] ) ) {
+            $styles .= $render_styles['css'];
+        }
 
         // Prepare response data
         $response_data = array(
@@ -174,7 +191,7 @@ class RestApi
             'title'       => wp_strip_all_tags( get_the_title( $post ) ),
             'content'     => $content_data['content'],
             'styles'      => $styles,
-            'blockStyles' => $block_styles,
+            'blockStyles' => array( 'urls' => $all_urls ),
             'type'        => $post->post_type,
         );
 

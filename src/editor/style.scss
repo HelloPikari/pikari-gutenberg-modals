@@ -42,6 +42,21 @@ span.modal-trigger,
 	}
 }
 
+// Close-mode inline triggers in the editor
+span[data-modal-action="close"],
+.editor-styles-wrapper span[data-modal-action="close"] {
+	text-decoration-color: #ef4444 !important;
+	background-color: rgba(239, 68, 68, 0.1) !important;
+	&:hover {
+		background-color: rgba(239, 68, 68, 0.2) !important;
+	}
+	// X icon for close triggers
+	&::after {
+		background-color: #ef4444;
+		mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 13.06l3.712 3.713 1.061-1.06L13.061 12l3.712-3.712-1.06-1.06L12 10.938 8.288 7.227l-1.061 1.06L10.939 12l-3.712 3.712 1.06 1.061L12 13.061z'/%3E%3C/svg%3E");
+	}
+}
+
 // Modal toolbar button
 .modal-toolbar-button {
 	svg {

@@ -46,3 +46,27 @@ a.modal-trigger {
 		outline-offset: 2px;
 	}
 }
+
+// ==========================================================================
+// Close Trigger Styles
+// ==========================================================================
+
+// Inline close triggers: reset button to look like surrounding text
+.modal-close-trigger--inline {
+	display: inline;
+	appearance: none;
+	border: none;
+	background: none;
+	padding: 0;
+	margin: 0;
+	font: inherit;
+	color: inherit;
+	text-decoration: underline;
+	cursor: pointer;
+}
+
+// Focus ring for all close triggers
+.modal-close-trigger:focus-visible {
+	outline: 2px solid var(--modal-focus-color, #3b82f6);
+	outline-offset: 2px;
+}

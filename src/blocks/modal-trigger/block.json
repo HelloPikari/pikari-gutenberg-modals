@@ -9,6 +9,10 @@
 	"textdomain": "pikari-gutenberg-modals",
 	"keywords": ["modal", "popup", "dialog", "trigger", "card", "clickable"],
 	"attributes": {
+		"triggerAction": {
+			"type": "string",
+			"default": "open"
+		},
 		"contentSource": {
 			"type": "string",
 			"default": "link"
@@ -41,13 +45,7 @@
 	"supports": {
 		"html": false,
 		"anchor": true,
-		"layout": {
-			"allowSizingOnChildren": true,
-			"default": {
-				"type": "flex",
-				"orientation": "vertical"
-			}
-		}
+		"layout": false
 	},
 	"editorScript": "file:../../../build/blocks/modal-trigger/index.js",
 	"editorStyle": "file:./editor.css",

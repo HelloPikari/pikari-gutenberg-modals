@@ -5,17 +5,42 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.3.0]
+
+### Added
+
+- Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
+- Modal Trigger block close mode with whole-wrapper and targeted child element options
+- Inline close triggers inside modal template parts (toolbar button in RichText editor)
+- Automatic sr-only fallback close button when no close trigger detected in modal dialog
+- `handleCloseClick` and `handleCloseKeydown` frontend actions for close triggers
+- Close trigger styles with focus-visible outline
+- Block context restrictions: Close Button and Content Area restricted to Modal Dialog ancestor; Modal Content and Modal Trigger unregistered in Site Editor
+
+### Changed
+
+- Default modal template now uses Modal Trigger block (close mode) wrapping a core/button instead of the close-button block
+- `findLinksInBlocks` extended with `includeButtonsWithoutUrl` option for close-mode element detection
+- Simplified hybrid theme rendering: `render()` goes directly to file-based fallback instead of attempting `block_template_part()` first
+
+### Deprecated
+
+- Close Button block hidden from inserter; replaced by Modal Trigger block with close action
 
 ### Fixed
 
 - Hybrid themes no longer see a phantom modal template part in the admin that cannot be meaningfully edited
 - Template part area registration and synthetic template injection now limited to block themes only
 - Hybrid theme editor routing uses file-based scanning instead of querying the block template system
+- Theme per-block styles (e.g. button "Outline" style) and block support CSS (e.g. Buttons justification) now captured and output for modal content in both REST API and template part rendering paths
+- Close-mode element selection now persists across page refreshes using anchor attribute instead of ephemeral clientId
+- Buttons with URLs now appear correctly in close trigger element dropdown
 
-### Changed
+## [1.2.2]
 
-- Simplified hybrid theme rendering: `render()` goes directly to file-based fallback instead of attempting `block_template_part()` first
+### Fixed
+
+- Hybrid themes seeing a non-functional modal template part in the admin that could not be meaningfully edited
 
 ## [1.2.1]
 
@@ -86,6 +111,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Domain allowlist/blocklist for external URLs
 - 12 developer filters
 
-[Unreleased]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.1.0...HEAD
+[1.3.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.2...v1.3.0
+[1.2.2]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.1...v1.2.2
+[1.2.1]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.2.0...v1.2.1
+[1.2.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/HelloPikari/pikari-gutenberg-modals/releases/tag/v1.0.0

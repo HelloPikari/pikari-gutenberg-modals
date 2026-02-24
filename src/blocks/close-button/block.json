@@ -7,6 +7,7 @@
 	"category": "design",
 	"description": "A close button for the modal dialog. Place inside the modal template part.",
 	"textdomain": "pikari-gutenberg-modals",
+	"ancestor": ["pikari-gutenberg-modals/modal-dialog"],
 	"attributes": {
 		"align": {
 			"type": "string",
@@ -14,6 +15,7 @@
 		}
 	},
 	"supports": {
+		"inserter": false,
 		"html": false,
 		"multiple": false,
 		"reusable": false,

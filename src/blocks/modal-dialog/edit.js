@@ -22,7 +22,17 @@ import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 const INNER_BLOCKS_TEMPLATE = [
-	[ 'pikari-gutenberg-modals/close-button', {} ],
+	[
+		'core/group',
+		{ layout: { type: 'flex', justifyContent: 'right' } },
+		[
+			[
+				'pikari-gutenberg-modals/modal-trigger',
+				{ triggerAction: 'close' },
+				[ [ 'core/button', { text: 'Close' } ] ],
+			],
+		],
+	],
 	[ 'pikari-gutenberg-modals/content-area', {} ],
 ];
 
