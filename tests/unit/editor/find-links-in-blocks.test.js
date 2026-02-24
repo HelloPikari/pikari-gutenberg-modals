@@ -384,6 +384,7 @@ describe( 'findLinksInBlocks', () => {
 				blockPath: '0',
 				blockName: 'core/button',
 				clientId: 'abc-123',
+				anchor: '',
 			} );
 			expect( result[ 0 ].label ).toContain( 'Cancel' );
 		} );
@@ -405,27 +406,33 @@ describe( 'findLinksInBlocks', () => {
 
 		it( 'should still detect buttons with URL when includeButtonsWithoutUrl is true', () => {
 			const blocks = [
-				createBlock( 'core/button', {
-					url: 'https://example.com',
-					text: 'Open',
-				} ),
+				{
+					...createBlock( 'core/button', {
+						url: 'https://example.com',
+						text: 'Open',
+					} ),
+					clientId: 'open-btn',
+				},
 			];
 			const result = findLinksInBlocks( blocks, '', {
 				includeButtonsWithoutUrl: true,
 			} );
 
 			expect( result ).toHaveLength( 1 );
-			expect( result[ 0 ].identifier.linkUrl ).toBe(
-				'https://example.com'
-			);
+			expect( result[ 0 ].identifier.clientId ).toBe( 'open-btn' );
+			expect( result[ 0 ].identifier.anchor ).toBe( '' );
+			expect( result[ 0 ].label ).toContain( 'Open' );
 		} );
 
 		it( 'should detect both URL and non-URL buttons together', () => {
 			const blocks = [
-				createBlock( 'core/button', {
-					url: 'https://example.com',
-					text: 'Submit',
-				} ),
+				{
+					...createBlock( 'core/button', {
+						url: 'https://example.com',
+						text: 'Submit',
+					} ),
+					clientId: 'submit-btn',
+				},
 				{
 					...createBlock( 'core/button', { text: 'Cancel' } ),
 					clientId: 'cancel-btn',
@@ -436,10 +443,29 @@ describe( 'findLinksInBlocks', () => {
 			} );
 
 			expect( result ).toHaveLength( 2 );
-			expect( result[ 0 ].identifier.linkUrl ).toBe(
-				'https://example.com'
-			);
+			expect( result[ 0 ].identifier.clientId ).toBe( 'submit-btn' );
+			expect( result[ 0 ].label ).toContain( 'Submit' );
 			expect( result[ 1 ].identifier.clientId ).toBe( 'cancel-btn' );
+			expect( result[ 1 ].label ).toContain( 'Cancel' );
+		} );
+
+		it( 'should include anchor attribute in close-mode identifier', () => {
+			const blocks = [
+				{
+					...createBlock( 'core/button', {
+						text: 'Close',
+						anchor: 'modal-close-abc12345',
+					} ),
+					clientId: 'close-btn',
+				},
+			];
+			const result = findLinksInBlocks( blocks, '', {
+				includeButtonsWithoutUrl: true,
+			} );
+
+			expect( result ).toHaveLength( 1 );
+			expect( result[ 0 ].identifier.anchor ).toBe( 'modal-close-abc12345' );
+			expect( result[ 0 ].identifier.clientId ).toBe( 'close-btn' );
 		} );
 	} );
 

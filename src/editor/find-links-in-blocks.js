@@ -23,7 +23,19 @@ export default function findLinksInBlocks( blocks, parentPath = '', options = {}
 		// Check for links based on block type
 		switch ( block.name ) {
 			case 'core/button':
-				if ( block.attributes.url ) {
+				if ( includeButtonsWithoutUrl ) {
+					// Close mode: include ALL buttons with clientId + anchor.
+					links.push( {
+						identifier: {
+							blockPath: currentPath,
+							blockName: block.name,
+							clientId: block.clientId,
+							anchor: block.attributes.anchor || '',
+						},
+						label: `${ __( 'Button', 'pikari-gutenberg-modals' ) }: ${ block.attributes.text || block.attributes.url || __( '(no text)', 'pikari-gutenberg-modals' ) }`,
+					} );
+				} else if ( block.attributes.url ) {
+					// Open mode: only buttons with URLs.
 					links.push( {
 						identifier: {
 							blockPath: currentPath,
@@ -31,15 +43,6 @@ export default function findLinksInBlocks( blocks, parentPath = '', options = {}
 							linkUrl: block.attributes.url,
 						},
 						label: `${ __( 'Button', 'pikari-gutenberg-modals' ) }: ${ block.attributes.text || block.attributes.url }`,
-					} );
-				} else if ( includeButtonsWithoutUrl ) {
-					links.push( {
-						identifier: {
-							blockPath: currentPath,
-							blockName: block.name,
-							clientId: block.clientId,
-						},
-						label: `${ __( 'Button', 'pikari-gutenberg-modals' ) }: ${ block.attributes.text || __( '(no text)', 'pikari-gutenberg-modals' ) }`,
 					} );
 				}
 				break;

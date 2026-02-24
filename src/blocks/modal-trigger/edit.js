@@ -97,15 +97,25 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		}
 
 		if ( isCloseMode ) {
-			// Close mode: match by clientId
+			// Close mode: match by anchor (persistent) or clientId (fresh selection)
 			try {
 				const identifier = JSON.parse( primaryLinkId );
-				if ( ! identifier.clientId ) {
+				let stillExists = false;
+
+				if ( identifier.closeTriggerId ) {
+					// Anchor-based match (persists across page loads)
+					stillExists = detectedLinks.some(
+						( el ) => el.identifier.anchor === identifier.closeTriggerId
+					);
+				} else if ( identifier.clientId ) {
+					// ClientId-based match (fresh selection before save)
+					stillExists = detectedLinks.some(
+						( el ) => el.identifier.clientId === identifier.clientId
+					);
+				} else {
 					return;
 				}
-				const stillExists = detectedLinks.some(
-					( el ) => el.identifier.clientId === identifier.clientId
-				);
+
 				if ( ! stillExists ) {
 					setAttributes( { primaryLinkId: '' } );
 				}
@@ -155,6 +165,13 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		}
 		try {
 			const identifier = JSON.parse( primaryLinkId );
+			if ( identifier.closeTriggerId ) {
+				// Find by anchor (persistent across page loads)
+				const match = detectedLinks.find(
+					( el ) => el.identifier.anchor === identifier.closeTriggerId
+				);
+				return match ? match.identifier.clientId : '';
+			}
 			return identifier.clientId || '';
 		} catch {
 			return '';
