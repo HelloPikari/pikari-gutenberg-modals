@@ -798,8 +798,36 @@ class BlockSupport
             array_unshift( self::$modal_template_slugs, 'modal' );
         }
 
+        // Snapshot the styles queue and block support CSS before rendering.
+        // Modal containers render at wp_footer priority 999, after
+        // wp_print_footer_scripts (priority 20) has already run. Styles
+        // enqueued or generated during template part rendering would
+        // otherwise never be output.
+        $before_queue       = wp_styles()->queue;
+        $before_support_css = wp_style_engine_get_stylesheet_from_context( 'block-supports', array( 'prettify' => false ) );
+
         foreach ( self::$modal_template_slugs as $slug ) {
             $this->render_modal_container( $slug );
+        }
+
+        // Print theme per-block stylesheets enqueued during template part
+        // rendering (e.g. theme button styles via wp_enqueue_block_style()).
+        $new_handles = array_diff( wp_styles()->queue, $before_queue );
+        if ( ! empty( $new_handles ) ) {
+            wp_styles()->do_items( $new_handles );
+        }
+
+        // Print block support CSS (layout, spacing) generated during rendering.
+        // wp_enqueue_block_support_styles() already ran at an earlier priority,
+        // so new rules from modal template part blocks need manual output.
+        $after_support_css = wp_style_engine_get_stylesheet_from_context( 'block-supports', array( 'prettify' => false ) );
+        if ( strlen( $after_support_css ) > strlen( $before_support_css ) ) {
+            $new_support_css = substr( $after_support_css, strlen( $before_support_css ) );
+            printf(
+                '<style id="modal-block-support-styles">%s</style>',
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS from WP style engine.
+                $new_support_css
+            );
         }
     }
 
