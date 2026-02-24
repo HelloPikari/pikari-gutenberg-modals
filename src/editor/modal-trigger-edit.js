@@ -47,7 +47,7 @@ const modalTriggerFormatSettings = {
  * @param {Object}   props.value      - RichText value object
  * @param {Function} props.onChange   - Callback to update the RichText value
  * @param {Object}   props.contentRef - Reference to the content element
- * @return {JSX.Element} The modal trigger edit UI
+ * @return {Element} The modal trigger edit UI
  */
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes)
 const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
