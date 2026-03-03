@@ -17,23 +17,45 @@ import {
 	FocalPointPicker,
 	ToggleControl,
 	Button,
+	Notice,
 } from '@wordpress/components';
-import { useEffect } from '@wordpress/element';
 import { __ } from '@wordpress/i18n';
 
 const INNER_BLOCKS_TEMPLATE = [
 	[
 		'core/group',
-		{ layout: { type: 'flex', justifyContent: 'right' } },
+		{
+			className: 'modal-chrome',
+			style: {
+				color: { background: '#ffffff' },
+				border: { radius: '20px' },
+				spacing: {
+					padding: {
+						top: '1.5rem',
+						right: '1.5rem',
+						bottom: '1.5rem',
+						left: '1.5rem',
+					},
+				},
+				shadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
+			},
+			layout: { type: 'flex', orientation: 'vertical' },
+		},
 		[
 			[
-				'pikari-gutenberg-modals/modal-trigger',
-				{ triggerAction: 'close' },
-				[ [ 'core/button', { text: 'Close' } ] ],
+				'core/group',
+				{ layout: { type: 'flex', justifyContent: 'right' } },
+				[
+					[
+						'pikari-gutenberg-modals/modal-trigger',
+						{ triggerAction: 'close' },
+						[ [ 'core/button', { text: 'Close' } ] ],
+					],
+				],
 			],
+			[ 'pikari-gutenberg-modals/content-area', {} ],
 		],
 	],
-	[ 'pikari-gutenberg-modals/content-area', {} ],
 ];
 
 export default function Edit( { attributes, setAttributes, clientId } ) {
@@ -45,30 +67,35 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		hasParallax,
 	} = attributes;
 
-	// WordPress block supports override the block.json "style" attribute default,
-	// so we apply default padding on first insertion when style is undefined.
-	useEffect( () => {
-		if ( ! attributes.style ) {
-			setAttributes( {
-				style: {
-					spacing: {
-						padding: {
-							top: '1.5rem',
-							right: '1.5rem',
-							bottom: '1.5rem',
-							left: '1.5rem',
-						},
-					},
-				},
-			} );
-		}
-	}, [] ); // eslint-disable-line react-hooks/exhaustive-deps -- Only on mount.
-
 	const blockProps = useBlockProps();
 	const colorGradientSettings = useMultipleOriginColorsAndGradients();
 
+	const hasLegacyChromeStyles = Boolean(
+		attributes.backgroundColor ||
+		attributes.borderColor ||
+		attributes.style?.color?.background ||
+		attributes.style?.border ||
+		attributes.style?.spacing?.padding ||
+		attributes.style?.shadow
+	);
+
 	return (
 		<>
+			{ hasLegacyChromeStyles && (
+				<InspectorControls>
+					<Notice
+						status="warning"
+						isDismissible={ false }
+						className="modal-dialog-deprecation-notice"
+					>
+						{ __(
+							'Dialog styling (background, border, padding, shadow) should be applied to an inner Group block instead of directly on the Modal Dialog.',
+							'pikari-gutenberg-modals'
+						) }
+					</Notice>
+				</InspectorControls>
+			) }
+
 			<InspectorControls group="color">
 				<ColorGradientSettingsDropdown
 					__experimentalIsRenderedInSidebar

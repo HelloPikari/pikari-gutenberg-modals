@@ -8,13 +8,9 @@
 
 /* CSS Custom Properties for theming */
 :root {
-	--modal-content-bg: #fff;
-	--modal-content-shadow: 0 4px 6px rgba(0, 0, 0, 0.1),
-		0 2px 4px rgba(0, 0, 0, 0.06);
 	--modal-max-width: 1024px;
 	--modal-max-width-small: 500px;
 	--modal-max-width-large: 1200px;
-	--modal-border-radius: 20px;
 	--modal-focus-color: #3b82f6;
 }
 
@@ -24,15 +20,6 @@
 	width: 100%;
 	display: flex;
 	flex-direction: column;
-
-	/* Fallback chrome (overridden by block supports inline styles) */
-	background: var(--modal-content-bg, #fff);
-	border-radius: var(--modal-border-radius, 20px);
-	box-shadow: var(
-		--modal-content-shadow,
-		0 4px 6px rgba(0, 0, 0, 0.1),
-		0 2px 4px rgba(0, 0, 0, 0.06)
-	);
 }
 
 /* Modal overlay — fixed fullscreen container rendered by BlockSupport.php */
@@ -83,8 +70,7 @@
 	z-index: 1;
 }
 
-/* Dialog container — frontend structural + fallback chrome.
-   Block supports inline styles override the fallback values. */
+/* Dialog container — frontend structural wrapper */
 .modal-content {
 	box-sizing: border-box;
 	position: relative;
@@ -95,13 +81,15 @@
 	overflow: hidden;
 	display: flex;
 	flex-direction: column;
-	background: var(--modal-content-bg, #fff);
-	border-radius: var(--modal-border-radius, 20px);
-	box-shadow: var(
-		--modal-content-shadow,
-		0 4px 6px rgba(0, 0, 0, 0.1),
-		0 2px 4px rgba(0, 0, 0, 0.06)
-	);
+}
+
+/* Chrome wrapper — flex bridge for scroll architecture.
+   display: flex + flex-direction: column provided by WordPress layout system
+   via the Group's layout: { type: "flex", orientation: "vertical" }. */
+.modal-content .modal-chrome {
+	flex: 1;
+	min-height: 0;
+	overflow: hidden;
 }
 
 /* Content area — flex chain for scrolling.
@@ -126,6 +114,9 @@
 	height: 100%;
 	border-radius: 0;
 }
+.modal-overlay[data-size="fullscreen"] .modal-content .modal-chrome {
+	border-radius: 0 !important;
+}
 
 /* Mobile responsiveness */
 @media (max-width: 768px) {
@@ -137,6 +128,9 @@
 		max-height: 100%;
 		height: 100%;
 		border-radius: 0;
+	}
+	.modal-content .modal-chrome {
+		border-radius: 0 !important;
 	}
 }
 
