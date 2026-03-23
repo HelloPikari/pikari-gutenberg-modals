@@ -38,7 +38,7 @@
 		"@wordpress/env": "latest",
 		"@wordpress/escape-html": "^3.39.0",
 		"@wordpress/icons": "latest",
-		"@wordpress/interactivity": "^6.41.0",
+		"@wordpress/interactivity": "^6.42.0",
 		"@wordpress/scripts": "latest",
 		"husky": "latest",
 		"lint-staged": "latest"
@@ -60,6 +60,6 @@
 		]
 	},
 	"dependencies": {
-		"@wordpress/primitives": "^4.41.0"
+		"@wordpress/primitives": "^4.42.0"
 	}
 }
