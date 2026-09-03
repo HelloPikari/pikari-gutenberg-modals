@@ -65,6 +65,11 @@ a.modal-trigger {
 	cursor: pointer;
 }
 
+// Pointer cursor for whole-wrapper close triggers (role="button" divs)
+.modal-close-trigger[role="button"] {
+	cursor: pointer;
+}
+
 // Focus ring for all close triggers
 .modal-close-trigger:focus-visible {
 	outline: 2px solid var(--modal-focus-color, #3b82f6);
