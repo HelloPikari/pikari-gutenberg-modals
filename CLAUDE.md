@@ -12,18 +12,19 @@ Always use these agents proactively:
 
 - **`wordpress-core-expert`** — Review all PHP and JavaScript code changes
 - **`accessibility-expert`** — Review modal functionality, keyboard navigation, focus management, ARIA attributes
-- - **`update-claude-md`** — Update CLAUDE.md to reflect changes since the last git tag or initial commit.
+- **`update-claude-md`** — Update CLAUDE.md to reflect changes since the last git tag or initial commit
 
 ## Architecture
 
-### Three Trigger Types
+### Trigger Types
 
 1. **Inline Modal Triggers** — RichText format applied to text in supported blocks
 
    - Format: `modal-toolbar-button/modal-trigger` (Cmd/Ctrl+M shortcut)
    - Editor: `src/editor/modal-format.js` + `src/editor/modal-trigger-edit.js`
-   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-trigger">` into interactive `<a>` tags
+   - Server: `BlockSupport::filter_block()` transforms `<span class="modal-trigger">` into interactive `<a>` tags (open mode) or `<button>` tags (close mode)
    - Supported blocks: paragraph, heading, list, list-item, quote, verse, preformatted, navigation-link
+   - **Close mode:** `data-modal-action="close"` attribute converts span to inline button with close action (for use in modal template parts)
 
 2. **Button Block Modals** — extends core/button with a toggle
 
@@ -38,28 +39,29 @@ Always use these agents proactively:
    - Server: `includes/GroupModalTriggerSupport.php` — two-phase rendering for Query Loop support
    - Supported link sources: button, image, navigation-link, heading/paragraph (inline links), post-title, post-featured-image, post-date, read-more, post-excerpt
 
-4. **Modal Trigger Block** — dedicated block for clickable card pattern (replaces group trigger)
+4. **Modal Trigger Block** — dedicated block for clickable card pattern and close triggers
    - Block: `pikari-gutenberg-modals/modal-trigger` in `src/blocks/modal-trigger/`
-   - Three content source modes: Detected Link, Custom URL, Page Content (inline)
-   - Editor: `edit.js` — InspectorControls with mode-specific UI
-   - Server: `render.php` — adds Interactivity API attributes, keyboard support, domain validation
+   - **Open mode:** Three content source modes (Detected Link, Custom URL, Page Content)
+   - **Close mode:** `triggerAction: "close"` makes block or specific child element close the modal (for use in modal template parts)
+   - Editor: `edit.js` — InspectorControls with mode-specific UI, link detection for close-mode targeting
+   - Server: `render.php` — routes to open/close handlers, adds Interactivity API attributes, keyboard support, domain validation
    - Transforms: `transforms.js` — bidirectional transforms between `core/group` and modal-trigger
    - Shared utility: `src/editor/find-links-in-blocks.js` — link detection used by both group extension and modal trigger
    - No visual block supports — styling is done on inner blocks
 
 ### PHP Classes (`includes/`)
 
-| Class                      | Lines | Purpose                                                                             |
-| -------------------------- | ----- | ----------------------------------------------------------------------------------- |
-| `BlockSupport`             | ~750  | Core block rendering, trigger transformation, single modal container in `wp_footer` |
-| `GroupModalTriggerSupport` | ~350  | Group block clickable cards, two-phase rendering for Query Loop                     |
-| `RestApi`                  | ~250  | Modal-content REST endpoint (frontend, HTTP cached)                                 |
-| `ModalHandler`             | ~230  | Content processing pipeline, URL validation, domain allow/block lists               |
-| `BlockStyleCollector`      | ~185  | Detects blocks in modal content, collects stylesheet URLs for dynamic loading       |
-| `SpeculativeLoading`       | ~155  | Hover-based prefetch (200ms delay), optional `<link rel="prefetch">` hints          |
-| `EditorIntegration`        | ~115  | Editor asset enqueuing, localized config via `pikariGutenbergModals` JS object      |
-| `ModalTemplatePart`        | ~285  | Template part area registration (block themes only), file-based fallback rendering  |
-| `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                      |
+| Class                      | Lines | Purpose                                                               |
+| -------------------------- | ----- | --------------------------------------------------------------------- | --- |
+| `BlockSupport`             | ~850  | Core rendering, trigger transformation, containers, block support CSS |     |
+| `GroupModalTriggerSupport` | ~350  | Group block cards, two-phase rendering for Query Loop                 |     |
+| `RestApi`                  | ~340  | Modal-content + search endpoints, theme per-block style collection    |     |
+| `ModalHandler`             | ~230  | Content processing, URL validation, domain allow/block lists          |     |
+| `BlockStyleCollector`      | ~250  | Block detection, stylesheet URLs, theme per-block styles              |     |
+| `SpeculativeLoading`       | ~155  | Hover prefetch (200ms delay), prefetch hints                          |     |
+| `EditorIntegration`        | ~130  | Editor assets, localized config, block context restrictions           |     |
+| `ModalTemplatePart`        | ~285  | Template part registration (block themes), file-based fallback        |     |
+| `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)        |     |
 
 ### JavaScript Files
 
@@ -109,6 +111,16 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 7. **Dynamic block styles** — `BlockStyleCollector` finds blocks in modal content, `block-style-loader.js` loads their stylesheets on-demand
 8. **Hover prefetch** — 200ms debounced prefetch warms browser HTTP cache before click
 9. **External URL iframe** — External URLs load in a sandboxed iframe; internal URLs use REST API. Sites blocking iframes (X-Frame-Options/CSP) will show a blank page; progressive enhancement provides fallback navigation
+10. **Theme per-block styles** — `BlockStyleCollector::collect_render_enqueued_styles()` captures styles enqueued during `do_blocks()` by comparing `wp_styles()->queue` before/after rendering (catches theme button styles registered via `wp_enqueue_block_style()`)
+11. **Block support CSS in wp_footer** — `BlockSupport::render_modal_containers()` snapshots block support CSS before rendering template parts and outputs any newly generated layout/spacing CSS in a `<style>` tag (needed because `wp_enqueue_block_support_styles()` runs earlier)
+
+### Critical Implementation Gotchas
+
+1. **Close triggers must NOT add `data-wp-interactive`** — Close triggers exist inside modal template parts where the parent modal container already provides `data-wp-interactive="pikari-modal"` scope. Adding it to close trigger wrappers in `render.php` creates nested Interactivity API islands that break event handling. Open triggers need it because they're outside the modal container; close triggers inherit scope.
+
+2. **render.php lives in build/, not src/** — WordPress reads `render.php` from `build/blocks/`, not `src/blocks/`. After editing any `render.php` file, you MUST run `npm run build` for changes to take effect in wp-env. The `@wordpress/scripts` build process copies PHP files from `src/` to `build/`.
+
+3. **Interactivity API namespace inheritance** — Elements with `data-wp-on--*` directives don't need their own `data-wp-interactive` if they're inside a parent element that has it. The namespace is inherited through the island's vdom tree. Adding unnecessary `data-wp-interactive` creates nested islands which cause hydration/event issues.
 
 ## Custom Hooks & Filters
 
@@ -243,3 +255,7 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 - `register_rest_route` — RestApi route registration
 - `get_post`, `get_the_title`, `get_permalink` — RestApi content retrieval
 - `home_url`, `wp_get_environment_type` — URL validation
+
+---
+
+Last updated: 2026-02-24 (v1.2.2..HEAD)
