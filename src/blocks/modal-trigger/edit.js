@@ -12,6 +12,7 @@ import {
 import {
 	PanelBody,
 	SelectControl,
+	TextControl,
 	Notice,
 } from '@wordpress/components';
 import { __, sprintf } from '@wordpress/i18n';
@@ -35,6 +36,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		contentSource,
 		primaryLinkId,
 		directUrl,
+		accessibleLabel,
 		inlineAnchor,
 		modalSize,
 		templatePart,
@@ -402,6 +404,24 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 										setAttributes( { directUrl: link?.url || '' } )
 									}
 									settings={ [] }
+								/>
+							) }
+
+							{ isUrl && (
+								<TextControl
+									__nextHasNoMarginBottom
+									label={ __(
+										'Accessible label',
+										'pikari-gutenberg-modals'
+									) }
+									value={ accessibleLabel }
+									onChange={ ( value ) =>
+										setAttributes( { accessibleLabel: value } )
+									}
+									help={ __(
+										'Describes the modal for screen readers. Defaults to "Open modal dialog".',
+										'pikari-gutenberg-modals'
+									) }
 								/>
 							) }
 
