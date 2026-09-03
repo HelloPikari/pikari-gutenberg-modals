@@ -16,6 +16,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `handleCloseClick` and `handleCloseKeydown` frontend actions for close triggers
 - Close trigger styles with focus-visible outline
 - Block context restrictions: Close Button and Content Area restricted to Modal Dialog ancestor; Modal Content and Modal Trigger unregistered in Site Editor
+- Video URLs from YouTube and Vimeo now hold a 16:9 box in the modal instead of stretching to the dialog height
+- Modal Trigger URL mode: optional Accessible label field, overriding the generic "Open modal dialog"
 
 ### Changed
 
