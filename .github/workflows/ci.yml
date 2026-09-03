@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main, development]
   pull_request:
-    branches: [main]
+    branches: [main, development]
 
 permissions:
   contents: read
@@ -107,7 +107,13 @@ jobs:
           npm audit --audit-level=high --omit=dev
 
           echo "Running composer audit..."
-          composer audit --no-dev
+          # --locked audits composer.lock rather than the installed tree, so it
+          # does not depend on what `composer install` put in vendor/. Dev
+          # packages are included deliberately: this plugin has no production
+          # composer dependencies (require is just php), so --no-dev audited
+          # nothing at all, and from Composer 2.10 that empty case is an error
+          # rather than a skip.
+          composer audit --locked
 
       - name: Validate block registration paths
         run: |
