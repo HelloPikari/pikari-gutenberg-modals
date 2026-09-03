@@ -63,19 +63,13 @@ if ( 'close' === $trigger_action ) {
             break;
         }
 
-        // Add data-wp-interactive to wrapper for Interactivity API scope.
-        $content   = $processor->get_updated_html();
-        $processor = new WP_HTML_Tag_Processor( $content );
-        if ( $processor->next_tag() ) {
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-        }
-
         echo $processor->get_updated_html(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
     } else {
         // Whole-wrapper close: make the entire block the close trigger.
+        // No data-wp-interactive needed — close triggers live inside modal
+        // template parts where the container already provides the scope.
         $processor = new WP_HTML_Tag_Processor( $content );
         if ( $processor->next_tag() ) {
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
             $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
             $processor->set_attribute( 'role', 'button' );
@@ -130,6 +124,13 @@ switch ( $content_source ) {
                     $aria_label = sprintf( __( 'Open %s in modal dialog', 'pikari-gutenberg-modals' ), $post_title );
                 }
             }
+        }
+
+        // An author-supplied label wins over both the generic string and the
+        // title derived from an internal URL.
+        $custom_label = trim( $attributes['accessibleLabel'] ?? '' );
+        if ( '' !== $custom_label ) {
+            $aria_label = $custom_label;
         }
 
         $trigger_id = 'modal-trigger-' . wp_unique_id();
