@@ -212,17 +212,31 @@ class ModalHandler
      */
     private static function is_local_url( string $host ): bool
     {
+        // wp_parse_url() keeps the brackets on an IPv6 literal.
+        $host = trim($host, '[]');
+
         // Check for localhost variations
         $local_hosts = ['localhost', '127.0.0.1', '::1'];
         if ( in_array($host, $local_hosts, true) ) {
             return true;
         }
 
-        // Check for private IP ranges
-        if ( filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false ) {
-            return true;
+        // Check for private IP ranges.
+        //
+        // filter_var() can only answer this for a host that is an IP literal:
+        // given a hostname it returns false whatever flags are set. Reading that
+        // false as "private address" classified every domain on the internet as
+        // local, so validate_url() fell through to its environment check and
+        // external URL modals were silently inert on every site whose
+        // environment type was not "local" — which is every production site.
+        //
+        // Hostnames are not resolved here. The URL becomes an iframe src in the
+        // visitor's browser rather than something this server fetches, so this
+        // is about not embedding internal addresses, not about SSRF.
+        if ( filter_var($host, FILTER_VALIDATE_IP) === false ) {
+            return false;
         }
 
-        return false;
+        return filter_var($host, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) === false;
     }
 }

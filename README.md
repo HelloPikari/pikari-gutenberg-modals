@@ -36,9 +36,10 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 ## Installation
 
-1. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
-2. Activate through the Plugins screen
-3. Use any of the trigger types in the block editor
+1. Download the latest release or clone this repository
+2. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
+3. Activate through the Plugins screen
+4. Use any of the three trigger types in the block editor
 
 ### Block Themes
 
@@ -232,6 +233,8 @@ Override in your theme's CSS:
 - Inline close triggers inside modal template parts
 - Automatic sr-only fallback close button when no close trigger detected in modal dialog
 - Block context restrictions: Close Button and Content Area restricted to Modal Dialog; Modal Content and Modal Trigger hidden in Site Editor
+- Video URLs from YouTube and Vimeo now hold a 16:9 box in the modal instead of stretching to the dialog height
+- Modal Trigger URL mode: optional Accessible label field, overriding the generic "Open modal dialog"
 - Default modal template now uses Modal Trigger block (close mode) instead of the close-button block
 - Close Button block deprecated (hidden from inserter, replaced by Modal Trigger close mode)
 - Fixed theme per-block styles and layout CSS missing from modal content
