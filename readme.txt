@@ -228,6 +228,9 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
+= Unreleased =
+* Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+
 = 1.3.0 =
 * Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
 * Modal Trigger block close mode with whole-wrapper and targeted child element options

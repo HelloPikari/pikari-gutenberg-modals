@@ -194,12 +194,12 @@
 	.modal-content {
 		transition: none;
 	}
-	.modal-overlay.modal-entering,
-	.modal-overlay.modal-leaving {
+	.modal-overlay.is-open,
+	.modal-overlay.is-closing {
 		animation: none;
 	}
-	.modal-overlay.modal-entering .modal-content,
-	.modal-overlay.modal-leaving .modal-content {
+	.modal-overlay.is-open .modal-content,
+	.modal-overlay.is-closing .modal-content {
 		animation: none;
 	}
 }
