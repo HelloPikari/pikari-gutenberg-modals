@@ -1,5 +1,7 @@
 # Roadmap — pikari-gutenberg-modals
 
+**Last updated:** 2026-09-04 (Session 1)
+
 What we've done, at a glance. Narrative lives in the session logs.
 
 ## Released
@@ -46,6 +48,8 @@ graceful degradation. See PR #103.
   **Until fixed: set the tag by hand when publishing.**
 - **Dialog `aria-label` is generic.** "Modal dialog" even when the trigger has a good
   accessible name. Measured on a live install.
+- **Fix CCLF's modal template part** after the chrome refactor ships (Pikari todo #436).
+  Only matters if it has a customised part.
 - **`@wordpress/primitives` 4.47 (#85)** — cannot merge. Peer-requires React 19 while
   `@wordpress/scripts` pins React 18. Blocked upstream, not on us.
 
