@@ -14,6 +14,10 @@
 		"overlayGradient": {
 			"type": "string"
 		},
+		"overlayOpacity": {
+			"type": "number",
+			"default": 100
+		},
 		"backgroundImage": {
 			"type": "object"
 		},
