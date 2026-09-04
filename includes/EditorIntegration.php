@@ -75,6 +75,7 @@ class EditorIntegration
                 'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
                 'nonce'              => wp_create_nonce('wp_rest'),
                 'modalSizes'         => $this->get_modal_sizes(),
+                'panelWidths'        => $this->get_panel_widths(),
                 'modalTemplateParts' => $this->get_modal_template_parts(),
                 'defaultSettings'    => [
                     'size' => 'medium',
@@ -137,6 +138,55 @@ class EditorIntegration
          * @param array $sizes Array of size options with 'label' and 'value' keys.
          */
         return apply_filters('pikari_gutenberg_modals_modal_sizes', $default_sizes);
+    }
+
+    /**
+     * Get available panel widths for the editor.
+     *
+     * Panels measure a width, not a max-width, so they need their own list.
+     * A sibling filter rather than a parameter on
+     * `pikari_gutenberg_modals_modal_sizes`: the editor needs both lists at
+     * once, and parameterising would turn the released
+     * `pikariGutenbergModals.modalSizes` from a flat array into a keyed
+     * object.
+     *
+     * Each entry has:
+     * - `label` (string) Translated display label.
+     * - `value` (string) Slug used as the `data-size` attribute value.
+     *                     Empty string means default (`--modal-panel-width`).
+     *
+     * Custom widths require matching CSS, e.g.:
+     * ```css
+     * .modal-overlay[data-placement="right"][data-size="custom-slug"] .modal-content {
+     *     width: 720px;
+     * }
+     * ```
+     *
+     * @return array<int, array{label: string, value: string}> Panel width options.
+     */
+    private function get_panel_widths(): array
+    {
+        $default_widths = [
+            [
+                'label' => __('Default', 'pikari-gutenberg-modals'),
+                'value' => '',
+            ],
+            [
+                'label' => __('Narrow', 'pikari-gutenberg-modals'),
+                'value' => 'narrow',
+            ],
+            [
+                'label' => __('Wide', 'pikari-gutenberg-modals'),
+                'value' => 'wide',
+            ],
+        ];
+
+        /**
+         * Filters the available modal panel width options.
+         *
+         * @param array $widths Array of width options with 'label' and 'value' keys.
+         */
+        return apply_filters('pikari_gutenberg_modals_panel_widths', $default_widths);
     }
 
     /**
