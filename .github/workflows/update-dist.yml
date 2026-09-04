@@ -52,12 +52,20 @@ jobs:
           fi
 
           if [ "$FAILED" -ne 0 ]; then
-            echo "Refusing to publish: the dist branch would be tagged v${TAG_VERSION} while the plugin reports a different version."
-            echo "Composer resolves versions from these tags, so this would install a mislabelled plugin."
+            echo "Refusing to build the dist branch: it would be tagged v${TAG_VERSION} while the plugin reports a different version."
+            echo "This is the Composer install path — a mismatch here ships silently."
             exit 1
           fi
 
           echo "Versions agree."
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+
+      - name: Install Composer production dependencies
+        run: composer install --no-dev --optimize-autoloader --no-interaction
 
       - name: Install dependencies
         run: npm ci
@@ -115,6 +123,10 @@ jobs:
 
           if [ -d "${{ github.workspace }}/parts" ]; then
             cp -r ${{ github.workspace }}/parts .
+          fi
+
+          if [ -d "${{ github.workspace }}/vendor" ]; then
+            cp -r ${{ github.workspace }}/vendor .
           fi
 
           cat > composer.json << INNEREOF
