@@ -22,7 +22,7 @@
 - **Never hand-edit these files** — they are synced from the monorepo and edits are silently lost: `phpcs.xml`, `phpunit.xml.dist`, `jest.config.js`, anything in `.github/workflows/`, `tests/php/TestCase.php`. (`tests/php/bootstrap.php` is protected by `skip-sync` and is safe.)
 - **Do not bump the version in this branch.** The version lives in three places that CI asserts agree (plugin header `* Version:`, `PIKARI_GUTENBERG_MODALS_VERSION`, `package.json`). When the release happens, run `node .github/bump-version.js pikari-gutenberg-modals <version>` from the monorepo root — never hand-edit one of the three.
 - CI required checks are `Code Quality`, `Build` and `Test`, on `main` only. Before pushing: `npm run lint:all && composer test && npm test`.
-- New developer-facing customisation points must be documented in **`CLAUDE.md`**, **`readme.txt`** *and* **`README.md`** (the Documentation Rule; readme.txt and README.md are the same content in two formats and must stay in sync).
+- New developer-facing customisation points must be documented in **`CLAUDE.md`**, **`readme.txt`** _and_ **`README.md`** (the Documentation Rule; readme.txt and README.md are the same content in two formats and must stay in sync).
 - Read `_plans/testing-notes.md` before authoring any browser test page. Hand-authored trigger markup navigates instead of opening the modal, and looks exactly like a broken feature.
 
 ## Sequencing note
@@ -38,10 +38,12 @@ Placement precedence and contextual sizing are the only real logic in this featu
 The size filter matters: `fullscreen` is a centered-only slug that sets `max-width:100%; height:100%`. Left leaking onto a right panel it produces a full-width sheet, silently undoing the placement.
 
 **Files:**
+
 - Create: `src/frontend/modal-geometry.js`
 - Test: `tests/unit/frontend/modal-geometry.test.js`
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `resolveGeometry( { triggerPlacement, dialogPlacement, size } ) => { placement: string, size: string }`, plus exported constants `PANEL_PLACEMENTS` (`['left','right']`), `PANEL_SIZES` (`['narrow','wide']`), `CENTERED_SIZES` (`['small','large','fullscreen']`). Task 4 imports `resolveGeometry`.
 
@@ -58,67 +60,69 @@ Create `tests/unit/frontend/modal-geometry.test.js`:
 
 import { resolveGeometry } from '../../../src/frontend/modal-geometry';
 
-describe( 'resolveGeometry', () => {
-	it( 'defaults to centered with no size', () => {
-		expect( resolveGeometry() ).toEqual( { placement: '', size: '' } );
-	} );
+describe('resolveGeometry', () => {
+	it('defaults to centered with no size', () => {
+		expect(resolveGeometry()).toEqual({ placement: '', size: '' });
+	});
 
-	it( 'uses the dialog placement when the trigger sets none', () => {
-		expect(
-			resolveGeometry( { dialogPlacement: 'right' } )
-		).toEqual( { placement: 'right', size: '' } );
-	} );
+	it('uses the dialog placement when the trigger sets none', () => {
+		expect(resolveGeometry({ dialogPlacement: 'right' })).toEqual({
+			placement: 'right',
+			size: '',
+		});
+	});
 
-	it( 'lets the trigger override the dialog placement', () => {
+	it('lets the trigger override the dialog placement', () => {
 		expect(
-			resolveGeometry( {
+			resolveGeometry({
 				triggerPlacement: 'left',
 				dialogPlacement: 'right',
-			} )
-		).toEqual( { placement: 'left', size: '' } );
-	} );
+			})
+		).toEqual({ placement: 'left', size: '' });
+	});
 
-	it( 'ignores an unknown trigger placement and falls back to the dialog', () => {
+	it('ignores an unknown trigger placement and falls back to the dialog', () => {
 		expect(
-			resolveGeometry( {
+			resolveGeometry({
 				triggerPlacement: 'top',
 				dialogPlacement: 'right',
-			} )
-		).toEqual( { placement: 'right', size: '' } );
-	} );
+			})
+		).toEqual({ placement: 'right', size: '' });
+	});
 
-	it( 'ignores an unknown dialog placement and centers', () => {
-		expect(
-			resolveGeometry( { dialogPlacement: 'bottom' } )
-		).toEqual( { placement: '', size: '' } );
-	} );
-
-	it( 'keeps a centered size slug when centered', () => {
-		expect( resolveGeometry( { size: 'fullscreen' } ) ).toEqual( {
-			placement: '',
-			size: 'fullscreen',
-		} );
-	} );
-
-	it( 'drops a centered size slug on a panel', () => {
-		expect(
-			resolveGeometry( { dialogPlacement: 'right', size: 'fullscreen' } )
-		).toEqual( { placement: 'right', size: '' } );
-	} );
-
-	it( 'keeps a panel size slug on a panel', () => {
-		expect(
-			resolveGeometry( { dialogPlacement: 'right', size: 'wide' } )
-		).toEqual( { placement: 'right', size: 'wide' } );
-	} );
-
-	it( 'drops a panel size slug when centered', () => {
-		expect( resolveGeometry( { size: 'narrow' } ) ).toEqual( {
+	it('ignores an unknown dialog placement and centers', () => {
+		expect(resolveGeometry({ dialogPlacement: 'bottom' })).toEqual({
 			placement: '',
 			size: '',
-		} );
-	} );
-} );
+		});
+	});
+
+	it('keeps a centered size slug when centered', () => {
+		expect(resolveGeometry({ size: 'fullscreen' })).toEqual({
+			placement: '',
+			size: 'fullscreen',
+		});
+	});
+
+	it('drops a centered size slug on a panel', () => {
+		expect(
+			resolveGeometry({ dialogPlacement: 'right', size: 'fullscreen' })
+		).toEqual({ placement: 'right', size: '' });
+	});
+
+	it('keeps a panel size slug on a panel', () => {
+		expect(resolveGeometry({ dialogPlacement: 'right', size: 'wide' })).toEqual(
+			{ placement: 'right', size: 'wide' }
+		);
+	});
+
+	it('drops a panel size slug when centered', () => {
+		expect(resolveGeometry({ size: 'narrow' })).toEqual({
+			placement: '',
+			size: '',
+		});
+	});
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -146,9 +150,9 @@ Create `src/frontend/modal-geometry.js` (tabs for indentation):
  * `max-width: 100%` and silently turn the panel into a full-width sheet.
  */
 
-export const PANEL_PLACEMENTS = [ 'left', 'right' ];
-export const PANEL_SIZES = [ 'narrow', 'wide' ];
-export const CENTERED_SIZES = [ 'small', 'large', 'fullscreen' ];
+export const PANEL_PLACEMENTS = ['left', 'right'];
+export const PANEL_SIZES = ['narrow', 'wide'];
+export const CENTERED_SIZES = ['small', 'large', 'fullscreen'];
 
 /**
  * Resolve the effective placement and size for an opening modal.
@@ -159,16 +163,16 @@ export const CENTERED_SIZES = [ 'small', 'large', 'fullscreen' ];
  * @param {string} options.size             Size slug from the trigger's context.
  * @return {{placement: string, size: string}} Effective geometry. Empty strings mean default.
  */
-export function resolveGeometry( {
+export function resolveGeometry({
 	triggerPlacement = '',
 	dialogPlacement = '',
 	size = '',
-} = {} ) {
+} = {}) {
 	let placement = '';
 
-	if ( PANEL_PLACEMENTS.includes( triggerPlacement ) ) {
+	if (PANEL_PLACEMENTS.includes(triggerPlacement)) {
 		placement = triggerPlacement;
-	} else if ( PANEL_PLACEMENTS.includes( dialogPlacement ) ) {
+	} else if (PANEL_PLACEMENTS.includes(dialogPlacement)) {
 		placement = dialogPlacement;
 	}
 
@@ -176,7 +180,7 @@ export function resolveGeometry( {
 
 	return {
 		placement,
-		size: allowed.includes( size ) ? size : '',
+		size: allowed.includes(size) ? size : '',
 	};
 }
 ```
@@ -207,10 +211,12 @@ Geometry applies to `.modal-overlay` and `.modal-content`; the chrome Group insi
 No new breakpoint is needed: the existing `@media (max-width: 768px)` block already forces full width and height, and the widest panel (600px) plus margin sits under that threshold.
 
 **Files:**
+
 - Modify: `src/blocks/modal-dialog/style.css` — add panel width custom properties to the `:root` block (lines 10-15), placement rules after the size variations (line 119), keyframes after the existing ones (line 183), and new selectors in the reduced-motion block (lines 186-199).
 - Test: `tests/unit/frontend/reduced-motion.test.js` (existing — must keep passing, do not edit it)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `.modal-overlay[data-placement="left"|"right"]` as the CSS contract Task 4's store writes to; custom properties `--modal-panel-width`, `--modal-panel-width-narrow`, `--modal-panel-width-wide`; `data-size` slugs `narrow` and `wide` used by Task 7.
 
@@ -246,29 +252,29 @@ Immediately after the `[data-size="fullscreen"]` rules (currently ending line 11
 /* Placement — applied via data-placement on .modal-overlay.
    Geometry belongs to the container; the chrome Group inside fills it.
    Author-set background, padding and shadow are untouched. */
-.modal-overlay[data-placement="left"],
-.modal-overlay[data-placement="right"] {
+.modal-overlay[data-placement='left'],
+.modal-overlay[data-placement='right'] {
 	align-items: stretch;
 }
-.modal-overlay[data-placement="left"] {
+.modal-overlay[data-placement='left'] {
 	justify-content: flex-start;
 }
-.modal-overlay[data-placement="right"] {
+.modal-overlay[data-placement='right'] {
 	justify-content: flex-end;
 }
-.modal-overlay[data-placement="left"] .modal-content,
-.modal-overlay[data-placement="right"] .modal-content {
+.modal-overlay[data-placement='left'] .modal-content,
+.modal-overlay[data-placement='right'] .modal-content {
 	width: var(--modal-panel-width, 420px);
 	max-width: 100%;
 	max-height: 100%;
 	height: 100%;
 }
-.modal-overlay[data-placement="left"][data-size="narrow"] .modal-content,
-.modal-overlay[data-placement="right"][data-size="narrow"] .modal-content {
+.modal-overlay[data-placement='left'][data-size='narrow'] .modal-content,
+.modal-overlay[data-placement='right'][data-size='narrow'] .modal-content {
 	width: var(--modal-panel-width-narrow, 320px);
 }
-.modal-overlay[data-placement="left"][data-size="wide"] .modal-content,
-.modal-overlay[data-placement="right"][data-size="wide"] .modal-content {
+.modal-overlay[data-placement='left'][data-size='wide'] .modal-content,
+.modal-overlay[data-placement='right'][data-size='wide'] .modal-content {
 	width: var(--modal-panel-width-wide, 600px);
 }
 
@@ -279,16 +285,16 @@ Immediately after the `[data-size="fullscreen"]` rules (currently ending line 11
 }
 
 /* Panels slide in from their edge rather than scaling from the centre. */
-.modal-overlay[data-placement="left"].is-open .modal-content {
+.modal-overlay[data-placement='left'].is-open .modal-content {
 	animation: modal-slide-in-left 300ms ease-out forwards;
 }
-.modal-overlay[data-placement="right"].is-open .modal-content {
+.modal-overlay[data-placement='right'].is-open .modal-content {
 	animation: modal-slide-in-right 300ms ease-out forwards;
 }
-.modal-overlay[data-placement="left"].is-closing .modal-content {
+.modal-overlay[data-placement='left'].is-closing .modal-content {
 	animation: modal-slide-out-left 200ms ease-in forwards;
 }
-.modal-overlay[data-placement="right"].is-closing .modal-content {
+.modal-overlay[data-placement='right'].is-closing .modal-content {
 	animation: modal-slide-out-right 200ms ease-in forwards;
 }
 ```
@@ -349,12 +355,12 @@ Inside the existing `@media (prefers-reduced-motion: reduce)` block, after the
 `.modal-overlay.is-open .modal-content, .modal-overlay.is-closing .modal-content` rule, add:
 
 ```css
-	.modal-overlay[data-placement="left"].is-open .modal-content,
-	.modal-overlay[data-placement="right"].is-open .modal-content,
-	.modal-overlay[data-placement="left"].is-closing .modal-content,
-	.modal-overlay[data-placement="right"].is-closing .modal-content {
-		animation: none;
-	}
+.modal-overlay[data-placement='left'].is-open .modal-content,
+.modal-overlay[data-placement='right'].is-open .modal-content,
+.modal-overlay[data-placement='left'].is-closing .modal-content,
+.modal-overlay[data-placement='right'].is-closing .modal-content {
+	animation: none;
+}
 ```
 
 - [ ] **Step 6: Run the tests and the CSS linter**
@@ -377,14 +383,16 @@ git commit -m "feat: add left and right panel placement styles for the modal dia
 
 ### Task 3: Placement attribute on the Modal Dialog block
 
-The block declares the placement; the store resolves it at open time. `render.php` emits `data-default-placement` rather than `data-placement` so the *declared* value on `.modal-content` can never be confused with the *effective* value the store writes on `.modal-overlay` — they are different elements with different meanings, and CSS reads only the latter.
+The block declares the placement; the store resolves it at open time. `render.php` emits `data-default-placement` rather than `data-placement` so the _declared_ value on `.modal-content` can never be confused with the _effective_ value the store writes on `.modal-overlay` — they are different elements with different meanings, and CSS reads only the latter.
 
 **Files:**
+
 - Modify: `src/blocks/modal-dialog/block.json` — add to `attributes` (after `hasParallax`, line 30)
 - Modify: `src/blocks/modal-dialog/render.php:78-83` — the `get_block_wrapper_attributes()` call
 - Modify: `src/blocks/modal-dialog/edit.js` — imports (line 15-22), destructuring (line 63-70), new InspectorControls panel
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: block attribute `placement` (string, default `''`, valid values `''`, `'left'`, `'right'`); the `data-default-placement` attribute on `.modal-content`, which Task 4's store reads.
 
@@ -426,51 +434,35 @@ $wrapper_attrs = get_block_wrapper_attributes( $wrapper_args );
 In `src/blocks/modal-dialog/edit.js`, add `SelectControl` to the `@wordpress/components` import list, add `placement` to the destructured attributes, and insert a new `InspectorControls` section immediately before the existing `<InspectorControls group="color">`:
 
 ```jsx
-			<InspectorControls>
-				<PanelBody
-					title={ __( 'Placement', 'pikari-gutenberg-modals' ) }
-				>
-					<SelectControl
-						__nextHasNoMarginBottom
-						__next40pxDefaultSize
-						label={ __(
-							'Dialog placement',
-							'pikari-gutenberg-modals'
-						) }
-						value={ placement }
-						options={ [
-							{
-								label: __(
-									'Centered',
-									'pikari-gutenberg-modals'
-								),
-								value: '',
-							},
-							{
-								label: __(
-									'Left edge',
-									'pikari-gutenberg-modals'
-								),
-								value: 'left',
-							},
-							{
-								label: __(
-									'Right edge',
-									'pikari-gutenberg-modals'
-								),
-								value: 'right',
-							},
-						] }
-						onChange={ ( value ) =>
-							setAttributes( { placement: value } )
-						}
-						help={ __(
-							'Edge placements pin the dialog to the side of the screen at full height. The corners are squared off against the edge.',
-							'pikari-gutenberg-modals'
-						) }
-					/>
-				</PanelBody>
-			</InspectorControls>
+<InspectorControls>
+	<PanelBody title={__('Placement', 'pikari-gutenberg-modals')}>
+		<SelectControl
+			__nextHasNoMarginBottom
+			__next40pxDefaultSize
+			label={__('Dialog placement', 'pikari-gutenberg-modals')}
+			value={placement}
+			options={[
+				{
+					label: __('Centered', 'pikari-gutenberg-modals'),
+					value: '',
+				},
+				{
+					label: __('Left edge', 'pikari-gutenberg-modals'),
+					value: 'left',
+				},
+				{
+					label: __('Right edge', 'pikari-gutenberg-modals'),
+					value: 'right',
+				},
+			]}
+			onChange={(value) => setAttributes({ placement: value })}
+			help={__(
+				'Edge placements pin the dialog to the side of the screen at full height. The corners are squared off against the edge.',
+				'pikari-gutenberg-modals'
+			)}
+		/>
+	</PanelBody>
+</InspectorControls>
 ```
 
 - [ ] **Step 4: Build and lint**
@@ -495,10 +487,12 @@ git commit -m "feat: add a placement attribute to the Modal Dialog block"
 `data-size` is written in three places today — the open path, the close timeout, and the cancel-pending-close branch that finishes a previous modal immediately when a second trigger fires before the first has finished closing. All three need the placement equivalent, or a right panel stays a right panel after a centered modal opens over it.
 
 **Files:**
+
 - Modify: `src/frontend/modal-store.js` — imports (line 12-21), `openModal` context destructuring (line 74-81), cancel-pending-close branch (line 119), the "Apply size from trigger context" block (line 160-166), `closeModal` timeout (line 372)
 - Test: `tests/unit/frontend/modal-store-geometry.test.js` (create)
 
 **Interfaces:**
+
 - Consumes: `resolveGeometry` from Task 1; `data-default-placement` from Task 3; the `placement` context key, which Task 7 populates (absent until then, which resolves to the dialog's value — the intended default).
 - Produces: `data-placement` on the `.modal-overlay` container element.
 
@@ -523,13 +517,11 @@ import '../../../src/frontend/modal-store';
  * @param {string} dialogPlacement Value for data-default-placement, or ''.
  * @return {HTMLElement} The container element.
  */
-function setUpContainer( dialogPlacement = '' ) {
+function setUpContainer(dialogPlacement = '') {
 	document.body.innerHTML = `
 		<div id="pikari-modal" class="modal-overlay">
 			<div class="modal-content"${
-				dialogPlacement
-					? ` data-default-placement="${ dialogPlacement }"`
-					: ''
+				dialogPlacement ? ` data-default-placement="${dialogPlacement}"` : ''
 			}>
 				<div class="modal-body"></div>
 			</div>
@@ -538,7 +530,7 @@ function setUpContainer( dialogPlacement = '' ) {
 			<p>Inline content</p>
 		</div>
 	`;
-	return document.getElementById( 'pikari-modal' );
+	return document.getElementById('pikari-modal');
 }
 
 /**
@@ -546,85 +538,85 @@ function setUpContainer( dialogPlacement = '' ) {
  *
  * @param {Object} actions Store actions.
  */
-function runOpen( actions ) {
+function runOpen(actions) {
 	const generator = actions.openModal();
 	let step = generator.next();
-	while ( ! step.done ) {
+	while (!step.done) {
 		step = generator.next();
 	}
 }
 
-describe( 'modal store geometry', () => {
+describe('modal store geometry', () => {
 	let actions;
 
-	beforeEach( () => {
-		( { actions } = store.getStore( 'pikari-modal' ) );
+	beforeEach(() => {
+		({ actions } = store.getStore('pikari-modal'));
 		jest.clearAllMocks();
-	} );
+	});
 
-	it( 'leaves a centered dialog with no placement attribute', () => {
+	it('leaves a centered dialog with no placement attribute', () => {
 		const container = setUpContainer();
-		getContext.mockReturnValue( {
+		getContext.mockReturnValue({
 			contentSource: 'inline',
 			inlineAnchor: 'promo',
-		} );
+		});
 
-		runOpen( actions );
+		runOpen(actions);
 
-		expect( container.hasAttribute( 'data-placement' ) ).toBe( false );
-	} );
+		expect(container.hasAttribute('data-placement')).toBe(false);
+	});
 
-	it( "applies the dialog's own placement", () => {
-		const container = setUpContainer( 'right' );
-		getContext.mockReturnValue( {
+	it("applies the dialog's own placement", () => {
+		const container = setUpContainer('right');
+		getContext.mockReturnValue({
 			contentSource: 'inline',
 			inlineAnchor: 'promo',
-		} );
+		});
 
-		runOpen( actions );
+		runOpen(actions);
 
-		expect( container.getAttribute( 'data-placement' ) ).toBe( 'right' );
-	} );
+		expect(container.getAttribute('data-placement')).toBe('right');
+	});
 
-	it( 'lets the trigger override the dialog placement', () => {
-		const container = setUpContainer( 'right' );
-		getContext.mockReturnValue( {
+	it('lets the trigger override the dialog placement', () => {
+		const container = setUpContainer('right');
+		getContext.mockReturnValue({
 			contentSource: 'inline',
 			inlineAnchor: 'promo',
 			placement: 'left',
-		} );
+		});
 
-		runOpen( actions );
+		runOpen(actions);
 
-		expect( container.getAttribute( 'data-placement' ) ).toBe( 'left' );
-	} );
+		expect(container.getAttribute('data-placement')).toBe('left');
+	});
 
-	it( 'drops a centered size slug on a panel', () => {
-		const container = setUpContainer( 'right' );
-		getContext.mockReturnValue( {
+	it('drops a centered size slug on a panel', () => {
+		const container = setUpContainer('right');
+		getContext.mockReturnValue({
 			contentSource: 'inline',
 			inlineAnchor: 'promo',
 			size: 'fullscreen',
-		} );
+		});
 
-		runOpen( actions );
+		runOpen(actions);
 
-		expect( container.hasAttribute( 'data-size' ) ).toBe( false );
-	} );
+		expect(container.hasAttribute('data-size')).toBe(false);
+	});
 
-	it( 'keeps a panel size slug on a panel', () => {
-		const container = setUpContainer( 'right' );
-		getContext.mockReturnValue( {
+	it('keeps a panel size slug on a panel', () => {
+		const container = setUpContainer('right');
+		getContext.mockReturnValue({
 			contentSource: 'inline',
 			inlineAnchor: 'promo',
 			size: 'wide',
-		} );
+		});
 
-		runOpen( actions );
+		runOpen(actions);
 
-		expect( container.getAttribute( 'data-size' ) ).toBe( 'wide' );
-	} );
-} );
+		expect(container.getAttribute('data-size')).toBe('wide');
+	});
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -646,15 +638,15 @@ import { resolveGeometry } from './modal-geometry';
 and add `placement` to the context destructuring in `openModal`, so it reads:
 
 ```js
-			const {
-				postId,
-				modalId,
-				size,
-				placement,
-				contentSource,
-				inlineAnchor,
-				templatePart,
-			} = context;
+const {
+	postId,
+	modalId,
+	size,
+	placement,
+	contentSource,
+	inlineAnchor,
+	templatePart,
+} = context;
 ```
 
 - [ ] **Step 4: Apply the resolved geometry on open**
@@ -662,28 +654,27 @@ and add `placement` to the context destructuring in `openModal`, so it reads:
 Replace the "Apply size from trigger context" block with:
 
 ```js
-			// Geometry: the trigger's override wins, else the Modal Dialog
-			// block's own placement, else centered. The size slug is dropped
-			// when it does not belong to the resolved placement.
-			const dialogEl = modal.querySelector( '.modal-content' );
-			const geometry = resolveGeometry( {
-				triggerPlacement: placement,
-				dialogPlacement:
-					dialogEl?.getAttribute( 'data-default-placement' ) || '',
-				size,
-			} );
+// Geometry: the trigger's override wins, else the Modal Dialog
+// block's own placement, else centered. The size slug is dropped
+// when it does not belong to the resolved placement.
+const dialogEl = modal.querySelector('.modal-content');
+const geometry = resolveGeometry({
+	triggerPlacement: placement,
+	dialogPlacement: dialogEl?.getAttribute('data-default-placement') || '',
+	size,
+});
 
-			if ( geometry.size ) {
-				modal.setAttribute( 'data-size', geometry.size );
-			} else {
-				modal.removeAttribute( 'data-size' );
-			}
+if (geometry.size) {
+	modal.setAttribute('data-size', geometry.size);
+} else {
+	modal.removeAttribute('data-size');
+}
 
-			if ( geometry.placement ) {
-				modal.setAttribute( 'data-placement', geometry.placement );
-			} else {
-				modal.removeAttribute( 'data-placement' );
-			}
+if (geometry.placement) {
+	modal.setAttribute('data-placement', geometry.placement);
+} else {
+	modal.removeAttribute('data-placement');
+}
 ```
 
 - [ ] **Step 5: Clear placement on both close paths**
@@ -691,13 +682,13 @@ Replace the "Apply size from trigger context" block with:
 In the cancel-pending-close branch, beside `activeContainer.removeAttribute( 'data-size' );`, add:
 
 ```js
-					activeContainer.removeAttribute( 'data-placement' );
+activeContainer.removeAttribute('data-placement');
 ```
 
 In the `closeModal` timeout, beside `modal.removeAttribute( 'data-size' );`, add:
 
 ```js
-					modal.removeAttribute( 'data-placement' );
+modal.removeAttribute('data-placement');
 ```
 
 - [ ] **Step 6: Run the tests**
@@ -725,11 +716,13 @@ git commit -m "feat: apply resolved placement and size to the modal container"
 A static method on a class, not a function declared in `render.php` — `render.php` runs once per block instance, so a plain function declaration fatals on the second trigger on a page.
 
 **Files:**
+
 - Create: `includes/TriggerContext.php`
 - Create: `tests/php/TriggerContextTest.php`
 - Modify: `src/blocks/modal-trigger/render.php` — the four context blocks and the `use` statements (lines 15-18)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `Pikari\GutenbergModals\TriggerContext::build( array $attributes, array $base, string $template_part = '' ): array` — returns `$base` with `size` and `templatePart` added when non-empty. Task 7 adds `placement` to it.
 
@@ -958,9 +951,11 @@ git commit -m "refactor: extract the modal trigger Interactivity context builder
 Panel widths get their own filter rather than parameterising `pikari_gutenberg_modals_modal_sizes`. The editor needs both lists at once, so parameterising would change the released `pikariGutenbergModals.modalSizes` from a flat array into a keyed object — a breaking change to localised data, to save a few lines.
 
 **Files:**
+
 - Modify: `includes/EditorIntegration.php` — the `wp_localize_script` array (around line 77) and a new private method beside `get_modal_sizes()` (line 111-139)
 
 **Interfaces:**
+
 - Consumes: nothing.
 - Produces: `window.pikariGutenbergModals.panelWidths` — an array of `{ label, value }` with values `''`, `'narrow'`, `'wide'`; the `pikari_gutenberg_modals_panel_widths` filter. Task 7's editor UI reads it.
 
@@ -976,7 +971,7 @@ In `includes/EditorIntegration.php`, in the `wp_localize_script` array, after th
 
 Immediately after `get_modal_sizes()`:
 
-```php
+````php
     /**
      * Get available panel widths for the editor.
      *
@@ -1025,7 +1020,7 @@ Immediately after `get_modal_sizes()`:
          */
         return apply_filters('pikari_gutenberg_modals_panel_widths', $default_widths);
     }
-```
+````
 
 - [ ] **Step 3: Lint and commit**
 
@@ -1041,15 +1036,17 @@ git commit -m "feat: add a panel widths filter for edge-placed modals"
 
 The trigger already overrides `size`, so placement being overridable keeps the two consistent — the spec retains this rather than adding it as a new idea.
 
-**Known limitation to record, not solve:** the size dropdown shows panel widths only when the *trigger's own* placement is left or right. A trigger that inherits an edge placement from the Modal Dialog block still shows the centered size list. Resolving that properly means the editor introspecting the template part's blocks, which is disproportionate; the store drops the mismatched slug at runtime anyway (Task 1), so the worst case is a control that does nothing.
+**Known limitation to record, not solve:** the size dropdown shows panel widths only when the _trigger's own_ placement is left or right. A trigger that inherits an edge placement from the Modal Dialog block still shows the centered size list. Resolving that properly means the editor introspecting the template part's blocks, which is disproportionate; the store drops the mismatched slug at runtime anyway (Task 1), so the worst case is a control that does nothing.
 
 **Files:**
+
 - Modify: `src/blocks/modal-trigger/block.json` — add to `attributes` after `modalSize`
 - Modify: `src/blocks/modal-trigger/edit.js` — size options constant (line 25-26), the InspectorControls block containing the size `SelectControl` (around line 478)
 - Modify: `includes/TriggerContext.php` — `build()`
 - Modify: `tests/php/TriggerContextTest.php` — add placement cases
 
 **Interfaces:**
+
 - Consumes: `panelWidths` from Task 6; `TriggerContext::build()` from Task 5.
 - Produces: block attribute `modalPlacement`; the `placement` key in Interactivity context, which Task 4's store already reads.
 
@@ -1143,26 +1140,23 @@ const PLACEMENT_OPTIONS = [
 Add `modalPlacement` to the destructured attributes, then add a placement `SelectControl` immediately before the existing size control, and switch the size control's `options` to depend on it:
 
 ```jsx
-								<SelectControl
-									__nextHasNoMarginBottom
-									__next40pxDefaultSize
-									label={ __(
-										'Placement',
-										'pikari-gutenberg-modals'
-									) }
-									value={ modalPlacement }
-									options={ PLACEMENT_OPTIONS }
-									onChange={ ( value ) =>
-										setAttributes( {
-											modalPlacement: value,
-											modalSize: '',
-										} )
-									}
-									help={ __(
-										'Overrides the placement set on the Modal Dialog block.',
-										'pikari-gutenberg-modals'
-									) }
-								/>
+<SelectControl
+	__nextHasNoMarginBottom
+	__next40pxDefaultSize
+	label={__('Placement', 'pikari-gutenberg-modals')}
+	value={modalPlacement}
+	options={PLACEMENT_OPTIONS}
+	onChange={(value) =>
+		setAttributes({
+			modalPlacement: value,
+			modalSize: '',
+		})
+	}
+	help={__(
+		'Overrides the placement set on the Modal Dialog block.',
+		'pikari-gutenberg-modals'
+	)}
+/>
 ```
 
 The size control's `options` becomes:
@@ -1189,11 +1183,12 @@ git commit -m "feat: let a modal trigger override the dialog placement"
 
 ### Task 8: Dialog aria-label from the trigger
 
-**Diagnosis, already done — do not re-derive it.** The container carries both `aria-label="Modal dialog"` and `aria-labelledby="modal-title--{slug}"` (`includes/BlockSupport.php:866-868`). `aria-labelledby` wins whenever its target exists — but `#modal-title--{slug}` is the `<h2>` written into `.modal-body` *during content loading*, and `.modal-body` is empty at the moment the dialog opens. So at announcement time the reference is dangling, the name computation falls through to `aria-label`, and assistive tech says "Modal dialog". That is what was measured on the Kindler install for a trigger named "Watch the Talks".
+**Diagnosis, already done — do not re-derive it.** The container carries both `aria-label="Modal dialog"` and `aria-labelledby="modal-title--{slug}"` (`includes/BlockSupport.php:866-868`). `aria-labelledby` wins whenever its target exists — but `#modal-title--{slug}` is the `<h2>` written into `.modal-body` _during content loading_, and `.modal-body` is empty at the moment the dialog opens. So at announcement time the reference is dangling, the name computation falls through to `aria-label`, and assistive tech says "Modal dialog". That is what was measured on the Kindler install for a trigger named "Watch the Talks".
 
 The fix is to carry the trigger's accessible name — already computed in every branch of `modal-trigger/render.php` as `$aria_label` — into context, and set it on the container at open time.
 
 **Files:**
+
 - Modify: `includes/TriggerContext.php` — `build()` gains a `label` option
 - Modify: `src/blocks/modal-trigger/render.php` — pass `'label' => $aria_label` in each of the four `$base` arrays
 - Modify: `src/frontend/modal-store.js` — `openModal` sets it, `closeModal` restores it
@@ -1201,6 +1196,7 @@ The fix is to carry the trigger's accessible name — already computed in every 
 - Test: `tests/unit/frontend/modal-store-geometry.test.js` — add a label case
 
 **Interfaces:**
+
 - Consumes: `TriggerContext::build()` from Task 5.
 - Produces: the `label` context key; `aria-label` on the container reflecting the trigger.
 
@@ -1209,34 +1205,32 @@ The fix is to carry the trigger's accessible name — already computed in every 
 Add to `tests/unit/frontend/modal-store-geometry.test.js`:
 
 ```js
-	it( "labels the dialog with the trigger's accessible name", () => {
-		const container = setUpContainer();
-		container.setAttribute( 'aria-label', 'Modal dialog' );
-		getContext.mockReturnValue( {
-			contentSource: 'inline',
-			inlineAnchor: 'promo',
-			label: 'Watch the Talks',
-		} );
+it("labels the dialog with the trigger's accessible name", () => {
+	const container = setUpContainer();
+	container.setAttribute('aria-label', 'Modal dialog');
+	getContext.mockReturnValue({
+		contentSource: 'inline',
+		inlineAnchor: 'promo',
+		label: 'Watch the Talks',
+	});
 
-		runOpen( actions );
+	runOpen(actions);
 
-		expect( container.getAttribute( 'aria-label' ) ).toBe(
-			'Watch the Talks'
-		);
-	} );
+	expect(container.getAttribute('aria-label')).toBe('Watch the Talks');
+});
 
-	it( 'leaves the generic label alone when the trigger supplies none', () => {
-		const container = setUpContainer();
-		container.setAttribute( 'aria-label', 'Modal dialog' );
-		getContext.mockReturnValue( {
-			contentSource: 'inline',
-			inlineAnchor: 'promo',
-		} );
+it('leaves the generic label alone when the trigger supplies none', () => {
+	const container = setUpContainer();
+	container.setAttribute('aria-label', 'Modal dialog');
+	getContext.mockReturnValue({
+		contentSource: 'inline',
+		inlineAnchor: 'promo',
+	});
 
-		runOpen( actions );
+	runOpen(actions);
 
-		expect( container.getAttribute( 'aria-label' ) ).toBe( 'Modal dialog' );
-	} );
+	expect(container.getAttribute('aria-label')).toBe('Modal dialog');
+});
 ```
 
 - [ ] **Step 2: Run it to verify it fails**
@@ -1258,34 +1252,31 @@ let previousAriaLabel = null;
 Add `label` to the `openModal` context destructuring, and after the geometry block:
 
 ```js
-			// The container's aria-labelledby points at a heading that does not
-			// exist until content loads, so at announcement time the name falls
-			// through to aria-label. Carry the trigger's own name across.
-			if ( label ) {
-				previousAriaLabel = modal.getAttribute( 'aria-label' );
-				modal.setAttribute( 'aria-label', label );
-			}
+// The container's aria-labelledby points at a heading that does not
+// exist until content loads, so at announcement time the name falls
+// through to aria-label. Carry the trigger's own name across.
+if (label) {
+	previousAriaLabel = modal.getAttribute('aria-label');
+	modal.setAttribute('aria-label', label);
+}
 ```
 
 In the `closeModal` timeout, beside the `data-placement` removal:
 
 ```js
-					if ( previousAriaLabel !== null ) {
-						modal.setAttribute( 'aria-label', previousAriaLabel );
-						previousAriaLabel = null;
-					}
+if (previousAriaLabel !== null) {
+	modal.setAttribute('aria-label', previousAriaLabel);
+	previousAriaLabel = null;
+}
 ```
 
 and the same restoration in the cancel-pending-close branch, beside its `data-placement` removal:
 
 ```js
-					if ( previousAriaLabel !== null ) {
-						activeContainer.setAttribute(
-							'aria-label',
-							previousAriaLabel
-						);
-						previousAriaLabel = null;
-					}
+if (previousAriaLabel !== null) {
+	activeContainer.setAttribute('aria-label', previousAriaLabel);
+	previousAriaLabel = null;
+}
 ```
 
 - [ ] **Step 4: Carry the label from PHP**
@@ -1371,6 +1362,7 @@ git commit -m "fix: label the dialog with the trigger's accessible name"
 The Documentation Rule requires new customisation points in `CLAUDE.md` **and** `readme.txt` **and** `README.md`. `readme.txt` and `README.md` carry the same content in two formats and must stay in sync.
 
 **Files:**
+
 - Modify: `CLAUDE.md` — the "Custom Hooks & Filters" block and the Modal Container Pattern section
 - Modify: `readme.txt` — Developer section
 - Modify: `README.md` — the matching Developer section
@@ -1439,7 +1431,7 @@ git commit -m "docs: document modal placement and the panel widths filter"
 
 - [ ] `npm run lint:all && composer test && npm test` — all green, with counts recorded.
 - [ ] `npm run build` has been run since the last `render.php` or block CSS edit.
-- [ ] Browser pass in wp-env from this worktree (`npx wp-env start`, http://localhost:5888, admin/password). Author the test content **through the editor**, not by hand — see `_plans/testing-notes.md`. Measure, do not eyeball:
+- [ ] Browser pass in wp-env from this worktree (`npx wp-env start`, <http://localhost:5888>, admin/password). Author the test content **through the editor**, not by hand — see `_plans/testing-notes.md`. Measure, do not eyeball:
   - right panel pinned to the edge, full height, at the configured width;
   - a centered modal unchanged from `main`;
   - narrow viewport: panel goes full width;

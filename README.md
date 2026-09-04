@@ -156,6 +156,40 @@ add_filter( 'pikari_gutenberg_modals_modal_sizes', function( $sizes ) {
 
 Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 
+### Modal Placement
+
+Set placement on the Modal Dialog block: Centered (default), Left edge, or Right edge. Edge placements pin the dialog full height at a panel width. A trigger can override the dialog's placement.
+
+Panel widths are set with CSS custom properties:
+
+```css
+--modal-panel-width: 420px; /* default */
+--modal-panel-width-narrow: 320px;
+--modal-panel-width-wide: 600px;
+```
+
+#### `pikari_gutenberg_modals_panel_widths`
+
+Add or modify the panel width options offered in the editor for edge-placed modals. Each entry needs a `label` and `value` (slug used as the `data-size` attribute). Custom widths require matching CSS.
+
+```php
+add_filter( 'pikari_gutenberg_modals_panel_widths', function( $widths ) {
+    $widths[] = array(
+        'label' => 'Extra wide',
+        'value' => 'xwide',
+    );
+    return $widths;
+} );
+```
+
+```css
+.modal-overlay[data-placement='right'][data-size='xwide'] .modal-content {
+	width: 720px;
+}
+```
+
+Default panel widths: Default (420px), Narrow (320px), Wide (600px)
+
 ### Domain Restrictions
 
 #### `pikari_gutenberg_modals_allowed_domains`
