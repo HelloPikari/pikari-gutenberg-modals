@@ -301,14 +301,13 @@ class EditorIntegration
     /**
      * Restrict modal template blocks to template part editors.
      *
-     * The Content Area and Modal Dialog blocks are only meaningful inside
-     * a template part (e.g., the modal template part). This filter hides
-     * them from the block inserter in post and page editors.
+     * The Modal Dialog block is only meaningful inside a template part.
+     * This filter hides it from the block inserter in post and page editors.
      *
-     * In the Site Editor (core/edit-site), all blocks are allowed because
-     * template parts are edited within it. The allowed_block_types_all
-     * filter fires once on page load, not when navigating between
-     * templates and template parts within the single-page Site Editor.
+     * Note: Close Button and Content Area use the `ancestor` property in
+     * block.json to restrict themselves to modal-dialog contexts. Modal
+     * Content and Modal Trigger are unregistered client-side in the Site
+     * Editor via domReady in src/editor/index.js.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
@@ -327,7 +326,6 @@ class EditorIntegration
         }
 
         $restricted_blocks = [
-            'pikari-gutenberg-modals/content-area',
             'pikari-gutenberg-modals/modal-dialog',
         ];
 
