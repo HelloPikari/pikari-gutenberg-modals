@@ -1,4 +1,8 @@
 <?xml version="1.0"?>
+<!--
+  Synced to all plugins via config-templates. Do not edit in plugin directories —
+  changes should be made in .github/config-templates/plugin/phpunit.xml.dist and synced.
+-->
 <phpunit
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.5/phpunit.xsd"
