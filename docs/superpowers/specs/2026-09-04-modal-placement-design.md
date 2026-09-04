@@ -80,12 +80,18 @@ applies to the *container*, and the chrome Group fills it:
 
 - `[data-placement="right"]` pins the container to the edge, full height, at the
   panel width.
-- `.modal-chrome` inside a placed container stretches to fill. Its author-set radius
-  is left alone — a panel with rounded corners is a legitimate design choice, not a
-  bug to override.
+- `.modal-chrome` inside a placed container stretches to fill.
 
-A cleaner boundary than the September draft: placement owns the *container's*
-geometry, the author owns the box.
+On radius specifically, the earlier draft said placement must leave an author's
+border-radius alone. Browser testing showed the codebase already disagrees: the
+mobile and fullscreen rules use `border-radius: 0 !important` to beat the Group's
+inline style, because a fullscreen dialog with rounded corners looks broken. An edge
+panel is the same situation, so placement overrides radius the same way rather than
+inventing a different rule for the same problem.
+
+Everything else the author sets — background, padding, shadow — is left alone.
+Placement owns the container's geometry and the geometry-dependent corners; the
+author owns the box.
 
 ## Overlay controls
 
@@ -177,20 +183,35 @@ save a few lines of duplication.
 
 ## Breaking changes and live sites
 
-Strand 2 is breaking. Template parts that style chrome on the Modal Dialog block lose
-it, and three custom properties (`--modal-content-bg`, `--modal-content-shadow`,
-`--modal-border-radius`) are removed. The February branch already carries a
-deprecation notice for legacy chrome styles; that stays.
+Strand 2 is breaking, and browser testing sharpened what that means. The block keeps
+its `color`, `border`, `spacing` and `shadow` supports, so nothing leaves its API and
+author-set chrome still applies. What goes is the *fallback* chrome on
+`.modal-content` — a free white background, 20px radius and shadow driven by
+`--modal-content-bg`, `--modal-content-shadow` and `--modal-border-radius`.
 
-Two known installs:
+Measured on a database-saved template part carrying the old markup, which is what an
+upgraded site has:
 
-- **CCLF** — fully controlled. Fix forward as needed.
-- **WinSuccession** — not controlled, plugins not managed via Composer. An
-  administrator there must take a new version by hand, so nobody is updated by
-  surprise. The risk is a stale install, not a broken one.
+    contentPadding:      24px              author's padding survives
+    contentBackground:   rgba(0, 0, 0, 0)  was white
+    contentBorderRadius: 0px               was 20px
+    contentBoxShadow:    none              was a shadow
 
-Accepted on that basis. It warrants a **minor version bump and an explicit upgrade
-note**, not a silent patch.
+That is a transparent dialog with page content showing through the text — visually
+broken rather than gracefully degraded. The modal still opens, traps focus and closes
+correctly; it has no box.
+
+Affected: a site with a **customised** modal template part. A site that never
+customised it picks up the new `parts/modal.html` and is unaffected.
+
+**A `:has()` fallback was considered and declined.** Scoping the old chrome to
+`.modal-content:not(:has(.modal-chrome))` would make this non-breaking. Of the two
+known installs, WinSuccession runs a beta version that would break more than this on
+any update, and CCLF is fully controlled and gets fixed forward. A permanent
+compatibility shim for a case that is already unprotectable is complexity with no
+beneficiary.
+
+Still warrants a **minor version bump and an explicit upgrade note**.
 
 ## Accessibility
 
