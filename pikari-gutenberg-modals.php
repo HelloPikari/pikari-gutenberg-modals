@@ -10,6 +10,9 @@
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: pikari-gutenberg-modals
  * Domain Path: /languages
+ * Requires at least: 6.8
+ * Tested up to: 7.1
+ * Requires PHP: 8.4
  *
  * @package pikari-gutenberg-modals
  */
