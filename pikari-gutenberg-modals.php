@@ -116,10 +116,10 @@ function pikari_gutenberg_modals_activate() {
         );
     }
 
-    if ( version_compare(PHP_VERSION, '8.2', '<') ) {
+    if ( version_compare(PHP_VERSION, '8.4', '<') ) {
         deactivate_plugins(plugin_basename(__DIR__ . '/pikari-gutenberg-modals.php'));
         wp_die(
-            esc_html__('This plugin requires PHP 8.2 or higher.', 'pikari-gutenberg-modals')
+            esc_html__('This plugin requires PHP 8.4 or higher.', 'pikari-gutenberg-modals')
         );
     }
 

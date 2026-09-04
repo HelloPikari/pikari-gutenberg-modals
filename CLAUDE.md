@@ -229,7 +229,7 @@ pikari-gutenberg-modals/
 ## Requirements
 
 - WordPress 6.8+
-- PHP 8.2+
+- PHP 8.4+
 - Node.js + Composer for development
 - **Theme support:** Block themes and hybrid themes (classic themes with `block-template-parts` support). Classic themes without `block-template-parts` support are NOT supported.
 
