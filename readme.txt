@@ -229,6 +229,7 @@ Override any of these in your theme's CSS to customize the modal appearance:
 == Changelog ==
 
 = Unreleased =
+* Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
 
 = 1.3.0 =

@@ -44,6 +44,14 @@ if ( ! empty( $attributes['overlayGradient'] ) ) {
     $overlay_style = 'background-color:rgba(0,0,0,0.8)';
 }
 
+// Overlay opacity is kept independent of the colour so a palette-only theme
+// (settings.color.custom: false) can still produce a translucent backdrop.
+// 100 emits nothing, so existing markup is unchanged.
+$overlay_opacity = $attributes['overlayOpacity'] ?? 100;
+if ( is_numeric( $overlay_opacity ) && (float) $overlay_opacity < 100 ) {
+    $overlay_style .= ';opacity:' . round( max( 0, (float) $overlay_opacity ) / 100, 2 );
+}
+
 // --- Background image ---
 $has_bg_image         = ! empty( $attributes['backgroundImage']['url'] );
 $bg_image_style_parts = [];
