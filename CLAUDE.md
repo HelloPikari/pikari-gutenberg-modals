@@ -1,7 +1,5 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with the Pikari Gutenberg Modals plugin.
-
 ## Project Overview
 
 WordPress plugin that adds accessible modal dialogs to the block editor. Content (posts, pages, custom post types, external URLs) is displayed in overlays triggered by inline links, buttons, or clickable group blocks. Uses the WordPress Interactivity API for reactive state management with progressive enhancement (triggers are real links that work without JavaScript).
@@ -12,7 +10,6 @@ Always use these agents proactively:
 
 - **`wordpress-core-expert`** — Review all PHP and JavaScript code changes
 - **`accessibility-expert`** — Review modal functionality, keyboard navigation, focus management, ARIA attributes
-- **`update-claude-md`** — Update CLAUDE.md to reflect changes since the last git tag or initial commit
 
 ## Architecture
 
@@ -78,13 +75,13 @@ Always use these agents proactively:
 
 **Frontend (`src/frontend/`):**
 
-| File                    | Lines | Purpose                                                                         |
-| ----------------------- | ----- | ------------------------------------------------------------------------------- |
-| `modal-store.js`        | ~340  | Interactivity API store — reactive state, async content loading, prefetch       |
-| `modal-a11y.js`         | ~95   | Focus trap, inert background, keyboard navigation utilities                     |
-| `block-style-loader.js` | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)                    |
-| `index.js`              | ~9    | Entry point                                                                     |
-| `style.scss`            | ~370  | Full modal UI — overlay, content, animations, responsive, print, reduced motion |
+| File                    | Lines | Purpose                                                                   |
+| ----------------------- | ----- | ------------------------------------------------------------------------- |
+| `modal-store.js`        | ~340  | Interactivity API store — reactive state, async content loading, prefetch |
+| `modal-a11y.js`         | ~95   | Focus trap, inert background, keyboard navigation utilities               |
+| `block-style-loader.js` | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)              |
+| `index.js`              | ~9    | Entry point                                                               |
+| `style.scss`            | ~77   | Trigger-only styles — inline triggers, group triggers, close triggers     |
 
 ### Modal Container Pattern
 
@@ -113,6 +110,7 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 9. **External URL iframe** — External URLs load in a sandboxed iframe; internal URLs use REST API. Sites blocking iframes (X-Frame-Options/CSP) will show a blank page; progressive enhancement provides fallback navigation
 10. **Theme per-block styles** — `BlockStyleCollector::collect_render_enqueued_styles()` captures styles enqueued during `do_blocks()` by comparing `wp_styles()->queue` before/after rendering (catches theme button styles registered via `wp_enqueue_block_style()`)
 11. **Block support CSS in wp_footer** — `BlockSupport::render_modal_containers()` snapshots block support CSS before rendering template parts and outputs any newly generated layout/spacing CSS in a `<style>` tag (needed because `wp_enqueue_block_support_styles()` runs earlier)
+12. **Style architecture split** — `modal-dialog/style.css` owns ALL modal visual styles (overlay, `.modal-content`, `.modal-chrome`, animations, keyframes, size variants, mobile, print, reduced motion, CSS custom properties). `frontend/style.scss` contains only trigger-specific styles (inline triggers, group triggers, close triggers). This separation means the modal chrome appearance is governed by WordPress block styles on the `modal-chrome` Group, not by custom CSS properties on `:root`.
 
 ### Critical Implementation Gotchas
 
@@ -121,6 +119,12 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 2. **render.php lives in build/, not src/** — WordPress reads `render.php` from `build/blocks/`, not `src/blocks/`. After editing any `render.php` file, you MUST run `npm run build` for changes to take effect in wp-env. The `@wordpress/scripts` build process copies PHP files from `src/` to `build/`.
 
 3. **Interactivity API namespace inheritance** — Elements with `data-wp-on--*` directives don't need their own `data-wp-interactive` if they're inside a parent element that has it. The namespace is inherited through the island's vdom tree. Adding unnecessary `data-wp-interactive` creates nested islands which cause hydration/event issues.
+
+4. **Modal Dialog block controls overlay only** — Dialog chrome (background, border, padding, shadow) belongs on an inner `core/group` block with class `modal-chrome`, not on the Modal Dialog block itself. The editor shows a deprecation `Notice` when legacy chrome attributes are detected directly on the Modal Dialog. The `INNER_BLOCKS_TEMPLATE` in `edit.js` sets up the correct structure: Modal Dialog wraps a `core/group.modal-chrome` (white bg, 20px radius, 1.5rem padding, shadow, vertical flex) which contains the close trigger row and content area.
+
+5. **`.modal-chrome` flex bridge** — The `modal-chrome` Group is the scroll architecture bridge between `.modal-content` (90vh cap) and the scrollable content area. Mobile and fullscreen overrides zero border-radius with `!important` (in `modal-dialog/style.css`). CSS custom properties `--modal-content-bg`, `--modal-content-shadow`, and `--modal-border-radius` were removed in the UX simplification — use block attributes on the chrome Group instead.
+
+6. **Fallback close button injection** — `modal-dialog/render.php` detects whether the rendered content contains a close trigger (by scanning for `actions.closeModal` or `actions.handleCloseClick`). If none is found, it injects a visually hidden `sr-only` fallback close button so keyboard/AT users always have a way to dismiss the modal.
 
 ## Custom Hooks & Filters
 
@@ -215,7 +219,7 @@ pikari-gutenberg-modals/
 ├── src/editor/                   # Block editor JS + SCSS
 ├── src/frontend/                 # Frontend Interactivity API JS + SCSS
 ├── build/                        # Compiled assets (gitignored)
-├── parts/                        # Block template parts (modal.html — default modal template)
+├── parts/                        # Block template parts (modal.html — Modal Dialog > modal-chrome Group > close row + content area)
 ├── languages/                    # Translation files (.pot, .po, .mo)
 ├── _playground/                  # WordPress Playground blueprints
 ├── docs/                         # Documentation
@@ -258,4 +262,4 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 
 ---
 
-Last updated: 2026-02-24 (v1.2.2..HEAD)
+Last updated: 2026-02-27 (v1.2.2..HEAD)
