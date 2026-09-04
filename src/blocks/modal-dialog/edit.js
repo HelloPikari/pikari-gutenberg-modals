@@ -17,6 +17,7 @@ import {
 	FocalPointPicker,
 	ToggleControl,
 	RangeControl,
+	SelectControl,
 	Button,
 	Notice,
 } from '@wordpress/components';
@@ -67,6 +68,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		backgroundImage,
 		focalPoint,
 		hasParallax,
+		placement,
 	} = attributes;
 
 	const blockProps = useBlockProps();
@@ -97,6 +99,52 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					</Notice>
 				</InspectorControls>
 			) }
+
+			<InspectorControls>
+				<PanelBody
+					title={ __( 'Placement', 'pikari-gutenberg-modals' ) }
+				>
+					<SelectControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __(
+							'Dialog placement',
+							'pikari-gutenberg-modals'
+						) }
+						value={ placement }
+						options={ [
+							{
+								label: __(
+									'Centered',
+									'pikari-gutenberg-modals'
+								),
+								value: '',
+							},
+							{
+								label: __(
+									'Left edge',
+									'pikari-gutenberg-modals'
+								),
+								value: 'left',
+							},
+							{
+								label: __(
+									'Right edge',
+									'pikari-gutenberg-modals'
+								),
+								value: 'right',
+							},
+						] }
+						onChange={ ( value ) =>
+							setAttributes( { placement: value } )
+						}
+						help={ __(
+							'Edge placements pin the dialog to the side of the screen at full height. The corners are squared off against the edge.',
+							'pikari-gutenberg-modals'
+						) }
+					/>
+				</PanelBody>
+			</InspectorControls>
 
 			<InspectorControls group="color">
 				<ColorGradientSettingsDropdown
