@@ -41,6 +41,14 @@ class TriggerContext
             $context['templatePart'] = $template_part;
         }
 
+        // Only known placements travel. An unknown slug would reach the store
+        // and be discarded there anyway; dropping it here keeps the context
+        // honest about what it can express.
+        $placement = $attributes['modalPlacement'] ?? '';
+        if ( in_array( $placement, [ 'left', 'right' ], true ) ) {
+            $context['placement'] = $placement;
+        }
+
         return $context;
     }
 }

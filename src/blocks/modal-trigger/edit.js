@@ -30,6 +30,22 @@ const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
 	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
 ];
 
+// Panel widths from PHP filter (pikari_gutenberg_modals_panel_widths)
+const PANEL_WIDTH_OPTIONS = window.pikariGutenbergModals?.panelWidths || [
+	{ label: __( 'Default', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( 'Narrow', 'pikari-gutenberg-modals' ), value: 'narrow' },
+	{ label: __( 'Wide', 'pikari-gutenberg-modals' ), value: 'wide' },
+];
+
+const PLACEMENT_OPTIONS = [
+	{
+		label: __( 'Inherit from dialog', 'pikari-gutenberg-modals' ),
+		value: '',
+	},
+	{ label: __( 'Left edge', 'pikari-gutenberg-modals' ), value: 'left' },
+	{ label: __( 'Right edge', 'pikari-gutenberg-modals' ), value: 'right' },
+];
+
 export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		triggerAction,
@@ -39,6 +55,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		accessibleLabel,
 		inlineAnchor,
 		modalSize,
+		modalPlacement,
 		templatePart,
 	} = attributes;
 
@@ -471,12 +488,39 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							{ hasValidSource && (
 								<SelectControl
 									__nextHasNoMarginBottom
+									__next40pxDefaultSize
+									label={ __(
+										'Placement',
+										'pikari-gutenberg-modals'
+									) }
+									value={ modalPlacement }
+									options={ PLACEMENT_OPTIONS }
+									onChange={ ( value ) =>
+										setAttributes( {
+											modalPlacement: value,
+											modalSize: '',
+										} )
+									}
+									help={ __(
+										'Overrides the placement set on the Modal Dialog block.',
+										'pikari-gutenberg-modals'
+									) }
+								/>
+							) }
+
+							{ hasValidSource && (
+								<SelectControl
+									__nextHasNoMarginBottom
 									label={ __(
 										'Modal Size',
 										'pikari-gutenberg-modals'
 									) }
 									value={ modalSize }
-									options={ MODAL_SIZE_OPTIONS }
+									options={
+										modalPlacement
+											? PANEL_WIDTH_OPTIONS
+											: MODAL_SIZE_OPTIONS
+									}
 									onChange={ ( value ) =>
 										setAttributes( { modalSize: value } )
 									}

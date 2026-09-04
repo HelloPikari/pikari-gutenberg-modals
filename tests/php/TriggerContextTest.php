@@ -55,4 +55,25 @@ class TriggerContextTest extends TestCase
         $this->assertSame( 'small', $context['size'] );
         $this->assertSame( 'promo', $context['templatePart'] );
     }
+
+    public function test_adds_placement_when_valid(): void
+    {
+        $context = TriggerContext::build( [ 'modalPlacement' => 'right' ], [ 'postId' => 1 ] );
+
+        $this->assertSame( 'right', $context['placement'] );
+    }
+
+    public function test_omits_empty_placement(): void
+    {
+        $context = TriggerContext::build( [ 'modalPlacement' => '' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'placement', $context );
+    }
+
+    public function test_omits_unknown_placement(): void
+    {
+        $context = TriggerContext::build( [ 'modalPlacement' => 'top' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'placement', $context );
+    }
 }

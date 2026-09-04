@@ -37,6 +37,10 @@
 			"type": "string",
 			"default": ""
 		},
+		"modalPlacement": {
+			"type": "string",
+			"default": ""
+		},
 		"templatePart": {
 			"type": "string",
 			"default": ""
