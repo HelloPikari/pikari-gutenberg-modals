@@ -9,11 +9,12 @@
 namespace Pikari\GutenbergModals;
 
 /**
- * Builds the `data-wp-context` payload shared by every open-mode trigger.
+ * Merges the optional `data-wp-context` keys shared by every open-mode trigger.
  *
- * The four content-source branches in the Modal Trigger block's render.php
- * differ only in their base keys; the optional keys are identical. Keeping
- * them here means a new option is added once rather than four times.
+ * Each of the four content-source branches in the Modal Trigger block's
+ * render.php still builds its own base keys and passes them in. What the four
+ * have in common is the set of optional keys — size, template part, placement
+ * — so those are added here once rather than four times.
  */
 class TriggerContext
 {

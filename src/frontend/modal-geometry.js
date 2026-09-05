@@ -6,11 +6,19 @@
  *
  * Size is contextual. Centered modals measure a max-width; panels measure
  * a width. Rather than allowlisting known slugs, the resolver rejects only
- * a slug that belongs to the *other* mode — otherwise `fullscreen` on a
- * right panel would apply `max-width: 100%` and silently turn the panel
- * into a full-width sheet. Everything else, including a site's own custom
- * slug registered via `pikari_gutenberg_modals_modal_sizes` or
+ * a slug that belongs to the *other* mode. Everything else, including a
+ * site's own custom slug registered via
+ * `pikari_gutenberg_modals_modal_sizes` or
  * `pikari_gutenberg_modals_panel_widths`, passes through unchanged.
+ *
+ * Dropping the foreign slug keeps the DOM honest rather than rescuing the
+ * CSS: `fullscreen` on a right panel would not actually widen it, because
+ * the `[data-placement]` and `[data-size]` rules have equal specificity and
+ * placement wins on source order alone — and `max-width: 100%` would not
+ * beat the panel's own `width` in any case. So keep the panel rules below
+ * the `[data-size]` rules in the stylesheet; the resolver does not rely on
+ * that ordering, it just stops site CSS keyed on `[data-size]` from seeing
+ * a combination the plugin never intends.
  */
 
 export const PANEL_PLACEMENTS = [ 'left', 'right' ];
