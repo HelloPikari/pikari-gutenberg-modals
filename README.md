@@ -232,37 +232,42 @@ add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $sl
 The plugin exposes CSS custom properties on `:root` for theming:
 
 ```css
-/* Modal appearance */
---modal-overlay-bg: rgba(0, 0, 0, 0.8);
---modal-content-bg: #fff;
---modal-content-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
---modal-border-radius: 20px;
-
-/* Modal widths */
+/* Centered dialog widths */
 --modal-max-width: 1024px; /* Default size */
 --modal-max-width-small: 500px; /* Small size */
 --modal-max-width-large: 1200px; /* Large size */
 
+/* Edge panel widths */
+--modal-panel-width: 420px; /* Default */
+--modal-panel-width-narrow: 320px; /* Narrow */
+--modal-panel-width-wide: 600px; /* Wide */
+
 /* Interaction */
 --modal-focus-color: #3b82f6;
---modal-transition: all 0.2s ease;
 ```
 
 Override in your theme's CSS:
 
 ```css
 :root {
-	--modal-border-radius: 8px;
 	--modal-max-width: 800px;
-	--modal-content-bg: #f9f9f9;
+	--modal-panel-width: 480px;
 }
 ```
+
+Dialog appearance — background, border radius, padding and shadow — is set with block attributes on the `modal-chrome` Group inside the Modal Dialog block, not with custom properties.
+
+The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
 
 ## Changelog
 
 ### Unreleased
 
 - Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
+
+- Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Modal Trigger can override the dialog's placement
+
+- `pikari_gutenberg_modals_panel_widths` filter for adding or changing the panel widths offered in the editor, alongside `--modal-panel-width`, `--modal-panel-width-narrow` and `--modal-panel-width-wide` custom properties
 
 - Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
 
