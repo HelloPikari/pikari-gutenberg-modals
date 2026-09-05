@@ -238,6 +238,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 				directUrl: '',
 				inlineAnchor: '',
 				modalSize: '',
+				modalPlacement: '',
 				templatePart: '',
 			} );
 		} else {
@@ -488,7 +489,6 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							{ hasValidSource && (
 								<SelectControl
 									__nextHasNoMarginBottom
-									__next40pxDefaultSize
 									label={ __(
 										'Placement',
 										'pikari-gutenberg-modals'
