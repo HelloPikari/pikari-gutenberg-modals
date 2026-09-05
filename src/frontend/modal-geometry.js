@@ -5,9 +5,12 @@
  * block's own value, else centered.
  *
  * Size is contextual. Centered modals measure a max-width; panels measure
- * a width. A slug only survives if it belongs to the resolved placement —
- * without that, `fullscreen` on a right panel would apply
- * `max-width: 100%` and silently turn the panel into a full-width sheet.
+ * a width. Rather than allowlisting known slugs, the resolver rejects only
+ * a slug that belongs to the *other* mode — otherwise `fullscreen` on a
+ * right panel would apply `max-width: 100%` and silently turn the panel
+ * into a full-width sheet. Everything else, including a site's own custom
+ * slug registered via `pikari_gutenberg_modals_modal_sizes` or
+ * `pikari_gutenberg_modals_panel_widths`, passes through unchanged.
  */
 
 export const PANEL_PLACEMENTS = [ 'left', 'right' ];
@@ -36,10 +39,10 @@ export function resolveGeometry( {
 		placement = dialogPlacement;
 	}
 
-	const allowed = placement ? PANEL_SIZES : CENTERED_SIZES;
+	const foreign = placement ? CENTERED_SIZES : PANEL_SIZES;
 
 	return {
 		placement,
-		size: allowed.includes( size ) ? size : '',
+		size: foreign.includes( size ) ? '' : size,
 	};
 }

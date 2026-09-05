@@ -66,4 +66,17 @@ describe( 'resolveGeometry', () => {
 			size: '',
 		} );
 	} );
+
+	it( 'keeps a custom size slug on a panel', () => {
+		expect(
+			resolveGeometry( { dialogPlacement: 'right', size: 'xwide' } )
+		).toEqual( { placement: 'right', size: 'xwide' } );
+	} );
+
+	it( 'keeps a custom size slug when centered', () => {
+		expect( resolveGeometry( { size: 'medium' } ) ).toEqual( {
+			placement: '',
+			size: 'medium',
+		} );
+	} );
 } );
