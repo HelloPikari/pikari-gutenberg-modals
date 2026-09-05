@@ -134,6 +134,12 @@
 .modal-overlay[data-placement="right"] {
 	justify-content: flex-end;
 }
+/* Each panel width is followed by the breakpoint below which it gives up and
+   fills the viewport — a panel narrower than the screen by less than a margin
+   leaves an unusable strip of page beside it. A media query cannot read a
+   custom property, so the breakpoints are hardcoded at the default width plus
+   48px: overriding --modal-panel-width* moves the panel but not the point at
+   which it goes full width. */
 .modal-overlay[data-placement="left"] .modal-content,
 .modal-overlay[data-placement="right"] .modal-content {
 	width: var(--modal-panel-width, 420px);
@@ -141,13 +147,34 @@
 	max-height: 100%;
 	height: 100%;
 }
+
+@media (max-width: 468px) {
+	.modal-overlay[data-placement="left"] .modal-content,
+	.modal-overlay[data-placement="right"] .modal-content {
+		width: 100%;
+	}
+}
 .modal-overlay[data-placement="left"][data-size="narrow"] .modal-content,
 .modal-overlay[data-placement="right"][data-size="narrow"] .modal-content {
 	width: var(--modal-panel-width-narrow, 320px);
 }
+
+@media (max-width: 368px) {
+	.modal-overlay[data-placement="left"][data-size="narrow"] .modal-content,
+	.modal-overlay[data-placement="right"][data-size="narrow"] .modal-content {
+		width: 100%;
+	}
+}
 .modal-overlay[data-placement="left"][data-size="wide"] .modal-content,
 .modal-overlay[data-placement="right"][data-size="wide"] .modal-content {
 	width: var(--modal-panel-width-wide, 600px);
+}
+
+@media (max-width: 648px) {
+	.modal-overlay[data-placement="left"][data-size="wide"] .modal-content,
+	.modal-overlay[data-placement="right"][data-size="wide"] .modal-content {
+		width: 100%;
+	}
 }
 
 /* Square off the corners against the viewport edge, the same way
