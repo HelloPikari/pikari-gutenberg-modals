@@ -2,8 +2,8 @@
 Contributors: pikari
 Tags: modal, popup, dialog, gutenberg, block, accessible
 Requires at least: 6.8
-Tested up to: 6.9.1
-Requires PHP: 8.2
+Tested up to: 7.1
+Requires PHP: 8.4
 Stable tag: trunk
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -228,12 +228,18 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 == Changelog ==
 
+= Unreleased =
+* Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
+* Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+
 = 1.3.0 =
 * Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
 * Modal Trigger block close mode with whole-wrapper and targeted child element options
 * Inline close triggers inside modal template parts
 * Automatic sr-only fallback close button when no close trigger detected in modal dialog
 * Block context restrictions: Close Button and Content Area restricted to Modal Dialog; Modal Content and Modal Trigger hidden in Site Editor
+* Video URLs from YouTube and Vimeo now hold a 16:9 box in the modal instead of stretching to the dialog height
+* Modal Trigger URL mode: optional Accessible label field, overriding the generic "Open modal dialog"
 * Default modal template now uses Modal Trigger block (close mode) instead of the close-button block
 * Close Button block deprecated (hidden from inserter, replaced by Modal Trigger close mode)
 * Fixed theme per-block styles and layout CSS missing from modal content

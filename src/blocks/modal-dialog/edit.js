@@ -16,6 +16,7 @@ import {
 	PanelBody,
 	FocalPointPicker,
 	ToggleControl,
+	RangeControl,
 	Button,
 	Notice,
 } from '@wordpress/components';
@@ -62,6 +63,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const {
 		overlayColor,
 		overlayGradient,
+		overlayOpacity,
 		backgroundImage,
 		focalPoint,
 		hasParallax,
@@ -126,6 +128,28 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					] }
 					panelId={ clientId }
 					{ ...colorGradientSettings }
+				/>
+				<RangeControl
+					__nextHasNoMarginBottom
+					__next40pxDefaultSize
+					label={ __(
+						'Overlay opacity',
+						'pikari-gutenberg-modals'
+					) }
+					value={ overlayOpacity }
+					onChange={ ( value ) =>
+						setAttributes( {
+							overlayOpacity:
+								value === undefined ? 100 : value,
+						} )
+					}
+					min={ 0 }
+					max={ 100 }
+					step={ 5 }
+					help={ __(
+						'Set independently of the overlay colour, so a theme that disables custom colours can still produce a translucent backdrop.',
+						'pikari-gutenberg-modals'
+					) }
 				/>
 			</InspectorControls>
 

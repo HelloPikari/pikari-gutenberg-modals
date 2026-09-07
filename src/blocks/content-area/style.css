@@ -51,6 +51,19 @@
 	flex: 1;
 }
 
+/* Known video hosts: hold 16:9 instead of stretching to the dialog height,
+   which otherwise letterboxes the video inside the iframe. */
+.modal-entry--iframe-16-9 {
+	flex: 0 1 auto;
+	justify-content: center;
+}
+.modal-entry--iframe-16-9 iframe {
+	flex: 0 0 auto;
+	aspect-ratio: 16 / 9;
+	height: auto;
+	min-height: 0;
+}
+
 /* Columns block vertical alignment (may not be loaded in modal context) */
 .modal-body .wp-block-columns.are-vertically-aligned-top {
 	align-items: flex-start;

@@ -17,6 +17,7 @@ import {
 	focusFirstElement,
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
+import { isVideoEmbedUrl } from './video-providers';
 
 // Prefetch delay in milliseconds - filters out accidental mouse movements
 const PREFETCH_DELAY_MS = 200;
@@ -228,8 +229,14 @@ const { state, actions } = store( 'pikari-modal', {
 					iframeTitle = iframeSrc;
 				}
 
+				// Known video hosts get a 16:9 box; anything else fills the
+				// dialog, which is what a page-in-modal wants.
+				const ratioClass = isVideoEmbedUrl( iframeSrc )
+					? ' modal-entry--iframe-16-9'
+					: '';
+
 				const iframeHtml = `
-					<article class="modal-entry modal-entry--iframe">
+					<article class="modal-entry modal-entry--iframe${ ratioClass }">
 						<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( iframeTitle ) }</h2>
 						<iframe
 							src="${ escapeAttribute( iframeSrc ) }"

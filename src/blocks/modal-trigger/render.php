@@ -126,6 +126,13 @@ switch ( $content_source ) {
             }
         }
 
+        // An author-supplied label wins over both the generic string and the
+        // title derived from an internal URL.
+        $custom_label = trim( $attributes['accessibleLabel'] ?? '' );
+        if ( '' !== $custom_label ) {
+            $aria_label = $custom_label;
+        }
+
         $trigger_id = 'modal-trigger-' . wp_unique_id();
         $modal_id   = $content_type . '-' . $content_id;
 

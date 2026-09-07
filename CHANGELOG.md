@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
+
+### Fixed
+
+- Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+
 ## [1.3.0]
 
 ### Added
@@ -16,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `handleCloseClick` and `handleCloseKeydown` frontend actions for close triggers
 - Close trigger styles with focus-visible outline
 - Block context restrictions: Close Button and Content Area restricted to Modal Dialog ancestor; Modal Content and Modal Trigger unregistered in Site Editor
+- Video URLs from YouTube and Vimeo now hold a 16:9 box in the modal instead of stretching to the dialog height
+- Modal Trigger URL mode: optional Accessible label field, overriding the generic "Open modal dialog"
 
 ### Changed
 
