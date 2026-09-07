@@ -230,10 +230,28 @@ source of the "where do I set this?" confusion.
 **Attributes kept:** `overlayColor`, `overlayGradient`, `backgroundImage`, `focalPoint`,
 `hasParallax`, plus `placement` arriving from `feature/modal-placement`.
 
-**Touch points:** `src/blocks/modal-dialog/` (directory rename), `block.json`, the
-`wp-block-pikari-gutenberg-modals-modal-dialog` CSS class, `parts/modal.html`,
-`BlockSupport::render_modal_containers()`, the fallback-close scan in `render.php`, and
-`INNER_BLOCKS_TEMPLATE` in `edit.js`.
+**Touch points** (enumerated from a full-tree grep, `build/` excluded):
+
+| File                                        | What                                                                                                                                      |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/blocks/modal-dialog/`                  | Directory rename to `modal-overlay/`                                                                                                      |
+| `src/blocks/modal-dialog/block.json:4,61`   | `name`, `title`, `description`, `editorScript` path, supports                                                                             |
+| `src/blocks/modal-dialog/style.css:18`      | `.wp-block-…-modal-dialog` selector                                                                                                       |
+| `src/blocks/modal-dialog/editor.css:6,9,15` | Two block selectors plus `.modal-dialog-image-control`                                                                                    |
+| `src/blocks/modal-dialog/edit.js:89,153`    | `modal-dialog-deprecation-notice`, `modal-dialog-image-control`                                                                           |
+| `src/blocks/modal-dialog/render.php:27`     | `has_class( 'wp-block-…-modal-dialog' )` unwrap check                                                                                     |
+| `src/blocks/close-button/block.json:10`     | `ancestor` array                                                                                                                          |
+| `src/blocks/content-area/block.json:10`     | `ancestor` array                                                                                                                          |
+| `pikari-gutenberg-modals.php:77`            | `register_block_type( … 'build/blocks/modal-dialog' )`                                                                                    |
+| `webpack.config.js:22`                      | Entry point path                                                                                                                          |
+| `includes/EditorIntegration.php:329`        | `restrict_modal_template_blocks()` allowlist                                                                                              |
+| `includes/BlockSupport.php:132`             | `wp_enqueue_style( 'pikari-gutenberg-modals-modal-dialog-style' )` — handle is derived from the block name, so it changes with the rename |
+| `parts/modal.html:1,2,13`                   | Block comment and wrapper class                                                                                                           |
+| `readme.txt:188`, `README.md:190`           | Filter example in the Developer section                                                                                                   |
+| `CLAUDE.md:113,125,127`                     | Gotchas 5, 6, 12 reference `modal-dialog/` paths                                                                                          |
+
+The `close-button` and `content-area` `ancestor` entries are easy to miss and fail silently —
+a stale ancestor makes those blocks uninsertable in the template part editor with no error.
 
 **Accepted breaking change, stated explicitly:** existing customized `wp_template_part` posts
 containing `pikari-gutenberg-modals/modal-dialog` will render as an unrecognised block.
@@ -257,21 +275,40 @@ separate work.
 
 ## 7. Testing
 
-**Jest** (`tests/unit/editor/modal-template-panel.test.js`):
+**Constraint discovered while planning.** None of `@wordpress/data`, `core-data`,
+`components`, `block-editor`, `compose`, `html-entities`, `notices`, `url`, or `blocks` is
+installed — they are webpack externals, present at build time only. `@testing-library/react`
+is absent too. Jest therefore cannot render any component that imports them. The one existing
+editor test, `find-links-in-blocks.test.js`, passes precisely because that module imports
+nothing from `@wordpress/*`.
 
-- Empty state renders the prominent create button; populated state renders select + `+` + Edit.
-- A stored slug absent from the records list renders a `(missing)` option and does not clear
-  the attribute.
-- Hybrid mode renders select only, with no create/edit/preview.
-- Create calls `saveEntityRecord` with `area: 'modal'` and the picked pattern's content.
-- Edit falls back to the site-editor URL when `onNavigateToEntityRecord` is undefined.
+Rather than add ten devDependencies or nine hand-written mocks, **every decision moves into a
+pure module and the component keeps only wiring.**
+
+`src/editor/modal-template-parts.js` — pure, fully Jest-covered, importing only `__` from
+`@wordpress/i18n` (already mapped to a mock in `jest.config.js`):
+
+| Export                                                                  | Responsibility                                      |
+| ----------------------------------------------------------------------- | --------------------------------------------------- |
+| `filterModalParts( records )`                                           | `area === 'modal'`, null-safe                       |
+| `buildPartOptions( { parts, selectedSlug, hasResolved, isResolving } )` | Default option, resolved options, `(missing)` entry |
+| `getUniqueTitle( base, parts )`                                         | Appends a numeric suffix against existing titles    |
+| `getCleanSlug( title )`                                                 | Title → URL-safe slug                               |
+| `createTemplatePartId( theme, slug )`                                   | `theme//slug`                                       |
+| `buildEditUrl( siteEditorUrl, theme, slug )`                            | Site Editor fallback URL                            |
+| `selectModalPatterns( patterns )`                                       | `blockTypes.includes( 'core/template-part/modal' )` |
+
+`src/editor/modal-template-panel.js` — hooks plus JSX only, no branching logic worth a unit
+test. Browser-verified.
 
 **PHPUnit:** pattern registration — three patterns registered with
-`blockTypes: [ 'core/template-part/modal' ]`.
+`blockTypes: [ 'core/template-part/modal' ]`; the new localized `isBlockTheme` and
+`siteEditorUrl` values present in `EditorIntegration`.
 
-**Browser only** (no harness exists for these): preview rendering, cross-editor navigation,
-and the created part actually opening as a modal on the front end. Same constraint documented
-in todo #441 — for the render path, browser verification _is_ the coverage, not a supplement.
+**Browser only** (no harness exists for these): panel states, preview rendering, cross-editor
+navigation, and a created part actually opening as a modal on the front end. Same constraint
+documented in todo #441 — for the render path, browser verification _is_ the coverage, not a
+supplement to it.
 
 ## Verify before building
 
