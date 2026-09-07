@@ -21,6 +21,7 @@
 - **`render.php` lives in `build/`.** After editing any `render.php` or `block.json`, run `npm run build` or changes will not appear in wp-env.
 - **Commit format:** `type: Brief description` (feat, fix, docs, style, refactor, test, chore). **No `Co-Authored-By` lines and no "Generated with Claude Code" attribution.**
 - **Before any commit:** `npm run lint:all && composer test && npm test`
+- **The JS code blocks in this plan have been reformatted by Prettier.** `lint-staged` runs `prettier --write` on `*.md`, and Prettier formats code inside fences even though `.prettierignore` excludes `*.js` files themselves. Tab indentation survived, but WordPress ESLint wants `{ __( 'x' ) }` where the fences now show `{__('x')}`. Paste the code as given, then run `npm run lint:fix` before committing. The logic is correct; only the spacing differs.
 
 ---
 
@@ -872,6 +873,8 @@ class ModalPatternsTest extends TestCase
 
     public function test_register_patterns_registers_three_modal_starters(): void
     {
+        Functions\stubTranslationFunctions();
+
         $registered = [];
 
         Functions\when( 'register_block_pattern' )->alias(
@@ -885,7 +888,7 @@ class ModalPatternsTest extends TestCase
 
         $this->assertCount( 3, $registered );
 
-        foreach ( ModalPatterns::PATTERNS as $slug => $title ) {
+        foreach ( ModalPatterns::PATTERN_SLUGS as $slug ) {
             $name = 'pikari-gutenberg-modals/' . $slug;
 
             $this->assertArrayHasKey( $name, $registered );
@@ -899,6 +902,8 @@ class ModalPatternsTest extends TestCase
 
     public function test_every_pattern_contains_a_close_trigger_and_content_area(): void
     {
+        Functions\stubTranslationFunctions();
+
         $registered = [];
 
         Functions\when( 'register_block_pattern' )->alias(
@@ -992,14 +997,18 @@ namespace Pikari\GutenbergModals;
 class ModalPatterns
 {
     /**
-     * Pattern slug => untranslated title.
+     * Pattern slugs, in the order they appear in the picker.
      *
-     * @var array<string, string>
+     * Titles live in register_patterns() rather than here: a PHP constant
+     * cannot hold a __() call, and the WordPress i18n sniff rejects passing
+     * a variable to a translation function.
+     *
+     * @var string[]
      */
-    public const PATTERNS = [
-        'modal-centered'    => 'Centered dialog',
-        'modal-panel-right' => 'Right panel',
-        'modal-panel-left'  => 'Left panel',
+    public const PATTERN_SLUGS = [
+        'modal-centered',
+        'modal-panel-right',
+        'modal-panel-left',
     ];
 
     /**
@@ -1022,7 +1031,13 @@ class ModalPatterns
      */
     public function register_patterns(): void
     {
-        foreach ( self::PATTERNS as $slug => $title ) {
+        $titles = [
+            'modal-centered'    => __( 'Centered dialog', 'pikari-gutenberg-modals' ),
+            'modal-panel-right' => __( 'Right panel', 'pikari-gutenberg-modals' ),
+            'modal-panel-left'  => __( 'Left panel', 'pikari-gutenberg-modals' ),
+        ];
+
+        foreach ( self::PATTERN_SLUGS as $slug ) {
             $content = $this->load_pattern( $slug );
 
             if ( '' === $content ) {
@@ -1032,7 +1047,7 @@ class ModalPatterns
             register_block_pattern(
                 'pikari-gutenberg-modals/' . $slug,
                 [
-                    'title'      => $title,
+                    'title'      => $titles[ $slug ],
                     'categories' => [ 'call-to-action' ],
                     'blockTypes' => [ self::BLOCK_TYPE ],
                     'content'    => $content,
@@ -1062,8 +1077,6 @@ class ModalPatterns
     }
 }
 ```
-
-Note: `title` is passed untranslated because `PATTERNS` is a `const` and PHP constants cannot hold function calls. Translate at registration time instead — replace `'title' => $title,` with `'title' => __( $title, 'pikari-gutenberg-modals' ),` only if `phpcs` accepts it; if the WordPress i18n sniff rejects a variable argument (it will), move the titles into the method body as a local array of `__()` calls keyed by slug, and keep `PATTERNS` as the slug list. Resolve this while implementing, not later.
 
 - [ ] **Step 5: Register the class**
 
@@ -1436,8 +1449,6 @@ export default function ModalTemplatePanel({
 					</HStack>
 				</>
 			)}
-
-			{showPreview && null /* Preview added in Task 9. */}
 		</div>
 	);
 }
@@ -1955,7 +1966,7 @@ export default function ModalTemplatePreview({ slug, theme }) {
 
 - [ ] **Step 2: Render it from the panel**
 
-In `src/editor/modal-template-panel.js`, import it and replace `{ showPreview && null /* Preview added in Task 9. */ }` with:
+In `src/editor/modal-template-panel.js`, import it and add before the closing `</div>`:
 
 ```jsx
 {
