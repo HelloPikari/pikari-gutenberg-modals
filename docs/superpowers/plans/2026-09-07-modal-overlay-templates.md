@@ -12,7 +12,8 @@
 
 ## Global Constraints
 
-- **Branch base:** this plan assumes `feature/modal-placement` has merged to `main` and the three `feature/simplify-modal-dialog-ux` commits have been rebased on top. Do not start until Pikari todo #441 is closed. Work on a new branch `feature/modal-overlay-templates`.
+- **Branch base:** this plan assumes `feature/modal-placement` has merged to `main` and the three `feature/simplify-modal-dialog-ux` commits have been rebased on top. Do not start Tasks 2–11 until Pikari todo #441 is closed. Work on a new branch `feature/modal-overlay-templates`.
+- **Task 1 was run ahead of that gate, deliberately.** It writes no production code and touches nothing the placement QA depends on, so it could answer the design's open questions early. It is complete; its findings already changed Tasks 2, 5, and 8.
 - **PHP:** WordPress Coding Standards, **4 spaces indentation, not tabs**. Enforced by `phpcs.xml`.
 - **JavaScript:** WordPress ESLint config, **tab indentation, not spaces**. Prettier ignores JS. When using Edit, `old_string` must preserve exact tab characters.
 - **i18n:** every user-facing string uses `__()` / `sprintf()` with text domain `pikari-gutenberg-modals`.
@@ -25,136 +26,33 @@
 
 ---
 
-### Task 1: Verify the three unknowns before writing production code
+### Task 1: Verify the three unknowns — COMPLETE (2026-09-07)
 
-This task produces findings, not code. The spec's §1 depends entirely on finding 1; if it fails, stop and re-open the design.
+Done. Do not repeat. Full findings and raw output: `_plans/modal-overlay-templates-verification.md` (commit `8fcb4b2`). Run against WordPress 7.1 with Twenty Twenty-Five.
 
-**Files:**
+- [x] **1. Synthetic default part surfaces through REST with content — PASS.** Returns `id: twentytwentyfive//modal`, `theme: twentytwentyfive`, `source: "plugin"`, `wp_id: 0`, `content.raw` of 1280 characters from `parts/modal.html`. Verified separately from the saved case, because a customised part already existed in the dev database. Spec §1 needs no change.
 
-- Create: `_plans/modal-overlay-templates-verification.md`
+- [x] **2. Plugin patterns keep arbitrary `blockTypes` — PASS.** With one wrinkle now recorded in Task 7: REST emits snake_case `block_types`, the client store converts to camelCase `blockTypes`. `selectModalPatterns()` is correct as specified.
 
-**Interfaces:**
+- [x] **3. `onNavigateToEntityRecord` absent in the post editor — REFUTED.** It is `typeof "function"` there on 7.1. This killed the hand-built Site Editor URL fallback: spec §4 was rewritten, and `buildEditUrl()` plus its four unit tests were removed from Task 2, `siteEditorUrl` from Task 5, and the fallback branch from Task 8.
 
-- Consumes: nothing
-- Produces: a written yes/no for each of the three questions, consumed by Tasks 4, 6, and 8
-
-- [ ] **Step 1: Start the environment**
+**Method note for anyone repeating this on another environment.** Do not add a temporary `register_block_pattern()` call to `pikari-gutenberg-modals.php` to probe pattern registration, and do not delete a customised template part to expose the synthetic one. Both mutate what may be a live QA environment. Register the probe in-process instead, and drive REST internally, so nothing persists:
 
 ```bash
-npx wp-env start
+npx wp-env run tests-cli wp eval '
+wp_set_current_user( 1 );
+register_block_pattern( "probe/x", [
+    "title" => "Probe", "content" => "<!-- wp:paragraph --><p>x</p><!-- /wp:paragraph -->",
+    "blockTypes" => [ "core/template-part/modal" ],
+] );
+$res = rest_do_request( new WP_REST_Request( "GET", "/wp/v2/block-patterns/patterns" ) );
+// ... inspect $res->get_data()
+'
 ```
 
-Open `http://localhost:8888/wp-admin` (admin / password). Confirm the active theme is a block theme (Appearance → Editor is present).
+The `tests-cli` environment has its own database, so it shows the uncustomised state without touching the dev site.
 
-- [ ] **Step 2: Verify the synthetic default part surfaces through REST with content**
-
-In the browser console on any wp-admin page:
-
-```js
-wp.apiFetch({ path: '/wp/v2/template-parts?per_page=-1&context=edit' }).then(
-	(parts) => {
-		const modal = parts.filter((p) => p.area === 'modal');
-		console.log('modal parts:', modal.length);
-		console.log(
-			'slugs:',
-			modal.map((p) => p.slug)
-		);
-		console.log(
-			'has content:',
-			modal.map((p) => !!p.content?.raw)
-		);
-		console.log(
-			'theme values:',
-			modal.map((p) => p.theme)
-		);
-	}
-);
-```
-
-Expected: at least one entry with `slug: "modal"`, `content.raw` a non-empty string containing `wp:pikari-gutenberg-modals/modal-dialog`, and a non-empty `theme`.
-
-**If `modal parts: 0` or `has content: [false]`, STOP.** `ModalTemplatePart::provide_default_template()` is not reaching the REST controller and the entity-store approach in spec §1 does not work as designed. Record the actual output and escalate before continuing.
-
-- [ ] **Step 3: Verify plugin-registered patterns keep arbitrary blockTypes**
-
-Add this to `pikari-gutenberg-modals.php` temporarily, inside the init function:
-
-```php
-add_action('init', function () {
-    register_block_pattern(
-        'pikari-gutenberg-modals/verify-probe',
-        [
-            'title'      => 'Verify probe',
-            'content'    => '<!-- wp:paragraph --><p>probe</p><!-- /wp:paragraph -->',
-            'blockTypes' => [ 'core/template-part/modal' ],
-        ]
-    );
-});
-```
-
-Then in the browser console inside the **post editor** (not wp-admin dashboard):
-
-```js
-wp.data
-	.select('core')
-	.getBlockPatterns()
-	.filter((p) => p.blockTypes?.includes('core/template-part/modal'))
-	.forEach((p) => console.log(p.name, p.blockTypes));
-```
-
-Expected: `pikari-gutenberg-modals/verify-probe [ 'core/template-part/modal' ]`.
-
-Remove the temporary code afterwards. **Do not commit it.**
-
-- [ ] **Step 4: Verify onNavigateToEntityRecord absence and the Site Editor URL shape**
-
-In the **post editor** console:
-
-```js
-console.log(
-	typeof wp.data.select('core/block-editor').getSettings()
-		.onNavigateToEntityRecord
-);
-```
-
-Expected: `"undefined"` (this is what justifies the fallback in spec §4). If it prints `"function"`, note that — the fallback becomes dead code and Task 8 simplifies.
-
-Then, in the **Site Editor**, open any template part for editing and copy the address bar URL verbatim into the findings file. This is the exact shape `buildEditUrl()` must produce in Task 2. Do not assume `?p=/wp_template_part/…&canvas=edit` — record what the installed WordPress actually uses.
-
-- [ ] **Step 5: Write the findings and commit**
-
-```bash
-cat > _plans/modal-overlay-templates-verification.md <<'EOF'
-# Modal Overlay Templates — Pre-build Verification
-
-Date:
-WordPress version:
-Theme:
-
-## 1. Synthetic default part through REST
-Result:
-Raw output:
-
-## 2. Plugin patterns keep arbitrary blockTypes
-Result:
-Raw output:
-
-## 3a. onNavigateToEntityRecord in the post editor
-Result:
-
-## 3b. Site Editor template part URL, verbatim
-URL:
-EOF
-```
-
-Fill in every field, then:
-
-```bash
-git add _plans/modal-overlay-templates-verification.md
-git commit -m "docs: record pre-build verification for modal overlay templates"
-```
-
----
+**Unresolved, and only relevant if the URL fallback is ever revived:** the verbatim Site Editor URL for a template part was not captured. The guessed `?p=…&canvas=edit` shape loaded the shell with no canvas, and the SPA routes via `history.pushState` rather than anchors. Core registers `wp_template_part` with `'_edit_link' => '/site-editor.php?canvas=edit'` (`wp-includes/post.php:503`), which has no id placeholder — there is no stable public URL contract to build against.
 
 ### Task 2: Pure template-part logic module
 
@@ -177,7 +75,6 @@ git commit -m "docs: record pre-build verification for modal overlay templates"
   - `getUniqueTitle( base: string, parts: Array ) => string`
   - `getCleanSlug( title: string ) => string`
   - `createTemplatePartId( theme: string, slug: string ) => string|null`
-  - `buildEditUrl( siteEditorUrl: string, theme: string, slug: string ) => string|null`
   - `selectModalPatterns( patterns: Array|null ) => Array`
 
 - [ ] **Step 1: Write the failing test**
@@ -198,7 +95,6 @@ import {
 	getUniqueTitle,
 	getCleanSlug,
 	createTemplatePartId,
-	buildEditUrl,
 	selectModalPatterns,
 	MODAL_PATTERN_BLOCK_TYPE,
 } from '../../../src/editor/modal-template-parts';
@@ -385,40 +281,6 @@ describe('createTemplatePartId', () => {
 
 	it('returns null without a slug', () => {
 		expect(createTemplatePartId('theme', '')).toBeNull();
-	});
-});
-
-describe('buildEditUrl', () => {
-	it('builds a site editor URL for the part', () => {
-		expect(
-			buildEditUrl(
-				'http://example.test/wp-admin/site-editor.php',
-				'theme',
-				'sidebar'
-			)
-		).toBe(
-			'http://example.test/wp-admin/site-editor.php?p=%2Fwp_template_part%2Ftheme%2F%2Fsidebar&canvas=edit'
-		);
-	});
-
-	it('appends with an ampersand when the base already has a query', () => {
-		expect(
-			buildEditUrl(
-				'http://example.test/wp-admin/site-editor.php?foo=1',
-				'theme',
-				'sidebar'
-			)
-		).toContain('?foo=1&p=');
-	});
-
-	it('returns null without a base URL', () => {
-		expect(buildEditUrl('', 'theme', 'sidebar')).toBeNull();
-	});
-
-	it('returns null when the id cannot be built', () => {
-		expect(
-			buildEditUrl('http://example.test/wp-admin/site-editor.php', '', 's')
-		).toBeNull();
 	});
 });
 
@@ -626,30 +488,6 @@ export function createTemplatePartId(theme, slug) {
 }
 
 /**
- * Build a Site Editor URL that opens a template part for editing.
- *
- * Used only when `onNavigateToEntityRecord` is unavailable, which is the
- * case in the post editor.
- *
- * @param {string} siteEditorUrl Absolute URL to site-editor.php.
- * @param {string} theme         Theme stylesheet.
- * @param {string} slug          Template part slug.
- * @return {string|null} URL, or null if it cannot be built.
- */
-export function buildEditUrl(siteEditorUrl, theme, slug) {
-	const id = createTemplatePartId(theme, slug);
-
-	if (!siteEditorUrl || !id) {
-		return null;
-	}
-
-	const separator = siteEditorUrl.includes('?') ? '&' : '?';
-	const path = encodeURIComponent(`/wp_template_part/${id}`);
-
-	return `${siteEditorUrl}${separator}p=${path}&canvas=edit`;
-}
-
-/**
  * Keep only patterns registered as modal template part starters.
  *
  * @param {Array|null} patterns All registered block patterns.
@@ -673,8 +511,6 @@ npm test -- --testPathPattern=modal-template-parts
 ```
 
 Expected: PASS, all suites green.
-
-If `buildEditUrl` disagrees with the URL you recorded in Task 1 Step 4, change **both** the implementation and its test to match the URL WordPress actually produced. Task 1's recorded URL wins.
 
 - [ ] **Step 5: Lint and commit**
 
@@ -1118,7 +954,7 @@ git commit -m "feat: register modal starter patterns for the modal template part
 
 ---
 
-### Task 5: Localize isBlockTheme and siteEditorUrl
+### Task 5: Localize isBlockTheme
 
 **Files:**
 
@@ -1128,37 +964,29 @@ git commit -m "feat: register modal starter patterns for the modal template part
 **Interfaces:**
 
 - Consumes: nothing
-- Produces: `window.pikariGutenbergModals.isBlockTheme` (boolean) and `window.pikariGutenbergModals.siteEditorUrl` (string), consumed by Tasks 6 and 8
+- Produces: `window.pikariGutenbergModals.isBlockTheme` (boolean), consumed by Task 6
 
 - [ ] **Step 1: Write the failing test**
 
 Add to `tests/php/EditorIntegrationTest.php`:
 
 ```php
-    public function test_get_editor_config_reports_block_theme_and_site_editor_url(): void
+    public function test_get_editor_config_reports_block_theme(): void
     {
         Functions\when( 'wp_is_block_theme' )->justReturn( true );
-        Functions\when( 'admin_url' )->alias(
-            static fn( $path ) => 'http://example.test/wp-admin/' . $path
-        );
 
-        $config = ( new EditorIntegration() )->get_editor_config();
-
-        $this->assertTrue( $config['isBlockTheme'] );
-        $this->assertSame(
-            'http://example.test/wp-admin/site-editor.php',
-            $config['siteEditorUrl']
+        $this->assertTrue(
+            ( new EditorIntegration() )->get_editor_config()['isBlockTheme']
         );
     }
 
     public function test_get_editor_config_reports_hybrid_theme(): void
     {
         Functions\when( 'wp_is_block_theme' )->justReturn( false );
-        Functions\when( 'admin_url' )->alias(
-            static fn( $path ) => 'http://example.test/wp-admin/' . $path
-        );
 
-        $this->assertFalse( ( new EditorIntegration() )->get_editor_config()['isBlockTheme'] );
+        $this->assertFalse(
+            ( new EditorIntegration() )->get_editor_config()['isBlockTheme']
+        );
     }
 ```
 
@@ -1192,9 +1020,6 @@ In `includes/EditorIntegration.php`, replace the inline array passed to `wp_loca
      * themes have no wp_template_part entities and no Site Editor, so the
      * panel falls back to a plain select over `modalTemplateParts`.
      *
-     * `siteEditorUrl` backs the Edit fallback used in the post editor, where
-     * the block editor settings do not provide `onNavigateToEntityRecord`.
-     *
      * @return array Editor configuration.
      */
     public function get_editor_config(): array
@@ -1210,7 +1035,6 @@ In `includes/EditorIntegration.php`, replace the inline array passed to `wp_loca
             'modalSizes'         => $this->get_modal_sizes(),
             'modalTemplateParts' => $this->get_modal_template_parts(),
             'isBlockTheme'       => wp_is_block_theme(),
-            'siteEditorUrl'      => admin_url('site-editor.php'),
             'defaultSettings'    => [
                 'size' => 'medium',
                 'animation' => 'fade',
@@ -1238,7 +1062,7 @@ Expected: PASS. If the existing tests mock `get_supported_blocks_for_js`, `rest_
 ```bash
 npm run lint:php
 git add includes/EditorIntegration.php tests/php/EditorIntegrationTest.php
-git commit -m "feat: localize isBlockTheme and siteEditorUrl for the editor"
+git commit -m "feat: localize isBlockTheme for the editor"
 ```
 
 ---
@@ -1754,7 +1578,7 @@ git commit -m "feat: create modal templates from starter patterns"
 
 ---
 
-### Task 8: Edit navigation with post-editor fallback
+### Task 8: Edit navigation
 
 **Files:**
 
@@ -1762,7 +1586,7 @@ git commit -m "feat: create modal templates from starter patterns"
 
 **Interfaces:**
 
-- Consumes: `createTemplatePartId`, `buildEditUrl` (Task 2); `currentTheme`, `selectedPart` (Task 6); `window.pikariGutenbergModals.siteEditorUrl` (Task 5)
+- Consumes: `createTemplatePartId` (Task 2); `currentTheme`, `selectedPart` (Task 6)
 - Produces: nothing consumed by later tasks
 
 - [ ] **Step 1: Add the navigation logic**
@@ -1773,7 +1597,7 @@ In `src/editor/modal-template-panel.js`, add imports:
 import { useSelect } from '@wordpress/data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
 import { pencil } from '@wordpress/icons';
-import { createTemplatePartId, buildEditUrl } from './modal-template-parts';
+import { createTemplatePartId } from './modal-template-parts';
 ```
 
 Pull `selectedPart` and `currentTheme` from `useModalTemplateEntities`, then add:
@@ -1787,33 +1611,16 @@ const onNavigateToEntityRecord = useSelect(
 const theme = selectedPart?.theme || currentTheme;
 
 const onEdit = () => {
-	if (!selectedPart || !theme) {
+	if (!selectedPart || !theme || !onNavigateToEntityRecord) {
 		return;
 	}
 
 	const postId = createTemplatePartId(theme, selectedPart.slug);
 
-	// The Site Editor provides this; the post editor does not. Most modal
-	// triggers live in post content, so fall back to opening the Site
-	// Editor in a new tab rather than hiding the affordance. A new tab,
-	// not a navigation, because the post may have unsaved changes.
-	if (onNavigateToEntityRecord) {
-		onNavigateToEntityRecord({
-			postId,
-			postType: 'wp_template_part',
-		});
-		return;
-	}
-
-	const url = buildEditUrl(
-		window.pikariGutenbergModals?.siteEditorUrl,
-		theme,
-		selectedPart.slug
-	);
-
-	if (url) {
-		window.open(url, '_blank', 'noopener');
-	}
+	onNavigateToEntityRecord({
+		postId,
+		postType: 'wp_template_part',
+	});
 };
 ```
 
@@ -1823,7 +1630,7 @@ Replace the `{ /* Edit button added in Task 8. */ }` placeholder inside `<FlexIt
 
 ```jsx
 {
-	isBlockTheme && selectedPart && hasResolved && (
+	isBlockTheme && selectedPart && hasResolved && onNavigateToEntityRecord && (
 		<Button
 			__next40pxDefaultSize
 			variant="secondary"
@@ -1836,7 +1643,11 @@ Replace the `{ /* Edit button added in Task 8. */ }` placeholder inside `<FlexIt
 }
 ```
 
-Note `selectedPart` is null for the default selection (`value === ''`) unless a `modal`-slug part exists in the records. If Task 1 Step 2 confirmed the synthetic default surfaces, editing the default works; if it did not, this button correctly stays hidden for the default.
+Two notes on the render guard.
+
+`selectedPart` is null for the default selection (`value === ''`) unless a `modal`-slug part exists in the records. Task 1 confirmed the synthetic default does surface, so editing the default works.
+
+`onNavigateToEntityRecord` gates the button because it is the only route to the Site Editor. Task 1 found it present in the post editor on WordPress 7.1, so in practice the button shows in both editors; on the 6.8 floor, where it may be absent, the button simply does not render. This is core's own behaviour — see spec §4 for why the earlier hand-built URL fallback was dropped.
 
 - [ ] **Step 3: Build and verify both paths in the browser**
 
@@ -1844,14 +1655,14 @@ Note `selectedPart` is null for the default selection (`value === ''`) unless a 
 npm run build && npm run lint:js
 ```
 
-- **Post editor:** select a non-default modal template, click Edit. A new tab opens the Site Editor with that part loaded in edit mode. Confirm the original tab keeps its unsaved changes.
+- **Post editor:** select a non-default modal template, click Edit. Confirm where it lands and that the post's unsaved changes survive — core routes `onNavigateToEntityRecord` differently per editor, and this specific behaviour for a `wp_template_part` from the post editor has not been observed yet. If it navigates away destructively, that is a finding: report it rather than working around it.
 - **Site Editor:** place a Modal Trigger inside a template, select a modal template, click Edit. It navigates in place, and the editor's back affordance returns you to the template.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 git add src/editor/modal-template-panel.js
-git commit -m "feat: edit modal templates from any trigger, with a post editor fallback"
+git commit -m "feat: edit modal templates from any trigger"
 ```
 
 ---
@@ -2184,7 +1995,7 @@ git commit -m "docs: document the modal overlay rename and template panel"
 | §3 Create flow                                    | 7                                             |
 | §3 Patterns                                       | 4                                             |
 | §3 `getBlockPatterns` substitution for `unlock()` | 7                                             |
-| §4 Edit navigation + fallback                     | 8, gated by 1                                 |
+| §4 Edit navigation                                | 8                                             |
 | §5 Rename                                         | 3                                             |
 | §6 Hybrid themes                                  | 6 (`isBlockTheme` branch), 5 (localized flag) |
 | §6 Inline popover                                 | 10 (`showCreate`/`showPreview` false)         |
@@ -2192,10 +2003,10 @@ git commit -m "docs: document the modal overlay rename and template panel"
 | §7 Pure module tests                              | 2                                             |
 | §7 PHPUnit                                        | 4, 5                                          |
 | §7 Browser-only checks                            | 3, 6, 7, 8, 9, 10                             |
-| Verify before building                            | 1                                             |
+| Verified before building                          | 1 (complete)                                  |
 
 No spec section is unimplemented.
 
 **Type consistency** — `buildPartOptions` takes an object in Task 2 and is called with an object in Task 6. `createTemplatePartId( theme, slug )` has the same argument order in Tasks 2, 8, and 9. `useModalTemplateEntities( selectedSlug )` returns `selectedPart` and `currentTheme`, both consumed in Tasks 8 and 9. `useCreateModalTemplate( parts )` returns a function taking `{ title, patternContent }`, matching its call site in Task 7.
 
-**Known risk** — Task 6's `useEntityRecords` fourth argument (`{ enabled }`) is version-dependent and is flagged inline with a fallback. Task 2's `buildEditUrl` output is asserted against a guessed URL shape; Task 1 Step 4 records the real one and Task 2 Step 4 says the recorded URL wins.
+**Known risk** — Task 6's `useEntityRecords` fourth argument (`{ enabled }`) is version-dependent and is flagged inline with a fallback. Task 8's post-editor behaviour for `onNavigateToEntityRecord` with a `wp_template_part` is confirmed _present_ but its landing behaviour is unobserved; Task 8 Step 3 says to report rather than work around it.

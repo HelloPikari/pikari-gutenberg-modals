@@ -199,21 +199,26 @@ const { onNavigateToEntityRecord } = useSelect(
 );
 ```
 
-Called with `{ postId: templatePartId, postType: 'wp_template_part' }`.
+Called with `{ postId: templatePartId, postType: 'wp_template_part' }`. Render the Edit
+button only when the setting is present; hide it when it is not. That is core's own
+behaviour, and it needs no URL construction.
 
-**It is undefined in the post editor** — the Site Editor sets it; the post editor does not.
-Core simply hides the Edit button when it is absent. Our triggers live overwhelmingly in post
-and page content, so hiding Edit there would remove the affordance from the common case.
+**Corrected after verification.** An earlier draft of this section asserted that
+`onNavigateToEntityRecord` is undefined in the post editor, and specified a fallback that
+hand-built `site-editor.php?p=/wp_template_part/{theme}//{slug}&canvas=edit` and opened it
+in a new tab. Both were wrong:
 
-Fallback when `onNavigateToEntityRecord` is unavailable: open
+- The setting is `typeof "function"` in the post editor on WordPress 7.1 (verified —
+  see `_plans/modal-overlay-templates-verification.md`). Core leaves a route there.
+- There is no stable public URL contract to build against even if we wanted one. Core
+  registers `wp_template_part` with `'_edit_link' => '/site-editor.php?canvas=edit'`
+  (`wp-includes/post.php:503`), which carries no id placeholder — the id is applied by
+  the JS router, not by anything a plugin can construct.
 
-```
-site-editor.php?p=/wp_template_part/{theme}//{slug}&canvas=edit
-```
+The fallback and its `siteEditorUrl` localized value are therefore dropped entirely.
 
-in a new tab, built with `addQueryArgs()` against `window.pikariGutenbergModals.siteEditorUrl`
-(a new localized value — do not hand-build admin URLs client-side). A new tab, not a
-same-tab navigation, because the user may have unsaved post content.
+On the WordPress 6.8 floor, where the setting may be absent, the button simply does not
+render. That degrades the same way core does and needs no version detection.
 
 ## 5. Modal Overlay rename
 
@@ -291,33 +296,48 @@ pure module and the component keeps only wiring.**
 | Export                                                                  | Responsibility                                      |
 | ----------------------------------------------------------------------- | --------------------------------------------------- |
 | `filterModalParts( records )`                                           | `area === 'modal'`, null-safe                       |
+| `getPartTitle( part )`                                                  | Rendered title, falling back to raw, then slug      |
 | `buildPartOptions( { parts, selectedSlug, hasResolved, isResolving } )` | Default option, resolved options, `(missing)` entry |
 | `getUniqueTitle( base, parts )`                                         | Appends a numeric suffix against existing titles    |
 | `getCleanSlug( title )`                                                 | Title → URL-safe slug                               |
 | `createTemplatePartId( theme, slug )`                                   | `theme//slug`                                       |
-| `buildEditUrl( siteEditorUrl, theme, slug )`                            | Site Editor fallback URL                            |
 | `selectModalPatterns( patterns )`                                       | `blockTypes.includes( 'core/template-part/modal' )` |
 
 `src/editor/modal-template-panel.js` — hooks plus JSX only, no branching logic worth a unit
 test. Browser-verified.
 
 **PHPUnit:** pattern registration — three patterns registered with
-`blockTypes: [ 'core/template-part/modal' ]`; the new localized `isBlockTheme` and
-`siteEditorUrl` values present in `EditorIntegration`.
+`blockTypes: [ 'core/template-part/modal' ]`; the new localized `isBlockTheme` value
+present in `EditorIntegration`.
 
 **Browser only** (no harness exists for these): panel states, preview rendering, cross-editor
 navigation, and a created part actually opening as a modal on the front end. Same constraint
 documented in todo #441 — for the render path, browser verification _is_ the coverage, not a
 supplement to it.
 
-## Verify before building
+## Verified before building
 
-1. Does the synthetic default `modal` part surface through `useEntityRecords` with
-   `content.raw`? (§1 — everything depends on it.)
-2. Does `select( 'core' ).getBlockPatterns()` return plugin-registered patterns with arbitrary
-   `blockTypes` values intact? (§3)
-3. Is `getSettings().onNavigateToEntityRecord` genuinely absent in the post editor at our
-   minimum WP version, or merely absent in some contexts? (§4)
+All three open questions were answered on 2026-09-07 against WordPress 7.1 with Twenty
+Twenty-Five. Full detail and raw output: `_plans/modal-overlay-templates-verification.md`.
+
+1. **Does the synthetic default `modal` part surface through REST with `content.raw`?**
+   **Yes.** Checked separately from the saved case, because the dev database already held
+   a customised part. The synthetic record returns `id: twentytwentyfive//modal`,
+   `source: "plugin"`, `origin: "plugin"`, `wp_id: 0`, and `content.raw` of 1280 characters
+   read from `parts/modal.html`. §1 stands unchanged.
+
+2. **Does `getBlockPatterns()` preserve arbitrary `blockTypes`?** **Yes**, with a naming
+   wrinkle worth recording: the REST layer emits snake_case `block_types`, and the client
+   store converts it back to camelCase `blockTypes`. Filter on the camelCase form in the
+   editor and the snake_case form if you ever read the endpoint directly. WordPress 7.1
+   ships 31 patterns scoped to `core/template-part/navigation-overlay`.
+
+3. **Is `onNavigateToEntityRecord` absent in the post editor?** **No — the opposite.** It is
+   a function there. This refuted §4 as originally written; that section has been rewritten
+   and the URL fallback dropped.
+
+One residual, deliberately not chased: the verbatim Site Editor URL for a template part was
+never captured. It only mattered for the fallback, which no longer exists.
 
 ## Out of scope
 
