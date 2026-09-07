@@ -6,7 +6,7 @@
 
 **Architecture:** Replace the PHP-localized template-part array with the `@wordpress/core-data` entity store, so parts created mid-session appear immediately and their content can be previewed. All branching logic lives in a pure, Jest-covered module (`src/editor/modal-template-parts.js`); the React panel is thin wiring, browser-verified. Create seeds a new `wp_template_part` from a plugin-registered pattern scoped to `core/template-part/modal`.
 
-**Tech Stack:** WordPress 6.8+, PHP 8.2+, `@wordpress/scripts` webpack, `@wordpress/core-data` entity store, Jest (jsdom), PHPUnit with Brain\Monkey.
+**Tech Stack:** WordPress 6.8+, PHP 8.4+, `@wordpress/scripts` webpack, `@wordpress/core-data` entity store, Jest (jsdom), PHPUnit with Brain\Monkey.
 
 **Spec:** `docs/superpowers/specs/2026-09-07-modal-overlay-templates-design.md`
 
@@ -14,7 +14,7 @@
 
 - **Branch base:** this plan assumes `feature/modal-placement` has merged to `main` and the three `feature/simplify-modal-dialog-ux` commits have been rebased on top. Do not start Tasks 2–11 until Pikari todo #441 is closed. Work on a new branch `feature/modal-overlay-templates`.
 - **Task 1 was run ahead of that gate, deliberately.** It writes no production code and touches nothing the placement QA depends on, so it could answer the design's open questions early. It is complete; its findings already changed Tasks 2, 5, and 8.
-- **PHP:** WordPress Coding Standards, **4 spaces indentation, not tabs**. Enforced by `phpcs.xml`.
+- **PHP:** 8.4+ (`composer.json` requires `>=8.4`; the plugin header says `Requires PHP: 8.4`). WordPress Coding Standards, **4 spaces indentation, not tabs**. Enforced by `phpcs.xml`.
 - **JavaScript:** WordPress ESLint config, **tab indentation, not spaces**. Prettier ignores JS. When using Edit, `old_string` must preserve exact tab characters.
 - **i18n:** every user-facing string uses `__()` / `sprintf()` with text domain `pikari-gutenberg-modals`.
 - **Text domain is exactly:** `pikari-gutenberg-modals`
@@ -625,7 +625,7 @@ correct changelog entry.
 Then fix by hand what `sed` cannot know:
 
 1. `src/blocks/modal-overlay/block.json` — set `"title": "Modal Overlay"` and update `description` to: `"The modal backdrop. Controls the overlay appearance (color, gradient, image) and where the dialog sits within it."`
-2. `src/blocks/modal-overlay/block.json` — delete the `color`, `__experimentalBorder`, `spacing`, and `shadow` entries from `supports`, leaving only `"html": false`, `"multiple": false`, `"reusable": false`.
+2. `src/blocks/modal-overlay/block.json` — delete the `color`, `__experimentalBorder`, `spacing`, and `shadow` entries from `supports`, leaving only `"html": false`, `"multiple": false`, `"reusable": false`. **Keep every attribute except `style`.** In particular `overlayOpacity` (added by PR #104) is an overlay concern and must survive; `style` existed only so the editor could detect legacy chrome styling, so it goes with the deprecation notice in step 3.
 3. `src/blocks/modal-overlay/edit.js` — remove the `hasLegacyChromeStyles` constant and the entire `<InspectorControls>` block that renders the deprecation `Notice`, plus the now-unused `Notice` import. The notice existed to migrate chrome styling off this block; with the supports gone there is nothing left to warn about.
 4. `readme.txt:188` and `README.md:190` — the sed pass already updated the filter example. Confirm both files still match each other exactly.
 
@@ -1983,7 +1983,7 @@ git commit -m "docs: document the modal overlay rename and template panel"
 
 ## Self-Review
 
-**Spec coverage**
+### Spec coverage
 
 | Spec section                                      | Task                                          |
 | ------------------------------------------------- | --------------------------------------------- |
@@ -2007,6 +2007,10 @@ git commit -m "docs: document the modal overlay rename and template panel"
 
 No spec section is unimplemented.
 
-**Type consistency** — `buildPartOptions` takes an object in Task 2 and is called with an object in Task 6. `createTemplatePartId( theme, slug )` has the same argument order in Tasks 2, 8, and 9. `useModalTemplateEntities( selectedSlug )` returns `selectedPart` and `currentTheme`, both consumed in Tasks 8 and 9. `useCreateModalTemplate( parts )` returns a function taking `{ title, patternContent }`, matching its call site in Task 7.
+### Type consistency
 
-**Known risk** — Task 6's `useEntityRecords` fourth argument (`{ enabled }`) is version-dependent and is flagged inline with a fallback. Task 8's post-editor behaviour for `onNavigateToEntityRecord` with a `wp_template_part` is confirmed _present_ but its landing behaviour is unobserved; Task 8 Step 3 says to report rather than work around it.
+`buildPartOptions` takes an object in Task 2 and is called with an object in Task 6. `createTemplatePartId( theme, slug )` has the same argument order in Tasks 2, 8, and 9. `useModalTemplateEntities( selectedSlug )` returns `selectedPart` and `currentTheme`, both consumed in Tasks 8 and 9. `useCreateModalTemplate( parts )` returns a function taking `{ title, patternContent }`, matching its call site in Task 7.
+
+### Known risk
+
+Task 6's `useEntityRecords` fourth argument (`{ enabled }`) is version-dependent and is flagged inline with a fallback. Task 8's post-editor behaviour for `onNavigateToEntityRecord` with a `wp_template_part` is confirmed _present_ but its landing behaviour is unobserved; Task 8 Step 3 says to report rather than work around it.

@@ -232,8 +232,13 @@ source of the "where do I set this?" confusion.
 
 **Supports removed:** `color.background`, `__experimentalBorder`, `spacing.padding`, `shadow`.
 
-**Attributes kept:** `overlayColor`, `overlayGradient`, `backgroundImage`, `focalPoint`,
-`hasParallax`, plus `placement` arriving from `feature/modal-placement`.
+**Attributes kept:** `overlayColor`, `overlayGradient`, `overlayOpacity`, `backgroundImage`,
+`focalPoint`, `hasParallax`, plus `placement` arriving from `feature/modal-placement`.
+
+`overlayOpacity` was added to the block by PR #104 after this spec was first written and is
+easy to drop by accident during the rename — it is an overlay concern, not chrome, so it
+stays. The `style` attribute becomes vestigial once the supports are removed: it exists only
+so the editor can detect legacy chrome styling. Remove it with the deprecation notice.
 
 **Touch points** (enumerated from a full-tree grep, `build/` excluded):
 

@@ -26,7 +26,7 @@ only proves the customised case.
 
 **Saved path** (dev DB, `/wp/v2/template-parts?per_page=-1&context=edit`):
 
-```
+```text
 modalCount: 1
 id: twentytwentyfive//modal   slug: modal   theme: twentytwentyfive
 source: custom   origin: plugin
@@ -36,7 +36,7 @@ content.raw present, 1959 chars
 **Synthetic path** (`ModalTemplatePart::provide_default_template()` called directly
 with an empty result set — no DB writes):
 
-```
+```text
 count: 1
 id: twentytwentyfive//modal   slug: modal   theme: twentytwentyfive
 area: modal   source: plugin   status: publish
@@ -45,7 +45,7 @@ content present, 1280 chars, from parts/modal.html
 
 **Synthetic path through REST** (clean tests DB, `rest_do_request` as user 1):
 
-```
+```text
 status: 200   modalCount: 1
 id: twentytwentyfive//modal   slug: modal   theme: twentytwentyfive
 source: plugin   origin: plugin   wp_id: 0
@@ -65,7 +65,7 @@ plugin- and theme-provided templates.
 A probe registered in-process with `blockTypes => [ 'core/template-part/modal' ]`
 came back from `/wp/v2/block-patterns/patterns` as:
 
-```
+```text
 keys: name, title, content, block_types
 block_types: [ "core/template-part/modal" ]
 ```
@@ -73,7 +73,7 @@ block_types: [ "core/template-part/modal" ]
 The REST layer emits **snake_case `block_types`**; the client store converts it back.
 In the post editor, `wp.data.select( 'core' ).getBlockPatterns()` returns:
 
-```
+```text
 totalPatterns: 161
 sample keys: name, title, content, categories, blockTypes, source
 patterns scoped to core/template-part/*: 31
@@ -87,7 +87,7 @@ Incidental but useful: WP 7.1 ships **31** patterns scoped to
 `core/template-part/navigation-overlay`. That is the prior art the design is modelled
 on, now confirmed present in this environment and available to read.
 
-## 3. Is onNavigateToEntityRecord undefined in the post editor? — NO. THE PLAN IS WRONG.
+## 3. Is onNavigateToEntityRecord undefined in the post editor? — NO. THE PLAN IS WRONG
 
 ```js
 typeof wp.data.select('core/block-editor').getSettings()
