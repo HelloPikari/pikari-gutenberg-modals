@@ -16,6 +16,7 @@ use Pikari\GutenbergModals\BlockSupport;
 use Pikari\GutenbergModals\GroupModalTriggerSupport;
 use Pikari\GutenbergModals\ModalHandler;
 use Pikari\GutenbergModals\SpeculativeLoading;
+use Pikari\GutenbergModals\TriggerContext;
 
 $trigger_action = $attributes['triggerAction'] ?? 'open';
 $content_source = $attributes['contentSource'] ?? 'link';
@@ -136,24 +137,17 @@ switch ( $content_source ) {
         $trigger_id = 'modal-trigger-' . wp_unique_id();
         $modal_id   = $content_type . '-' . $content_id;
 
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $modal_id,
         ];
 
         // Mark external URLs so the frontend renders an iframe instead of fetching via REST API.
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        $modal_size = $attributes['modalSize'] ?? '';
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $attributes, $base, $template_part );
 
         // Add Interactivity API attributes to the wrapper.
         $processor = new WP_HTML_Tag_Processor( $content );
@@ -186,24 +180,19 @@ switch ( $content_source ) {
         BlockSupport::set_has_modal_triggers( $slug );
 
         $trigger_id = 'modal-trigger-' . wp_unique_id();
-        $modal_size = $attributes['modalSize'] ?? '';
 
         /* translators: %s: modal content identifier */
         $aria_label = sprintf( __( 'Open %s in modal dialog', 'pikari-gutenberg-modals' ), $inline_anchor );
 
-        $context = [
-            'contentSource' => 'inline',
-            'inlineAnchor'  => $inline_anchor,
-            'modalId'       => 'inline-' . $inline_anchor,
-        ];
-
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build(
+            $attributes,
+            [
+                'contentSource' => 'inline',
+                'inlineAnchor'  => $inline_anchor,
+                'modalId'       => 'inline-' . $inline_anchor,
+            ],
+            $template_part
+        );
 
         $processor = new WP_HTML_Tag_Processor( $content );
         if ( $processor->next_tag() ) {
@@ -296,20 +285,14 @@ switch ( $content_source ) {
             $content = $processor->get_updated_html();
             $content = GroupModalTriggerSupport::cleanup_post_link_markers( $content );
 
-            $modal_size = $attributes['modalSize'] ?? '';
-
-            $context = [
-                'postId'  => $post_id,
-                'modalId' => 'post-' . $post_id,
-            ];
-
-            if ( ! empty( $modal_size ) ) {
-                $context['size'] = $modal_size;
-            }
-
-            if ( ! empty( $template_part ) ) {
-                $context['templatePart'] = $template_part;
-            }
+            $context = TriggerContext::build(
+                $attributes,
+                [
+                    'postId'  => $post_id,
+                    'modalId' => 'post-' . $post_id,
+                ],
+                $template_part
+            );
 
             $processor = new WP_HTML_Tag_Processor( $content );
             if ( $processor->next_tag() ) {
@@ -381,24 +364,16 @@ switch ( $content_source ) {
         $content = $processor->get_updated_html();
         $content = GroupModalTriggerSupport::cleanup_post_link_markers( $content );
 
-        $modal_size = $attributes['modalSize'] ?? '';
-
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $modal_id,
         ];
 
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $attributes, $base, $template_part );
 
         $processor = new WP_HTML_Tag_Processor( $content );
         if ( $processor->next_tag() ) {
