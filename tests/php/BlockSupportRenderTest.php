@@ -183,4 +183,54 @@ class BlockSupportRenderTest extends TestCase
         // Nothing else in the markup gets decorated.
         $this->assertFalse( $processor->next_tag() );
     }
+
+    /**
+     * Pins the fix-round-3 regression: filter_button_block_inline() used
+     * next_tag('a'), which matches nothing at all for a tagName:'button'
+     * button (there is no <a> anywhere in the markup) — the whole
+     * decoration block was silently skipped, leaving a dead button with no
+     * click handler. Also covers the tag-aware href handling: a <button>
+     * gets no href (it doesn't support one and needs none to be
+     * focusable), unlike the <a> case in the sibling test above.
+     */
+    public function test_filter_button_block_inline_decorates_inner_button_not_wrapper(): void
+    {
+        $instance = new BlockSupport();
+
+        // tagName: 'button' shape — no <a> anywhere in this markup.
+        $input = '<div class="wp-block-button"><button type="button" class="wp-block-button__link">Text</button></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'inline',
+                'pikariModalInlineAnchor'  => 'promo',
+            ],
+        ];
+
+        $result = $instance->filter_button_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+
+        // The wrapper <div> must be left completely undecorated.
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'DIV', $processor->get_tag() );
+        $this->assertNull( $processor->get_attribute( 'id' ) );
+        $this->assertNull( $processor->get_attribute( 'data-wp-interactive' ) );
+        $this->assertFalse( $processor->has_class( 'has-pikari-modal' ) );
+
+        // The inner <button> gets the trigger's decoration...
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'BUTTON', $processor->get_tag() );
+        $this->assertStringStartsWith( 'modal-trigger-', (string) $processor->get_attribute( 'id' ) );
+        $this->assertSame( 'pikari-modal', $processor->get_attribute( 'data-wp-interactive' ) );
+        $this->assertSame( 'dialog', $processor->get_attribute( 'aria-haspopup' ) );
+        $this->assertTrue( $processor->has_class( 'has-pikari-modal' ) );
+
+        // ...but no href: unlike the <a> case, a <button> supports no
+        // href attribute and needs none to be focusable.
+        $this->assertNull( $processor->get_attribute( 'href' ) );
+
+        // Nothing else in the markup gets decorated.
+        $this->assertFalse( $processor->next_tag() );
+    }
 }

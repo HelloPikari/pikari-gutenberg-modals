@@ -384,8 +384,13 @@ class BlockSupport
 
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
-        // Find the anchor tag (button link)
-        if ( $processor->next_tag( 'a' ) ) {
+        // Find the button's own interactive element. The block's root is
+        // a wrapper <div class="wp-block-button"> — the first next_tag()
+        // lands there and must be left alone; the second reaches the
+        // inner <a> (tagName: 'a', the default) or <button> (tagName:
+        // 'button'), whichever the block actually rendered. Same two-call
+        // pattern as filter_button_block() and filter_close_trigger().
+        if ( $processor->next_tag() && $processor->next_tag() ) {
             $processor->set_attribute( 'id', $trigger_id );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
@@ -396,7 +401,15 @@ class BlockSupport
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->set_attribute( 'href', '#' . $inline_anchor );
+
+            // A <button> has no href and is already natively focusable and
+            // keyboard-operable without one — only an <a> needs it, to
+            // point at the inline content's in-page anchor for
+            // progressive enhancement.
+            if ( 'A' === $processor->get_tag() ) {
+                $processor->set_attribute( 'href', '#' . $inline_anchor );
+            }
+
             $processor->add_class( 'has-pikari-modal' );
 
             // The button's own visible text is already its accessible
