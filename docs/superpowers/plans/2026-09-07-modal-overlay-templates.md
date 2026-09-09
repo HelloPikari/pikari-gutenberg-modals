@@ -626,6 +626,24 @@ Then fix by hand what `sed` cannot know:
 
 1. `src/blocks/modal-overlay/block.json` — set `"title": "Modal Overlay"` and update `description` to: `"The modal backdrop. Controls the overlay appearance (color, gradient, image) and where the dialog sits within it."`
 2. `src/blocks/modal-overlay/block.json` — delete the `color`, `__experimentalBorder`, `spacing`, and `shadow` entries from `supports`, leaving only `"html": false`, `"multiple": false`, `"reusable": false`. **Keep every attribute except `style`.** In particular `overlayOpacity` (added by PR #104) is an overlay concern and must survive; `style` existed only so the editor could detect legacy chrome styling, so it goes with the deprecation notice in step 3.
+
+   **The Overlay control survives this — verified, not assumed.** Removing `color`
+   support does not remove the Color panel. `InspectorControlsSlot`
+   (`block-editor/src/components/inspector-controls/slot.jsx`) gates the panel on
+   whether the slot has fills, not on block supports:
+
+   ```js
+   const fills = useSlotFills( slotFill?.name );
+   if ( ! fills?.length ) { return null; }
+   if ( label ) { return <BlockSupportToolsPanel group={ group } label={ label }>…; }
+   ```
+
+   `StylesTab` renders `<InspectorControls.Slot group="color" label="Color" />`
+   unconditionally for non-section blocks, and the block's own
+   `ColorGradientSettingsDropdown` is a fill. Confirm visually anyway in step 6 — if
+   the Overlay swatch ever vanished, the modal backdrop would become unstylable with
+   no error to say why.
+
 3. `src/blocks/modal-overlay/edit.js` — remove the `hasLegacyChromeStyles` constant and the entire `<InspectorControls>` block that renders the deprecation `Notice`, plus the now-unused `Notice` import. The notice existed to migrate chrome styling off this block; with the supports gone there is nothing left to warn about.
 4. `readme.txt:188` and `README.md:190` — the sed pass already updated the filter example. Confirm both files still match each other exactly.
 
@@ -654,7 +672,16 @@ Expected: all PASS. The build must succeed — a stale `webpack.config.js` entry
 
 - [ ] **Step 6: Verify in the browser**
 
-Open the Site Editor, edit the Modal template part. The block must be titled **Modal Overlay** in the list view, must show only the Overlay colour and Overlay image controls (no border, padding, shadow, or background), and Close Button plus Content Area must still be insertable inside it. A stale `ancestor` array in either `block.json` makes them silently uninsertable.
+Open the Site Editor, edit the Modal template part. Check all four:
+
+1. The block is titled **Modal Overlay** in list view.
+2. The **Color** panel is still present with the **Overlay** swatch in it, and setting a
+   colour still works. This is the one that would fail silently — see the note in step 3.
+3. The **Overlay** panel still holds Opacity, image, focal point and parallax, and the
+   opacity slider renders at full width rather than squashed.
+4. No Background, Dimensions or Border & Shadow panels remain, and Close Button plus
+   Content Area are still insertable inside the block — a stale `ancestor` array in
+   either `block.json` makes them silently uninsertable.
 
 - [ ] **Step 7: Commit**
 
