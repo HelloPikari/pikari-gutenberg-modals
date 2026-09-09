@@ -7,7 +7,10 @@
 
 import { addFilter } from '@wordpress/hooks';
 import { createHigherOrderComponent } from '@wordpress/compose';
-import { InspectorControls } from '@wordpress/block-editor';
+import {
+	InspectorControls,
+	useBlockEditingMode,
+} from '@wordpress/block-editor';
 import { useSelect } from '@wordpress/data';
 import { useEffect, useMemo } from '@wordpress/element';
 import {
@@ -43,6 +46,15 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 
 		const templateParts = useModalTemplateParts();
 		const modalContentBlocks = useModalContentBlocks();
+
+		// Don't expose block settings in contentOnly editing mode (e.g.
+		// locked patterns) — that's a WordPress convention. Unlike the old
+		// group-modal-trigger-extension.js, this does NOT also hide the panel
+		// inside a modal template part: close-mode triggers live there by
+		// design and need their Action control to stay reachable.
+		const blockEditingMode = useBlockEditingMode();
+		const isContentOnly = blockEditingMode === 'contentOnly';
+
 		const isOpen = pikariModalAction === 'open';
 		const contentSource = pikariModalContentSource || 'link';
 		const isLinkSource = name === 'core/group' && contentSource === 'link';
@@ -137,7 +149,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 		return (
 			<>
 				<BlockEdit { ...props } />
-				{ isSelected && (
+				{ isSelected && ! isContentOnly && (
 					<InspectorControls>
 						<PanelBody
 							title={ __( 'Modal', 'pikari-gutenberg-modals' ) }
