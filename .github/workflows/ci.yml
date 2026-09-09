@@ -200,7 +200,43 @@ jobs:
           npm ci
           composer install --prefer-dist --no-progress
 
+      # tests/php/BlockSupportRenderTest.php and
+      # tests/php/GroupModalTriggerSupportRenderTest.php run against the
+      # REAL WP_HTML_Tag_Processor (not Brain\Monkey) and self-skip when no
+      # WordPress core checkout is discoverable via WP_CORE_DIR. Rather than
+      # installing all of WordPress, download just the handful of
+      # wp-includes files those tests actually load — pinned to a tag known
+      # to work together (see each test's load_wp_html_api()) and cached so
+      # this only hits the network once per pin.
+      - name: Cache WordPress HTML API files
+        id: wp-html-api-cache
+        uses: actions/cache@v6
+        with:
+          path: /tmp/wp-core-min
+          key: wp-html-api-7.1.0
+
+      - name: Download WordPress HTML API files
+        if: steps.wp-html-api-cache.outputs.cache-hit != 'true'
+        run: |
+          base="https://raw.githubusercontent.com/WordPress/wordpress-develop/7.1.0/src/wp-includes"
+          mkdir -p /tmp/wp-core-min/wp-includes/html-api
+          for f in \
+            class-wp-token-map.php \
+            html-api/html5-named-character-references.php \
+            html-api/class-wp-html-attribute-token.php \
+            html-api/class-wp-html-span.php \
+            html-api/class-wp-html-doctype-info.php \
+            html-api/class-wp-html-text-replacement.php \
+            html-api/class-wp-html-decoder.php \
+            utf8.php \
+            html-api/class-wp-html-tag-processor.php \
+          ; do
+            curl -fsSL "$base/$f" -o "/tmp/wp-core-min/wp-includes/$f"
+          done
+
       - name: Run PHP tests
+        env:
+          WP_CORE_DIR: /tmp/wp-core-min
         run: composer test
 
       - name: Run JS tests
