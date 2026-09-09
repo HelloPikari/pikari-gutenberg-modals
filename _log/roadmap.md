@@ -32,14 +32,17 @@ asserts the invariant, not the selectors. See PR #102.
 for sites with a **customised** template part: measured as a transparent dialog, not
 graceful degradation. See PR #103.
 
+~~Strand 3 — modal placement~~ — ✅ DONE (Session 1). Modal Dialog gained `placement`
+(centered/left/right), overridable per trigger, with contextual sizing so `fullscreen`
+can't turn a panel into a full-width sheet. Panels square off `border-radius` with
+`!important`, following the mobile/fullscreen precedent — chrome (background, padding,
+shadow) stays with the author's Group.
+
 ## Open
 
-- **Strand 3 — modal placement.** Centered / left / right, with contextual sizing.
-  Design agreed and twice-corrected from browser testing:
-  `docs/superpowers/specs/2026-09-04-modal-placement-design.md`. Not started.
-- **Overlay opacity** — PR #104, awaiting merge. Lets a theme with
+- **Overlay opacity** — PR #104, merged. Lets a theme with
   `settings.color.custom: false` still produce a translucent backdrop.
-- **Testing traps write-up** — PR #105, awaiting merge.
+- **Testing traps write-up** — PR #105, merged.
 - **Release-tag provenance (design item, not started).** `update-dist.yml` runs
   `git tag -f`, moving release tags onto the `dist` branch. Release Drafter's
   `commitish: main` then has no valid base, re-counts all history, and mis-resolves
