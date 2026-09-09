@@ -163,4 +163,90 @@ class BlockSupportTest extends TestCase {
 
         $this->assertSame( $input, $result );
     }
+
+    /**
+     * Test that get_trigger_blocks() returns the default block list.
+     */
+    public function test_get_trigger_blocks_returns_default_list(): void {
+        $this->assertSame( [ 'core/group', 'core/button' ], $this->instance->get_trigger_blocks() );
+    }
+
+    /**
+     * Test that get_trigger_blocks() applies the documented filter.
+     */
+    public function test_get_trigger_blocks_applies_filter(): void {
+        \Brain\Monkey\Filters\expectApplied( 'pikari_gutenberg_modals_trigger_blocks' )
+            ->once()
+            ->andReturn( [ 'core/group', 'core/button', 'core/quote' ] );
+
+        $this->assertSame(
+            [ 'core/group', 'core/button', 'core/quote' ],
+            $this->instance->get_trigger_blocks()
+        );
+    }
+
+    /**
+     * Test that filter_button_block() leaves content unchanged with no modal action.
+     */
+    public function test_filter_button_block_ignores_missing_action(): void {
+        $input = '<div class="wp-block-button"><a href="https://example.com">Link</a></div>';
+
+        $result = $this->instance->filter_button_block( $input, [ 'attrs' => [] ] );
+
+        $this->assertSame( $input, $result );
+    }
+
+    /**
+     * Test that filter_button_block() leaves content unchanged for a close action.
+     *
+     * Close mode for buttons is handled by filter_close_mode_block(), not here.
+     */
+    public function test_filter_button_block_ignores_close_action(): void {
+        $input = '<div class="wp-block-button"><a href="https://example.com">Link</a></div>';
+        $block = [ 'attrs' => [ 'pikariModalAction' => 'close' ] ];
+
+        $result = $this->instance->filter_button_block( $input, $block );
+
+        $this->assertSame( $input, $result );
+    }
+
+    /**
+     * Test that filter_button_block() no longer honours the legacy attribute name.
+     *
+     * Regression guard for the pikariOpenInModal -> pikariModalAction rename.
+     */
+    public function test_filter_button_block_ignores_legacy_open_in_modal_attribute(): void {
+        $input = '<div class="wp-block-button"><a href="https://example.com">Link</a></div>';
+        $block = [ 'attrs' => [ 'pikariOpenInModal' => true ] ];
+
+        $result = $this->instance->filter_button_block( $input, $block );
+
+        $this->assertSame( $input, $result );
+    }
+
+    /**
+     * Test that filter_close_mode_block() leaves content unchanged with no modal action.
+     */
+    public function test_close_mode_block_ignores_missing_action(): void {
+        $input = '<div class="wp-block-group">Content</div>';
+
+        $result = $this->instance->filter_close_mode_block( $input, [] );
+
+        $this->assertSame( $input, $result );
+    }
+
+    /**
+     * Test that filter_close_mode_block() leaves content unchanged for an open action.
+     *
+     * Open mode is handled elsewhere (filter_button_block() here,
+     * GroupModalTriggerSupport for core/group).
+     */
+    public function test_close_mode_block_ignores_open_action(): void {
+        $input = '<div class="wp-block-group">Content</div>';
+        $block = [ 'attrs' => [ 'pikariModalAction' => 'open' ] ];
+
+        $result = $this->instance->filter_close_mode_block( $input, $block );
+
+        $this->assertSame( $input, $result );
+    }
 }

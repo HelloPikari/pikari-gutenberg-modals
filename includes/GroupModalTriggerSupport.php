@@ -2,10 +2,11 @@
 /**
  * Group Modal Trigger Support
  *
- * Handles server-side rendering for modal trigger functionality on core/group blocks.
- *
- * @deprecated Use the Modal Trigger block (pikari-gutenberg-modals/modal-trigger) instead.
- *             This class is retained for backward compatibility with existing content.
+ * Handles server-side rendering for modal trigger functionality on core/group
+ * blocks, reading the unified pikariModal* attributes (see trigger-blocks.js).
+ * This is the current mechanism for group-based modal triggers — the Modal
+ * Trigger wrapper block (pikari-gutenberg-modals/modal-trigger) is being
+ * retired in favor of it.
  *
  * @package PikariGutenbergModals
  */
@@ -78,8 +79,8 @@ class GroupModalTriggerSupport
     /**
      * Filter group block to add modal trigger functionality.
      *
-     * When a group has the pikariModalTrigger attribute enabled and a valid
-     * primary link selected, this method:
+     * When a group has pikariModalAction set to 'open' and a valid primary
+     * link selected, this method:
      * 1. Adds modal trigger CSS class to the group wrapper
      * 2. Finds the primary link anchor and adds Interactivity API attributes
      *
@@ -89,17 +90,18 @@ class GroupModalTriggerSupport
      */
     public function filter_group_block( string $block_content, array $block ): string
     {
-        // Check if modal trigger is enabled
-        $modal_trigger_enabled = $block['attrs']['pikariModalTrigger'] ?? false;
+        // Check if the group is configured to open a modal
+        $is_open_trigger = ( $block['attrs']['pikariModalAction'] ?? '' ) === 'open';
 
-        if ( ! $modal_trigger_enabled ) {
+        if ( ! $is_open_trigger ) {
             // Don't clean up markers here - a parent group may need them.
             // Markers will be cleaned up by the parent group that uses them,
             // or left in place (harmless) if no parent group needs them.
             return $block_content;
         }
 
-        // Check content source: 'inline' for page content, 'link' (default) for URL
+        // Check content source: 'inline' for page content, 'url' for a custom
+        // URL, 'link' (default) for a link detected inside the group.
         $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
         $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
 
@@ -107,8 +109,12 @@ class GroupModalTriggerSupport
             return $this->handle_inline_content( $block_content, $block, $template_part );
         }
 
-        // Get the modal trigger block identifier JSON
-        $primary_link_json = $block['attrs']['pikariModalTriggerBlockId'] ?? '';
+        if ( $content_source === 'url' ) {
+            return $this->handle_direct_url( $block_content, $block, $template_part );
+        }
+
+        // Get the selected primary link identifier JSON
+        $primary_link_json = $block['attrs']['pikariModalPrimaryLinkId'] ?? '';
 
         if ( empty( $primary_link_json ) ) {
             return self::cleanup_post_link_markers( $block_content );
@@ -210,26 +216,17 @@ class GroupModalTriggerSupport
         // Clean up any post-link markers
         $block_content = self::cleanup_post_link_markers( $block_content );
 
-        // Get modal size setting
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
-
         // Build context data
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $modal_id,
         ];
 
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // Now add the modal trigger class, click handler, and accessibility attributes to the group wrapper
         $processor = new \WP_HTML_Tag_Processor( $block_content );
@@ -327,22 +324,13 @@ class GroupModalTriggerSupport
         // Clean up other markers not used as primary link
         $block_content = self::cleanup_post_link_markers( $block_content );
 
-        // Get modal size setting
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
-
         // Build context data
-        $context = [
+        $base = [
             'postId'  => $post_id,
             'modalId' => 'post-' . $post_id,
         ];
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // Add group wrapper attributes (same as URL-based)
         $processor = new \WP_HTML_Tag_Processor( $block_content );
@@ -389,22 +377,14 @@ class GroupModalTriggerSupport
         // Clean up any post-link markers
         $block_content = self::cleanup_post_link_markers( $block_content );
 
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
-
         // Build context data for inline content
-        $context = [
+        $base = [
             'contentSource' => 'inline',
             'inlineAnchor'  => $inline_anchor,
             'modalId'       => 'inline-' . $inline_anchor,
         ];
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // Add group wrapper attributes
         $processor = new \WP_HTML_Tag_Processor( $block_content );
@@ -416,6 +396,86 @@ class GroupModalTriggerSupport
                 wp_json_encode( $context )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'aria-haspopup', 'dialog' );
+            $processor->set_attribute( 'aria-expanded', 'false' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            $processor->set_attribute( 'role', 'button' );
+            $processor->set_attribute( 'tabindex', '0' );
+            $processor->set_attribute( 'aria-label', __( 'Open modal dialog', 'pikari-gutenberg-modals' ) );
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Handle group trigger with a direct/custom URL content source.
+     *
+     * Unlike handle_url_based_link(), this does not search the group's inner
+     * blocks for a matching anchor — the group has no link of its own to
+     * find, the URL is typed directly into the panel. The whole group
+     * becomes the trigger, mirroring handle_inline_content().
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @param string $template_part Template part slug (empty for default 'modal').
+     * @return string Modified block content.
+     */
+    private function handle_direct_url( string $block_content, array $block, string $template_part = '' ): string
+    {
+        $target_url = esc_url_raw( $block['attrs']['pikariModalDirectUrl'] ?? '' );
+
+        if ( empty( $target_url ) ) {
+            return self::cleanup_post_link_markers( $block_content );
+        }
+
+        // Mark that we have modal triggers on this page
+        $slug = ! empty( $template_part ) ? $template_part : 'modal';
+        BlockSupport::set_has_modal_triggers( $slug );
+
+        // Clean up any post-link markers
+        $block_content = self::cleanup_post_link_markers( $block_content );
+
+        // Determine content type and ID
+        $content_type = 'url';
+        $content_id   = $target_url;
+
+        // Check if URL is internal WordPress content
+        $post_id = url_to_postid( $target_url );
+        if ( $post_id > 0 ) {
+            $post = get_post( $post_id );
+            if ( $post ) {
+                $content_type = $post->post_type;
+                $content_id   = (string) $post_id;
+
+                // Register for speculative loading
+                SpeculativeLoading::register_modal_post_id( $post_id );
+            }
+        }
+
+        // Build context data
+        $base = [
+            'postId'  => $content_id,
+            'modalId' => $content_type . '-' . $content_id,
+        ];
+
+        if ( $content_type === 'url' ) {
+            $base['contentSource'] = 'url';
+        }
+
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
+
+        // Add group wrapper attributes
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+        if ( $processor->next_tag() ) {
+            $processor->add_class( 'has-pikari-modal-trigger' );
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute(
+                'data-wp-context',
+                wp_json_encode( $context )
+            );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
+            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );

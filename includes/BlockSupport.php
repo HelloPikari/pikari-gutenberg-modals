@@ -41,6 +41,13 @@ class BlockSupport
         // Add filter for button blocks with modal attribute
         add_filter('render_block_core/button', [$this, 'filter_button_block'], 10, 2);
 
+        // Add close-mode handling for every block that can carry a modal action.
+        // Open-mode handling stays block-specific (filter_button_block() here,
+        // GroupModalTriggerSupport for core/group); close mode is generic.
+        foreach ( $this->get_trigger_blocks() as $block_name ) {
+            add_filter( "render_block_{$block_name}", [ $this, 'filter_close_mode_block' ], 10, 2 );
+        }
+
         // Add single modal container to footer (only renders if triggers were found)
         add_action('wp_footer', [$this, 'render_single_modal_container'], 999);
     }
@@ -90,6 +97,22 @@ class BlockSupport
     public function get_supported_blocks_for_js(): array
     {
         return $this->supported_blocks;
+    }
+
+    /**
+     * Blocks that can carry a modal action.
+     *
+     * core/image is excluded deliberately — core's own lightbox attaches a
+     * competing click handler to it via render_block_core/image.
+     *
+     * @return string[] Block names.
+     */
+    public function get_trigger_blocks(): array
+    {
+        return apply_filters(
+            'pikari_gutenberg_modals_trigger_blocks',
+            [ 'core/group', 'core/button' ]
+        );
     }
 
     /**
@@ -192,9 +215,9 @@ class BlockSupport
     /**
      * Filter button block to add modal trigger functionality.
      *
-     * When a button has the pikariOpenInModal attribute set to true,
-     * this method transforms the button's anchor tag to work with the
-     * Interactivity API modal system.
+     * When a button has pikariModalAction set to 'open', this method
+     * transforms the button's anchor tag to work with the Interactivity
+     * API modal system.
      *
      * @param string $block_content The block content HTML.
      * @param array  $block         The block data array.
@@ -202,14 +225,15 @@ class BlockSupport
      */
     public function filter_button_block( string $block_content, array $block ): string
     {
-        // Check if modal is enabled for this button
-        $open_in_modal = $block['attrs']['pikariOpenInModal'] ?? false;
+        // Check if the button is configured to open a modal
+        $open_in_modal = ( $block['attrs']['pikariModalAction'] ?? '' ) === 'open';
 
         if ( ! $open_in_modal ) {
             return $block_content;
         }
 
-        // Check content source: 'inline' for page content, 'link' (default) for URL
+        // Check content source: 'inline' for page content, 'url' for a custom
+        // URL, 'link' (default) for the button's own href.
         $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
         $inline_anchor  = $block['attrs']['pikariModalInlineAnchor'] ?? '';
         $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
@@ -218,14 +242,20 @@ class BlockSupport
             return $this->filter_button_block_inline( $block_content, $block, $inline_anchor, $template_part );
         }
 
-        // Get the URL - first try block attributes, then extract from HTML
-        $url = $block['attrs']['url'] ?? '';
+        if ( $content_source === 'url' ) {
+            // Custom URL: the button's own href stays untouched, the modal
+            // content is fetched from the URL typed into the panel instead.
+            $url = esc_url_raw( $block['attrs']['pikariModalDirectUrl'] ?? '' );
+        } else {
+            // Detected link (default): the button's own URL is its link.
+            $url = $block['attrs']['url'] ?? '';
 
-        // If URL not in attributes, extract from the anchor href
-        if ( empty( $url ) ) {
-            $processor = new \WP_HTML_Tag_Processor( $block_content );
-            if ( $processor->next_tag( 'a' ) ) {
-                $url = $processor->get_attribute( 'href' ) ?? '';
+            // If URL not in attributes, extract from the anchor href
+            if ( empty( $url ) ) {
+                $processor = new \WP_HTML_Tag_Processor( $block_content );
+                if ( $processor->next_tag( 'a' ) ) {
+                    $url = $processor->get_attribute( 'href' ) ?? '';
+                }
             }
         }
 
@@ -254,9 +284,6 @@ class BlockSupport
             }
         }
 
-        // Get modal size setting
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
-
         // Generate unique trigger ID
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
@@ -264,22 +291,16 @@ class BlockSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
         // Build context data
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $content_type . '-' . $content_id,
         ];
 
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // Find the anchor tag (button link)
         if ( $processor->next_tag( 'a' ) ) {
@@ -323,23 +344,16 @@ class BlockSupport
         $slug = ! empty( $template_part ) ? $template_part : 'modal';
         self::set_has_modal_triggers( $slug );
 
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
         // Build context data for inline content
-        $context = [
+        $base = [
             'contentSource' => 'inline',
             'inlineAnchor'  => $inline_anchor,
             'modalId'       => 'inline-' . $inline_anchor,
         ];
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
@@ -357,6 +371,56 @@ class BlockSupport
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->set_attribute( 'href', '#' . $inline_anchor );
             $processor->add_class( 'has-pikari-modal' );
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Apply close-mode handling to a trigger block.
+     *
+     * Runs for every block name returned by get_trigger_blocks(). Open-mode
+     * handling stays block-specific (filter_button_block() here,
+     * GroupModalTriggerSupport for core/group); close mode needs no
+     * block-specific knowledge, so it is shared across all of them.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @return string Modified block content.
+     */
+    public function filter_close_mode_block( string $block_content, array $block ): string
+    {
+        if ( ( $block['attrs']['pikariModalAction'] ?? '' ) !== 'close' ) {
+            return $block_content;
+        }
+
+        return $this->filter_close_trigger( $block_content );
+    }
+
+    /**
+     * Turn a block into a close trigger.
+     *
+     * No data-wp-interactive is added: close triggers live inside modal
+     * template parts, where the container already provides the namespace.
+     * Adding it here creates a nested Interactivity island and breaks events.
+     *
+     * @param string $block_content Rendered block HTML.
+     * @return string Decorated HTML.
+     */
+    private function filter_close_trigger( string $block_content ): string
+    {
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        if ( $processor->next_tag() ) {
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+            $processor->set_attribute( 'role', 'button' );
+            $processor->set_attribute( 'tabindex', '0' );
+            $processor->set_attribute(
+                'aria-label',
+                esc_attr__( 'Close dialog', 'pikari-gutenberg-modals' )
+            );
+            $processor->add_class( 'modal-close-trigger' );
         }
 
         return $processor->get_updated_html();
