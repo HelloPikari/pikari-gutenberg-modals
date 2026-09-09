@@ -1,5 +1,4 @@
 <?php
-
 /**
  * Interactivity API context for modal triggers.
  *
