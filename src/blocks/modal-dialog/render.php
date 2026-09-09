@@ -75,12 +75,20 @@ if ( $has_bg_image ) {
 }
 
 // --- Dialog container ---
-$wrapper_attrs = get_block_wrapper_attributes(
-    [
-        'class'             => 'modal-content',
-        'data-wp-on--click' => 'actions.stopPropagation',
-    ]
-);
+// The declared placement travels as `data-default-placement`. The store
+// resolves it against any trigger override and writes the winner to
+// `data-placement` on the overlay, which is what the CSS reads.
+$wrapper_args = [
+    'class'             => 'modal-content',
+    'data-wp-on--click' => 'actions.stopPropagation',
+];
+
+$placement = $attributes['placement'] ?? '';
+if ( in_array( $placement, [ 'left', 'right' ], true ) ) {
+    $wrapper_args['data-default-placement'] = $placement;
+}
+
+$wrapper_attrs = get_block_wrapper_attributes( $wrapper_args );
 
 ?>
 <?php if ( $has_bg_image ) : ?>

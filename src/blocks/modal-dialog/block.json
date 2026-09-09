@@ -28,6 +28,10 @@
 			"type": "boolean",
 			"default": false
 		},
+		"placement": {
+			"type": "string",
+			"default": ""
+		},
 		"style": {
 			"type": "object"
 		}
