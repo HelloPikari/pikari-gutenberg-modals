@@ -25,6 +25,16 @@ import findLinksInBlocks from './find-links-in-blocks';
 import useModalContentBlocks from './use-modal-content-blocks';
 import useModalTemplateParts from './use-modal-template-parts';
 
+// Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes). Read
+// once at module scope, same as the deleted group/button extensions this
+// panel replaces — see their MODAL_SIZE_OPTIONS constants.
+const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
+	{ label: __( 'Default', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( 'Small', 'pikari-gutenberg-modals' ), value: 'small' },
+	{ label: __( 'Large', 'pikari-gutenberg-modals' ), value: 'large' },
+	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
+];
+
 const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
 		const { name, attributes, setAttributes, isSelected, clientId } = props;
@@ -40,6 +50,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 			pikariModalPrimaryLinkId,
 			pikariModalInlineAnchor,
 			pikariModalPlacement,
+			pikariModalSize,
 			pikariModalTemplatePart,
 			pikariModalAccessibleLabel,
 		} = attributes;
@@ -59,6 +70,29 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 		const contentSource = pikariModalContentSource || 'link';
 		const isLinkSource = name === 'core/group' && contentSource === 'link';
 		const isInlineSource = contentSource === 'inline';
+
+		// A core/button rendered as a <button> (tagName: 'button') has no
+		// href of its own, so "Detected link" — the button's own URL —
+		// has nothing to detect. See includes/BlockSupport.php's
+		// filter_button_block(): with no url attribute and no <a> in the
+		// markup to fall back to, the trigger silently does nothing.
+		const isButtonWithoutLink =
+			name === 'core/button' && attributes.tagName === 'button';
+
+		const contentSourceOptions = [
+			! isButtonWithoutLink && {
+				label: __( 'Detected link', 'pikari-gutenberg-modals' ),
+				value: 'link',
+			},
+			{
+				label: __( 'Custom URL', 'pikari-gutenberg-modals' ),
+				value: 'url',
+			},
+			{
+				label: __( 'Inline content', 'pikari-gutenberg-modals' ),
+				value: 'inline',
+			},
+		].filter( Boolean );
 
 		// Detected-link picker (core/group only): find links in the group's
 		// inner blocks. A core/button's own URL is its detected link, so it
@@ -146,6 +180,17 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 			setAttributes,
 		] );
 
+		// A core/button with no href (tagName: 'button') can't use
+		// "Detected link" — the option is hidden from the Content select
+		// above, but the stored attribute still defaults to 'link'. Move it
+		// off that dead value automatically rather than leaving the trigger
+		// silently inert.
+		useEffect( () => {
+			if ( isOpen && isButtonWithoutLink && contentSource === 'link' ) {
+				setAttributes( { pikariModalContentSource: 'url' } );
+			}
+		}, [ isOpen, isButtonWithoutLink, contentSource, setAttributes ] );
+
 		return (
 			<>
 				<BlockEdit { ...props } />
@@ -187,20 +232,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 										__nextHasNoMarginBottom
 										label={ __( 'Content', 'pikari-gutenberg-modals' ) }
 										value={ contentSource }
-										options={ [
-											{
-												label: __( 'Detected link', 'pikari-gutenberg-modals' ),
-												value: 'link',
-											},
-											{
-												label: __( 'Custom URL', 'pikari-gutenberg-modals' ),
-												value: 'url',
-											},
-											{
-												label: __( 'Inline content', 'pikari-gutenberg-modals' ),
-												value: 'inline',
-											},
-										] }
+										options={ contentSourceOptions }
 										onChange={ ( value ) =>
 											setAttributes( { pikariModalContentSource: value } )
 										}
@@ -305,6 +337,17 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 										}
 									/>
 
+									<SelectControl
+										__next40pxDefaultSize
+										__nextHasNoMarginBottom
+										label={ __( 'Size', 'pikari-gutenberg-modals' ) }
+										value={ pikariModalSize }
+										options={ MODAL_SIZE_OPTIONS }
+										onChange={ ( value ) =>
+											setAttributes( { pikariModalSize: value } )
+										}
+									/>
+
 									{ templateParts.hasMultiple && (
 										<SelectControl
 											__next40pxDefaultSize
@@ -318,19 +361,21 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 										/>
 									) }
 
-									<TextControl
-										__next40pxDefaultSize
-										__nextHasNoMarginBottom
-										label={ __( 'Accessible label', 'pikari-gutenberg-modals' ) }
-										value={ pikariModalAccessibleLabel }
-										onChange={ ( value ) =>
-											setAttributes( { pikariModalAccessibleLabel: value } )
-										}
-										help={ __(
-											'Overrides the label announced to screen readers.',
-											'pikari-gutenberg-modals'
-										) }
-									/>
+									{ ! isLinkSource && (
+										<TextControl
+											__next40pxDefaultSize
+											__nextHasNoMarginBottom
+											label={ __( 'Accessible label', 'pikari-gutenberg-modals' ) }
+											value={ pikariModalAccessibleLabel }
+											onChange={ ( value ) =>
+												setAttributes( { pikariModalAccessibleLabel: value } )
+											}
+											help={ __(
+												'Overrides the label announced to screen readers.',
+												'pikari-gutenberg-modals'
+											) }
+										/>
+									) }
 								</>
 							) }
 						</PanelBody>
