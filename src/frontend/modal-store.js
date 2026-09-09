@@ -19,6 +19,7 @@ import {
 import { loadBlockStyles } from './block-style-loader';
 import { isVideoEmbedUrl } from './video-providers';
 import { resolveGeometry } from './modal-geometry';
+import { shouldDeferToElement } from './trigger-click';
 
 // Prefetch delay in milliseconds - filters out accidental mouse movements
 const PREFETCH_DELAY_MS = 200;
@@ -449,20 +450,9 @@ const { state, actions } = store( 'pikari-modal', {
 		 * Supports both role="group" (detected link) and role="button" (URL/inline) wrappers.
 		 */
 		handleGroupTriggerClick: withSyncEvent( ( event ) => {
-			const clickedElement = event.target;
-
-			// Check if clicked element is an interactive element that should NOT trigger modal
-			const interactiveSelector =
-				'a:not(.is-primary-link), button, input, select, textarea, [role="button"]';
-			const clickedInteractive = clickedElement.closest( interactiveSelector );
-
-			// If clicked on a non-primary interactive element (not the trigger wrapper itself),
-			// let it handle the event normally
-			if (
-				clickedInteractive &&
-				clickedInteractive !== event.currentTarget &&
-				! clickedInteractive.classList.contains( 'is-primary-link' )
-			) {
+			// Genuine interactive content inside the trigger keeps working;
+			// see trigger-click.js for why an href-less anchor is not that.
+			if ( shouldDeferToElement( event.target, event.currentTarget ) ) {
 				return; // Don't prevent default, let the element work normally
 			}
 
