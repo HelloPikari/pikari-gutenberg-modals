@@ -177,37 +177,42 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 					panelId={ clientId }
 					{ ...colorGradientSettings }
 				/>
-				<RangeControl
-					__nextHasNoMarginBottom
-					__next40pxDefaultSize
-					label={ __(
-						'Overlay opacity',
-						'pikari-gutenberg-modals'
-					) }
-					value={ overlayOpacity }
-					onChange={ ( value ) =>
-						setAttributes( {
-							overlayOpacity:
-								value === undefined ? 100 : value,
-						} )
-					}
-					min={ 0 }
-					max={ 100 }
-					step={ 5 }
-					help={ __(
-						'Set independently of the overlay colour, so a theme that disables custom colours can still produce a translucent backdrop.',
-						'pikari-gutenberg-modals'
-					) }
-				/>
 			</InspectorControls>
 
 			<InspectorControls>
 				<PanelBody
-					title={ __(
-						'Overlay image',
-						'pikari-gutenberg-modals'
-					) }
+					title={ __( 'Overlay', 'pikari-gutenberg-modals' ) }
 				>
+					{ /*
+					 * Opacity lives here rather than in the colour group: that
+					 * group renders inside core's colour ToolsPanel, whose
+					 * narrow swatch-oriented column squashes a range control
+					 * down to a stub track beside an oversized number input.
+					 *
+					 * It is a separate attribute from the colour so a theme
+					 * with settings.color.custom disabled — where every
+					 * available swatch is opaque — can still produce a
+					 * translucent backdrop.
+					 */ }
+					<RangeControl
+						__nextHasNoMarginBottom
+						__next40pxDefaultSize
+						label={ __(
+							'Opacity',
+							'pikari-gutenberg-modals'
+						) }
+						value={ overlayOpacity }
+						onChange={ ( value ) =>
+							setAttributes( {
+								overlayOpacity:
+									value === undefined ? 100 : value,
+							} )
+						}
+						min={ 0 }
+						max={ 100 }
+						step={ 5 }
+					/>
+
 					<MediaUploadCheck>
 						<MediaUpload
 							onSelect={ ( media ) => {
