@@ -177,6 +177,7 @@ class BlockSupportTest extends TestCase {
     public function test_get_trigger_blocks_applies_filter(): void {
         \Brain\Monkey\Filters\expectApplied( 'pikari_gutenberg_modals_trigger_blocks' )
             ->once()
+            ->with( [ 'core/group', 'core/button' ] )
             ->andReturn( [ 'core/group', 'core/button', 'core/quote' ] );
 
         $this->assertSame(
@@ -218,6 +219,29 @@ class BlockSupportTest extends TestCase {
     public function test_filter_button_block_ignores_legacy_open_in_modal_attribute(): void {
         $input = '<div class="wp-block-button"><a href="https://example.com">Link</a></div>';
         $block = [ 'attrs' => [ 'pikariOpenInModal' => true ] ];
+
+        $result = $this->instance->filter_button_block( $input, $block );
+
+        $this->assertSame( $input, $result );
+    }
+
+    /**
+     * Test that filter_button_block() bails out for an empty direct URL.
+     *
+     * Covers the 'url' content-source branch's validation guard — the only
+     * part of that branch reachable without WP_HTML_Tag_Processor, which
+     * does not exist in this test environment.
+     */
+    public function test_filter_button_block_ignores_empty_direct_url(): void {
+        Functions\when( 'esc_url_raw' )->returnArg();
+
+        $input = '<div class="wp-block-button"><a>Link</a></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'url',
+            ],
+        ];
 
         $result = $this->instance->filter_button_block( $input, $block );
 

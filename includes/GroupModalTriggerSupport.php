@@ -386,6 +386,13 @@ class GroupModalTriggerSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
+        // An author-supplied label wins over the generic default.
+        $aria_label   = __( 'Open modal dialog', 'pikari-gutenberg-modals' );
+        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+        if ( '' !== $custom_label ) {
+            $aria_label = $custom_label;
+        }
+
         // Add group wrapper attributes
         $processor = new \WP_HTML_Tag_Processor( $block_content );
         if ( $processor->next_tag() ) {
@@ -401,7 +408,7 @@ class GroupModalTriggerSupport
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->set_attribute( 'role', 'button' );
             $processor->set_attribute( 'tabindex', '0' );
-            $processor->set_attribute( 'aria-label', __( 'Open modal dialog', 'pikari-gutenberg-modals' ) );
+            $processor->set_attribute( 'aria-label', $aria_label );
         }
 
         return $processor->get_updated_html();
@@ -424,7 +431,10 @@ class GroupModalTriggerSupport
     {
         $target_url = esc_url_raw( $block['attrs']['pikariModalDirectUrl'] ?? '' );
 
-        if ( empty( $target_url ) ) {
+        // Validated against the domain allow/block lists — this is
+        // author-typed input, unlike the links matched in
+        // handle_url_based_link(), which already exist in page content.
+        if ( ! ModalHandler::validate_url( $target_url ) ) {
             return self::cleanup_post_link_markers( $block_content );
         }
 
@@ -438,6 +448,7 @@ class GroupModalTriggerSupport
         // Determine content type and ID
         $content_type = 'url';
         $content_id   = $target_url;
+        $aria_label   = __( 'Open modal dialog', 'pikari-gutenberg-modals' );
 
         // Check if URL is internal WordPress content
         $post_id = url_to_postid( $target_url );
@@ -449,7 +460,20 @@ class GroupModalTriggerSupport
 
                 // Register for speculative loading
                 SpeculativeLoading::register_modal_post_id( $post_id );
+
+                $post_title = get_the_title( $post );
+                if ( ! empty( $post_title ) ) {
+                    /* translators: %s: content title */
+                    $aria_label = sprintf( __( 'Open %s in modal dialog', 'pikari-gutenberg-modals' ), $post_title );
+                }
             }
+        }
+
+        // An author-supplied label wins over both the generic string and
+        // the title derived from an internal URL above.
+        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+        if ( '' !== $custom_label ) {
+            $aria_label = $custom_label;
         }
 
         // Build context data
@@ -474,6 +498,7 @@ class GroupModalTriggerSupport
                 wp_json_encode( $context )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
             $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
             $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
@@ -481,7 +506,7 @@ class GroupModalTriggerSupport
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->set_attribute( 'role', 'button' );
             $processor->set_attribute( 'tabindex', '0' );
-            $processor->set_attribute( 'aria-label', __( 'Open modal dialog', 'pikari-gutenberg-modals' ) );
+            $processor->set_attribute( 'aria-label', $aria_label );
         }
 
         return $processor->get_updated_html();

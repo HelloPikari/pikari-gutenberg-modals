@@ -245,7 +245,13 @@ class BlockSupport
         if ( $content_source === 'url' ) {
             // Custom URL: the button's own href stays untouched, the modal
             // content is fetched from the URL typed into the panel instead.
+            // Validated against the domain allow/block lists — this is
+            // author-typed input, unlike the button's own link below.
             $url = esc_url_raw( $block['attrs']['pikariModalDirectUrl'] ?? '' );
+
+            if ( ! ModalHandler::validate_url( $url ) ) {
+                return $block_content;
+            }
         } else {
             // Detected link (default): the button's own URL is its link.
             $url = $block['attrs']['url'] ?? '';
@@ -302,8 +308,20 @@ class BlockSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        // Find the anchor tag (button link)
-        if ( $processor->next_tag( 'a' ) ) {
+        // Find the button's own interactive element. core/button renders
+        // either an <a> (tagName: 'a', the default) or a real <button>
+        // (tagName: 'button') — next_tag() with no name matches whichever
+        // is there instead of assuming <a>.
+        if ( $processor->next_tag() ) {
+            // A <button> is natively focusable and keyboard-operable
+            // without an href — only an <a> needs one. The Modal Button
+            // variation ships no url of its own, so without this an
+            // <a>-shaped button with no link would be unfocusable and
+            // mouse-only.
+            if ( 'A' === $processor->get_tag() && ! $processor->get_attribute( 'href' ) ) {
+                $processor->set_attribute( 'href', $url );
+            }
+
             $processor->set_attribute( 'id', $trigger_id );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
@@ -394,33 +412,62 @@ class BlockSupport
             return $block_content;
         }
 
-        return $this->filter_close_trigger( $block_content );
+        return $this->filter_close_trigger( $block_content, $block['blockName'] ?? '' );
     }
 
     /**
      * Turn a block into a close trigger.
+     *
+     * Most trigger blocks close on their own root element (core/group's
+     * wrapper div). A core/button's root is a wrapper div around its real
+     * link or button, so decorating the wrapper itself would put a second
+     * focusable, interactive element inside a role="button" element — a
+     * nested-interactive ARIA violation — and would let the generic
+     * aria-label below win over the button's own visible text on the
+     * wrong element. So for core/button this descends into that inner
+     * element instead, mirroring the targeted-close behavior the Modal
+     * Trigger block used for a specific child element: an already-native
+     * <button> needs no role/tabindex/aria-label override (its own type
+     * and visible text already make it a correct close control), and an
+     * <a> has its href removed first so it cannot also navigate.
      *
      * No data-wp-interactive is added: close triggers live inside modal
      * template parts, where the container already provides the namespace.
      * Adding it here creates a nested Interactivity island and breaks events.
      *
      * @param string $block_content Rendered block HTML.
+     * @param string $block_name    Block name (e.g. 'core/group'), used to
+     *                              find the right element to decorate.
      * @return string Decorated HTML.
      */
-    private function filter_close_trigger( string $block_content ): string
+    private function filter_close_trigger( string $block_content, string $block_name = '' ): string
     {
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
-        if ( $processor->next_tag() ) {
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
-            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+        if ( ! $processor->next_tag() ) {
+            return $processor->get_updated_html();
+        }
+
+        if ( 'core/button' === $block_name && ! $processor->next_tag() ) {
+            // No inner link/button found; leave the wrapper unmodified.
+            return $processor->get_updated_html();
+        }
+
+        $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
+        $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+        $processor->add_class( 'modal-close-trigger' );
+
+        if ( 'BUTTON' !== $processor->get_tag() ) {
+            if ( 'A' === $processor->get_tag() ) {
+                $processor->remove_attribute( 'href' );
+            }
+
             $processor->set_attribute( 'role', 'button' );
             $processor->set_attribute( 'tabindex', '0' );
             $processor->set_attribute(
                 'aria-label',
-                esc_attr__( 'Close dialog', 'pikari-gutenberg-modals' )
+                __( 'Close dialog', 'pikari-gutenberg-modals' )
             );
-            $processor->add_class( 'modal-close-trigger' );
         }
 
         return $processor->get_updated_html();
