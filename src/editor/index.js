@@ -5,8 +5,8 @@ import { unregisterBlockType } from '@wordpress/blocks';
 import domReady from '@wordpress/dom-ready';
 import { toggleFormat, applyFormat, removeFormat } from '@wordpress/rich-text';
 import './modal-format';
-import './button-modal-extension';
-import './group-modal-trigger-extension';
+import './modal-trigger-attributes';
+import './modal-trigger-panel';
 import './style.scss';
 
 /**
