@@ -104,24 +104,56 @@ was introduced by `baf78c1`, which is already on `main`, and
 changes. The VoiceOver/NVDA decision is real, but it is not scoped to #441 and
 should not block this merge.
 
-## Not verified — needs a human at a real browser
+## Follow-up run with Playwright (2026-09-09)
 
-1. **Focus moving into the dialog on open.** The code is right: manually executing
-   exactly what `focusFirstElement()` does moved focus inside the dialog
-   (`insideDialog: true`). But it is wrapped in `requestAnimationFrame`, which never
-   fires in a backgrounded tab (`rafFiredInHiddenTab: false`), so the real behaviour
-   was never observed. Open a panel in a foreground window and confirm focus lands on
-   the close trigger.
-2. **The slide-in animation actually animating.** Same cause — the timeline is frozen
-   at 0 in a hidden tab. End state is correct; the motion between was never seen.
-3. **Narrow-viewport behaviour.** `resize_window` reported success twice but the
-   detached tab never relayouted (`innerWidth` stuck at 1554, `outerWidth: 0`). The
-   breakpoints are asserted from shipped CSS above; the rendered result at 360 / 460 /
-   640px wide has not been seen.
-4. **Overlay controls and overlay opacity under a theme with
-   `settings.color.custom: false`.** This is an editor-side check and needs a logged-in
-   Site Editor session. I cannot enter credentials, so this was not attempted. It was
-   also not browser-verified in the previous session, so it remains genuinely open.
+Three of the four items below were originally handed off as "needs a human". That was
+wrong: the Playwright MCP driver runs a real foreground browser
+(`visibility: visible`, `hasFocus: true`, `requestAnimationFrame` fires,
+`setViewportSize` relayouts), which removes every limitation that blocked them. They
+were re-run and all pass.
+
+**Focus enters the dialog on open — PASS.** Clicking a trigger opens the modal and
+`document.activeElement` lands inside `.modal-content` (`focusInsideDialog: true`).
+
+**Slide animation — PASS.** Traced per frame at a 1200px viewport, right panel:
+`x=1200 op=0` → `x=995 op=0.48` @98ms → `x=845 op=0.84` @198ms → `x=780 op=1` @298ms,
+then held. 1200 − 420 = 780. Real ~300ms slide with fade.
+
+**Narrow-viewport breakpoints — PASS**, measured live:
+
+| Viewport | Panel         | Width         | Result                         |
+| -------- | ------------- | ------------- | ------------------------------ |
+| 500      | default (420) | 420, left 80  | holds above the 468 breakpoint |
+| 440      | default (420) | 440, left 0   | full width below 468           |
+| 440      | narrow (320)  | 320, left 120 | holds above the 368 breakpoint |
+| 350      | narrow (320)  | 350, left 0   | full width below 368           |
+| 440      | wide (600)    | 440, left 0   | full width below 648           |
+
+**Still open — overlay controls under `settings.color.custom: false`.** Editor-side,
+needs a logged-in Site Editor session, and credentials cannot be entered. Genuinely
+unverified in this session and the previous one.
+
+## Defect found: a button inside a Modal Trigger is dead
+
+Not a placement bug — it predates this branch — but found while running the above and
+serious enough to record here.
+
+`handleGroupTriggerClick` ignores clicks matching
+`a:not(.is-primary-link), button, input, select, textarea, [role="button"]` so that
+genuine nested links keep working. `render.php` only adds `is-primary-link` in the
+**detected-link** content source. In `url` and `inline` modes it decorates the wrapper
+and marks no inner anchor at all.
+
+A core Button block renders `<a class="wp-block-button__link">` with **no `href`** when
+no link is set. It therefore matches the ignore list, the handler bails, and because the
+anchor has no `href` it does not navigate either. The button is inert.
+
+Confirmed in Playwright: clicking the button returned `is-open: false`; adding
+`is-primary-link` to that same anchor and clicking again returned `is-open: true`.
+
+The anchor has `href: null`. An anchor with no `href` is not a link — it is not
+focusable and has no navigation to preserve — so the ignore list has nothing to protect
+in this case. That is the seam for a fix, rather than `pointer-events: none`.
 
 ## Environment left in place
 
