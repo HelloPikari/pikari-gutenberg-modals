@@ -13,6 +13,7 @@
 ## Global Constraints
 
 - **Branch base:** this plan assumes `feature/modal-placement` has merged to `main` and the three `feature/simplify-modal-dialog-ux` commits have been rebased on top. Do not start Tasks 2–11 until Pikari todo #441 is closed. Work on a new branch `feature/modal-overlay-templates`.
+- **Amended 2026-09-09: also requires `feature/modal-trigger-as-property` merged first.** That branch (see `docs/superpowers/plans/2026-09-09-modal-trigger-as-block-property.md`) deletes the `pikari-gutenberg-modals/modal-trigger` block and the separate `core/button`/`core/group` extensions, replacing them with `pikariModalAction` and related attributes on `core/group` and `core/button` directly, carried by one shared panel (`src/editor/modal-trigger-panel.js`). Tasks 4 and 10 below were amended to assume that architecture is already on `main`. Starting this plan against a `main` that predates that merge will find the old block and extensions still present, and the amended steps will not apply as written.
 - **Task 1 was run ahead of that gate, deliberately.** It writes no production code and touches nothing the placement QA depends on, so it could answer the design's open questions early. It is complete; its findings already changed Tasks 2, 5, and 8.
 - **PHP:** 8.4+ (`composer.json` requires `>=8.4`; the plugin header says `Requires PHP: 8.4`). WordPress Coding Standards, **4 spaces indentation, not tabs**. Enforced by `phpcs.xml`.
 - **JavaScript:** WordPress ESLint config, **tab indentation, not spaces**. Prettier ignores JS. When using Edit, `old_string` must preserve exact tab characters.
@@ -570,14 +571,14 @@ class EditorIntegrationTest extends TestCase
         $allowed = [
             'core/paragraph',
             'pikari-gutenberg-modals/modal-overlay',
-            'pikari-gutenberg-modals/modal-trigger',
+            'core/heading',
         ];
 
         $result = $integration->restrict_modal_template_blocks( $allowed, $context );
 
         $this->assertNotContains( 'pikari-gutenberg-modals/modal-overlay', $result );
         $this->assertContains( 'core/paragraph', $result );
-        $this->assertContains( 'pikari-gutenberg-modals/modal-trigger', $result );
+        $this->assertContains( 'core/heading', $result );
     }
 
     public function test_restrict_modal_template_blocks_leaves_site_editor_untouched(): void
@@ -780,7 +781,7 @@ class ModalPatternsTest extends TestCase
 
         foreach ( $registered as $name => $properties ) {
             $this->assertStringContainsString(
-                '"triggerAction":"close"',
+                '"pikariModalAction":"close"',
                 $properties['content'],
                 $name . ' is missing a close trigger'
             );
@@ -804,6 +805,12 @@ Expected: FAIL — class `Pikari\GutenbergModals\ModalPatterns` not found.
 
 - [ ] **Step 3: Write the pattern files**
 
+> **Amended 2026-09-09.** The close row below originally wrapped a `core/button` in a
+> `pikari-gutenberg-modals/modal-trigger` block set to `{"triggerAction":"close"}`. That
+> block was removed by `feature/modal-trigger-as-property`; a close trigger is now a plain
+> `core/button` carrying `{"pikariModalAction":"close"}` directly, with no wrapper block.
+> This matches `parts/modal.html`'s close row on that branch.
+
 Create `patterns/modal-centered.php`:
 
 ```php
@@ -818,11 +825,9 @@ Create `patterns/modal-centered.php`:
 <!-- wp:pikari-gutenberg-modals/modal-overlay -->
 <div class="wp-block-pikari-gutenberg-modals-modal-overlay"><!-- wp:group {"className":"modal-chrome","style":{"color":{"background":"#ffffff"},"border":{"radius":"20px"},"spacing":{"padding":{"top":"1.5rem","right":"1.5rem","bottom":"1.5rem","left":"1.5rem"}},"shadow":"0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)"},"layout":{"type":"flex","orientation":"vertical"}} -->
 <div class="wp-block-group modal-chrome has-background" style="border-radius:20px;background-color:#ffffff;padding-top:1.5rem;padding-right:1.5rem;padding-bottom:1.5rem;padding-left:1.5rem;box-shadow:0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)"><!-- wp:group {"layout":{"type":"flex","justifyContent":"right"}} -->
-<div class="wp-block-group"><!-- wp:pikari-gutenberg-modals/modal-trigger {"triggerAction":"close"} -->
-<div class="wp-block-pikari-gutenberg-modals-modal-trigger"><!-- wp:button -->
+<div class="wp-block-group"><!-- wp:button {"pikariModalAction":"close"} -->
 <div class="wp-block-button"><a class="wp-block-button__link wp-element-button"><?php echo esc_html__( 'Close', 'pikari-gutenberg-modals' ); ?></a></div>
 <!-- /wp:button --></div>
-<!-- /wp:pikari-gutenberg-modals/modal-trigger --></div>
 <!-- /wp:group -->
 
 <!-- wp:pikari-gutenberg-modals/content-area /--></div>
@@ -1594,7 +1599,7 @@ npm run build
 npm run lint:js && npm run lint:css
 ```
 
-In the post editor, add a Modal Trigger block. The Modal template panel shows a prominent **Create modal template** button only if no modal parts exist; otherwise a `+`. Click it: three patterns render with previews, name it "Booking sidebar", click Create. The select must immediately show "Booking sidebar" as the active value — this is the behaviour the old localized array could not provide, so it is the key check.
+In the post editor, add a core Button block and set its Modal panel's Action to **Open a modal** (the Modal Trigger block this step originally named was removed by `feature/modal-trigger-as-property`; a core Button or Group with the modal action set is the current equivalent — see Task 10). The Modal template panel shows a prominent **Create modal template** button only if no modal parts exist; otherwise a `+`. Click it: three patterns render with previews, name it "Booking sidebar", click Create. The select must immediately show "Booking sidebar" as the active value — this is the behaviour the old localized array could not provide, so it is the key check.
 
 - [ ] **Step 6: Commit**
 
@@ -1857,35 +1862,32 @@ git commit -m "feat: preview the selected modal template part"
 
 ### Task 10: Wire the panel into every trigger surface
 
+> **Amended 2026-09-09.** This task originally touched four call sites: the Modal Trigger
+> block's own `edit.js`, a `core/button` extension, a `core/group` extension, and the
+> inline RichText format. `feature/modal-trigger-as-property` deleted the block and both
+> extensions, replacing them with `pikariModalAction` (and sibling `pikariModal*`)
+> attributes registered directly on `core/group` and `core/button`, surfaced through one
+> shared `editor.BlockEdit` filter in `src/editor/modal-trigger-panel.js` — a single "Modal"
+> panel rendered on both blocks. There are now two trigger surfaces to wire, not four: that
+> shared panel, and the inline format. The panel already contains the same
+> `templateParts.hasMultiple && (…)` `SelectControl` the four old call sites used to have,
+> so the substitution below is the same shape as before — there are just fewer places to
+> make it.
+
 **Files:**
 
-- Modify: `src/blocks/modal-trigger/edit.js` (around line 465)
-- Modify: `src/editor/button-modal-extension.js` (around line 245)
+- Modify: `src/editor/modal-trigger-panel.js` (around line 308 — the `templateParts.hasMultiple && ( … )` `SelectControl`, labelled "Modal template")
 - Modify: `src/editor/modal-trigger-edit.js` (around line 489)
 - Delete: `src/editor/use-modal-template-parts.js`
-- Leave alone: `src/editor/group-modal-trigger-extension.js`
 
 **Interfaces:**
 
 - Consumes: `<ModalTemplatePanel>` (Tasks 6–9)
 - Produces: nothing
 
-- [ ] **Step 1: Replace the selector in the Modal Trigger block**
+- [ ] **Step 1: Replace the selector in the shared Modal panel**
 
-In `src/blocks/modal-trigger/edit.js`, remove the `useModalTemplateParts` import and its `const templateParts = useModalTemplateParts();` line. Replace the entire `{ templateParts.hasMultiple && ( … ) }` block and any adjacent `isValidSelection` fallback with:
-
-```jsx
-<ModalTemplatePanel
-	value={templatePart}
-	onChange={(next) => setAttributes({ templatePart: next })}
-/>
-```
-
-Add `import ModalTemplatePanel from '../../editor/modal-template-panel';`.
-
-- [ ] **Step 2: Replace the selector in the button extension**
-
-In `src/editor/button-modal-extension.js`, same substitution, with the attribute name `pikariModalTemplatePart`:
+In `src/editor/modal-trigger-panel.js`, remove the `useModalTemplateParts` import and its `const templateParts = useModalTemplateParts();` line. Replace the entire `{ templateParts.hasMultiple && ( … ) }` block with:
 
 ```jsx
 <ModalTemplatePanel
@@ -1898,9 +1900,9 @@ In `src/editor/button-modal-extension.js`, same substitution, with the attribute
 />
 ```
 
-Add `import ModalTemplatePanel from './modal-template-panel';` and remove the `useModalTemplateParts` import and call.
+Add `import ModalTemplatePanel from './modal-template-panel';`. This one substitution covers both `core/group` and `core/button` — the panel component already renders for both (see `isTriggerBlock()` in `src/editor/trigger-blocks.js`); there is no separate button call site to repeat it at.
 
-- [ ] **Step 3: Replace the selector in the inline format**
+- [ ] **Step 2: Replace the selector in the inline format**
 
 In `src/editor/modal-trigger-edit.js`, the UI is a `Popover`, so create and preview are suppressed:
 
@@ -1915,15 +1917,15 @@ In `src/editor/modal-trigger-edit.js`, the UI is a `Popover`, so create and prev
 
 Add `import ModalTemplatePanel from './modal-template-panel';` and remove the `useModalTemplateParts` import and call.
 
-- [ ] **Step 4: Point the group extension at the localized array directly**
+- [ ] **Step 3: Delete the superseded hook**
 
-`src/editor/group-modal-trigger-extension.js` is deprecated and does not get the new panel, but it is the last consumer of `use-modal-template-parts.js`. Inline the small amount it needs so the old hook can be deleted: replace `const templateParts = useModalTemplateParts();` with a local `useMemo` over `window.pikariGutenbergModals?.modalTemplateParts` producing the same `{ options, hasMultiple, isValidSelection }` shape, then delete `src/editor/use-modal-template-parts.js`.
+Both remaining consumers of `use-modal-template-parts.js` were migrated in Steps 1–2, and no other file imports it (`group-modal-trigger-extension.js`, its last other consumer, no longer exists).
 
 ```bash
 git rm src/editor/use-modal-template-parts.js
 ```
 
-- [ ] **Step 5: Build, lint, test**
+- [ ] **Step 4: Build, lint, test**
 
 ```bash
 npm run build
@@ -1934,16 +1936,15 @@ npm test
 
 Expected: all green. `npm test` must still pass — `find-links-in-blocks.test.js` and `modal-template-parts.test.js` are unaffected.
 
-- [ ] **Step 6: Verify all four surfaces in the browser**
+- [ ] **Step 5: Verify both surfaces in the browser**
 
-For each of: Modal Trigger block, a core Button with the modal toggle on, an inline modal trigger (Cmd/Ctrl+M), and a group modal trigger —
+For each of: a core Group set to open a modal, a core Button set to open a modal, and the inline modal trigger (Cmd/Ctrl+M) —
 
 - The Modal template panel appears **even when only the default part exists** (the old `hasMultiple` gate is gone).
 - Selecting a non-default template and viewing the page opens that template's modal.
 - The inline format's popover shows select + Edit only, with no create button and no preview.
-- The group block still works with its old select.
 
-- [ ] **Step 7: Commit**
+- [ ] **Step 6: Commit**
 
 ```bash
 git add -A
