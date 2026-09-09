@@ -2,8 +2,10 @@
 
 **Date:** 2026-09-07
 **Status:** Approved, not yet implemented
-**Depends on:** `feature/modal-placement` (blocked on browser QA, Pikari todo #441); also,
-as of the 2026-09-09 amendments below, `feature/modal-trigger-as-property`
+**Depends on:** `feature/modal-placement` — merged to `main` (PR #112, `1db0e1f`); Pikari
+todo #441 is closed. `feature/simplify-modal-dialog-ux` also merged (PR #113, `460a9c2`).
+As of the 2026-09-09 amendments below, this plan additionally depends on
+`feature/modal-trigger-as-property`, which has not yet merged.
 
 ## Problem
 
@@ -282,14 +284,16 @@ Editor. The panel degrades to select-only — no create, no edit, no preview —
 retained localized array. Detect via a localized `isBlockTheme` flag; the panel must degrade,
 not error.
 
-**Amended 2026-09-09.** The two bullets below originally described three surfaces: the
-inline RichText format, plus a `core/group` extension deliberately left behind the Modal
-Trigger block with its own old select, pending its removal as separate work.
-`feature/modal-trigger-as-property` did that removal — the block and the `core/group` and
-`core/button` extensions are gone, replaced by attributes on `core/group` and `core/button`
-directly, both served by one shared "Modal" panel (`src/editor/modal-trigger-panel.js`).
-There is no `core/group`-specific degraded mode left to describe: the only surface that
-still degrades relative to the full experience is the inline format.
+**Amended 2026-09-09.** The two bullets below originally named three surfaces: the inline
+RichText format; a `core/group` extension — kept its own old select, never given the new
+panel — deprecated in favour of the Modal Trigger block; and that block itself, named only
+as the extension's replacement, not as a degraded surface of its own.
+`feature/modal-trigger-as-property` removed the block and both the `core/group` and
+`core/button` extensions, replacing them with attributes on `core/group` and `core/button`
+directly, served by one shared "Modal" panel (`src/editor/modal-trigger-panel.js`). There is
+no `core/group`-specific degraded mode left to describe. The inline format still degrades,
+for the reason below — and, per the Hybrid themes bullet directly above, so does the
+select-only experience on classic themes without Site Editor support.
 
 **Inline RichText format.** The format's UI is a transient `Popover`, not `InspectorControls`.
 A `BlockPreview` there is cramped and disappears on blur. That surface gets select + Edit
@@ -360,7 +364,7 @@ never captured. It only mattered for the fallback, which no longer exists.
 
 - `modalSize` stays on the trigger; the size-vs-placement interaction that #441 flags
   ("a fullscreen size on a trigger pointing at a panel dialog") is a separate question.
-- ~~Removing the `core/group` modal trigger extension.~~ Already done, by a different
-  plan that landed first: `feature/modal-trigger-as-property` removed it (2026-09-09).
-  See the amendment note in §6.
+- ~~Removing the `core/group` modal trigger extension.~~ Superseded by
+  `feature/modal-trigger-as-property`, which removes it as part of its own work; that
+  branch has not yet merged. See the amendment note in §6.
 - Any migration or deprecation shim for the renamed block.

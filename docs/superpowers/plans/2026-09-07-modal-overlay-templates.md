@@ -12,7 +12,7 @@
 
 ## Global Constraints
 
-- **Branch base:** this plan assumes `feature/modal-placement` has merged to `main` and the three `feature/simplify-modal-dialog-ux` commits have been rebased on top. Do not start Tasks 2–11 until Pikari todo #441 is closed. Work on a new branch `feature/modal-overlay-templates`.
+- **Branch base:** `feature/modal-placement` has merged to `main` (PR #112, `1db0e1f`) and `feature/simplify-modal-dialog-ux` merged too (PR #113, `460a9c2`). Pikari todo #441 is closed. That gate is satisfied — Tasks 2–11 are clear to start on that front. Work on a new branch `feature/modal-overlay-templates`.
 - **Amended 2026-09-09: also requires `feature/modal-trigger-as-property` merged first.** That branch (see `docs/superpowers/plans/2026-09-09-modal-trigger-as-block-property.md`) deletes the `pikari-gutenberg-modals/modal-trigger` block and the separate `core/button`/`core/group` extensions, replacing them with `pikariModalAction` and related attributes on `core/group` and `core/button` directly, carried by one shared panel (`src/editor/modal-trigger-panel.js`). Tasks 4 and 10 below were amended to assume that architecture is already on `main`. Starting this plan against a `main` that predates that merge will find the old block and extensions still present, and the amended steps will not apply as written.
 - **Task 1 was run ahead of that gate, deliberately.** It writes no production code and touches nothing the placement QA depends on, so it could answer the design's open questions early. It is complete; its findings already changed Tasks 2, 5, and 8.
 - **PHP:** 8.4+ (`composer.json` requires `>=8.4`; the plugin header says `Requires PHP: 8.4`). WordPress Coding Standards, **4 spaces indentation, not tabs**. Enforced by `phpcs.xml`.
@@ -65,18 +65,19 @@ The `tests-cli` environment has its own database, so it shows the uncustomised s
 **Interfaces:**
 
 - Consumes: nothing. Imports only `__` and `sprintf` from `@wordpress/i18n`.
-- Produces, all named exports:
 
-  - `MODAL_TEMPLATE_PART_AREA` — string `'modal'`
-  - `MODAL_PATTERN_BLOCK_TYPE` — string `'core/template-part/modal'`
-  - `DEFAULT_MODAL_SLUG` — string `'modal'`
-  - `filterModalParts( records: Array|null ) => Array`
-  - `getPartTitle( part: Object ) => string`
-  - `buildPartOptions( { parts, selectedSlug, hasResolved, isResolving } ) => Array<{ label: string, value: string }>`
-  - `getUniqueTitle( base: string, parts: Array ) => string`
-  - `getCleanSlug( title: string ) => string`
-  - `createTemplatePartId( theme: string, slug: string ) => string|null`
-  - `selectModalPatterns( patterns: Array|null ) => Array`
+**Produces, all named exports:**
+
+- `MODAL_TEMPLATE_PART_AREA` — string `'modal'`
+- `MODAL_PATTERN_BLOCK_TYPE` — string `'core/template-part/modal'`
+- `DEFAULT_MODAL_SLUG` — string `'modal'`
+- `filterModalParts( records: Array|null ) => Array`
+- `getPartTitle( part: Object ) => string`
+- `buildPartOptions( { parts, selectedSlug, hasResolved, isResolving } ) => Array<{ label: string, value: string }>`
+- `getUniqueTitle( base: string, parts: Array ) => string`
+- `getCleanSlug( title: string ) => string`
+- `createTemplatePartId( theme: string, slug: string ) => string|null`
+- `selectModalPatterns( patterns: Array|null ) => Array`
 
 - [ ] **Step 1: Write the failing test**
 
@@ -1110,9 +1111,11 @@ git commit -m "feat: localize isBlockTheme for the editor"
 **Interfaces:**
 
 - Consumes: everything from `src/editor/modal-template-parts.js` (Task 2), `window.pikariGutenbergModals.isBlockTheme` (Task 5)
-- Produces:
-  - `useModalTemplateEntities()` returning `{ parts, options, isResolving, hasResolved, currentTheme, isBlockTheme, selectedPart }` — takes `selectedSlug` as its only argument
-  - `<ModalTemplatePanel value onChange showCreate showPreview />` — default export of `modal-template-panel.js`. `value` is the slug (`''` = default), `onChange` receives the new slug. `showCreate` and `showPreview` default to `true`; the inline format surface passes `false` for both.
+
+**Produces:**
+
+- `useModalTemplateEntities()` returning `{ parts, options, isResolving, hasResolved, currentTheme, isBlockTheme, selectedPart }` — takes `selectedSlug` as its only argument
+- `<ModalTemplatePanel value onChange showCreate showPreview />` — default export of `modal-template-panel.js`. `value` is the slug (`''` = default), `onChange` receives the new slug. `showCreate` and `showPreview` default to `true`; the inline format surface passes `false` for both.
 
 This task builds the select and the two states only. Create is stubbed, Edit and preview arrive in Tasks 7–9.
 
@@ -1372,10 +1375,11 @@ git commit -m "feat: add shared modal template panel with entity-backed select"
 **Interfaces:**
 
 - Consumes: `getUniqueTitle`, `getCleanSlug`, `selectModalPatterns` (Task 2); patterns from Task 4; `useModalTemplateEntities` (Task 6)
-- Produces:
 
-  - `useCreateModalTemplate( parts )` returning `async ( { title, patternContent } ) => templatePart`
-  - `<ModalTemplateCreateModal parts onClose onCreated />` — default export
+**Produces:**
+
+- `useCreateModalTemplate( parts )` returning `async ( { title, patternContent } ) => templatePart`
+- `<ModalTemplateCreateModal parts onClose onCreated />` — default export
 
 - [ ] **Step 1: Write the create hook**
 
