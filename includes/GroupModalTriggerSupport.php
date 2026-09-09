@@ -396,12 +396,14 @@ class GroupModalTriggerSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
         if ( $processor->next_tag() ) {
             $processor->add_class( 'has-pikari-modal-trigger' );
+            $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
                 'data-wp-context',
                 wp_json_encode( $context )
             );
             $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
@@ -491,6 +493,7 @@ class GroupModalTriggerSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
         if ( $processor->next_tag() ) {
             $processor->add_class( 'has-pikari-modal-trigger' );
+            $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
                 'data-wp-context',
