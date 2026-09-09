@@ -90,7 +90,12 @@ class ModalHandlerTest extends TestCase {
 	}
 
 	/**
-	 * URLs that must not be allowed to reach the server-side fetcher.
+	 * Internal addresses that must not be embeddable on a production site.
+	 *
+	 * There is no server-side fetcher: an external URL becomes an iframe src in
+	 * the visitor's browser, never a request this server makes. So the risk being
+	 * guarded here is embedding an internal address in a public page, not SSRF.
+	 * See ModalHandler::is_local_url().
 	 *
 	 * @return array<string, array{0: string}>
 	 */
