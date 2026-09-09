@@ -91,7 +91,7 @@ Default blocks: `core/paragraph`, `core/heading`, `core/list`, `core/list-item`,
 
 #### `pikari_gutenberg_modals_trigger_blocks`
 
-Customize which block types can carry a modal action (the "Modal" inspector panel and the `pikariModalAction` attribute). This filter is also localized to the editor, so the panel, block variations, and `render_block` decoration all stay in sync.
+Customize which block types can carry a modal action (the "Modal" inspector panel and the `pikariModalAction` attribute). This filter is also localized to the editor, so the panel and attribute registration stay in sync, and close-mode `render_block` decoration honours it too. Open-mode decoration and the block variations are hardcoded to `core/group` and `core/button`.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_trigger_blocks', function( $blocks ) {
