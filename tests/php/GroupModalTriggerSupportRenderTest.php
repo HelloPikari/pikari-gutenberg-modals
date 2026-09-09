@@ -196,4 +196,58 @@ class GroupModalTriggerSupportRenderTest extends TestCase
         // it alongside the id so a future refactor can't silently drop it.
         $this->assertSame( 'actions.handleTriggerKeydown', $processor->get_attribute( 'data-wp-on--keydown' ) );
     }
+
+    /**
+     * Pins the fix-round-4 regression the id addition itself introduced:
+     * both open-mode paths call set_attribute( 'id', ... ) unconditionally
+     * on the group wrapper — the same element core's `anchor` block support
+     * writes an author-set HTML anchor to. Without a guard, every render
+     * silently overwrites that anchor with a generated modal-trigger- id,
+     * breaking in-page #anchor links to the group and (ironically) giving
+     * modal-store.js's getElementById() a moving target instead of a stable
+     * one. An existing id is exactly as good for focus restore as a
+     * generated one, so it must be preserved rather than replaced.
+     */
+    public function test_group_inline_mode_preserves_existing_wrapper_id(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group" id="my-custom-anchor"><p>Card content</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'inline',
+                'pikariModalInlineAnchor'  => 'promo',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'my-custom-anchor', $processor->get_attribute( 'id' ) );
+    }
+
+    /**
+     * Sibling of the above for the direct-URL open mode's wrapper.
+     */
+    public function test_group_url_mode_preserves_existing_wrapper_id(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group" id="my-custom-anchor"><p>Card content</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'url',
+                'pikariModalDirectUrl'     => 'https://example.com',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'my-custom-anchor', $processor->get_attribute( 'id' ) );
+    }
 }

@@ -396,7 +396,14 @@ class GroupModalTriggerSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
         if ( $processor->next_tag() ) {
             $processor->add_class( 'has-pikari-modal-trigger' );
-            $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+
+            // Preserve an author-set HTML anchor (core's `anchor` block
+            // support writes it to this same wrapper's id) rather than
+            // overwriting it — it serves the same focus-restore purpose a
+            // generated id would.
+            if ( ! $processor->get_attribute( 'id' ) ) {
+                $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+            }
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
                 'data-wp-context',
@@ -493,7 +500,14 @@ class GroupModalTriggerSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
         if ( $processor->next_tag() ) {
             $processor->add_class( 'has-pikari-modal-trigger' );
-            $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+
+            // Preserve an author-set HTML anchor (core's `anchor` block
+            // support writes it to this same wrapper's id) rather than
+            // overwriting it — it serves the same focus-restore purpose a
+            // generated id would.
+            if ( ! $processor->get_attribute( 'id' ) ) {
+                $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+            }
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
                 'data-wp-context',
