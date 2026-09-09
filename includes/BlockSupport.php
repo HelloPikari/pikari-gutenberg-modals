@@ -308,11 +308,13 @@ class BlockSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        // Find the button's own interactive element. core/button renders
-        // either an <a> (tagName: 'a', the default) or a real <button>
-        // (tagName: 'button') — next_tag() with no name matches whichever
-        // is there instead of assuming <a>.
-        if ( $processor->next_tag() ) {
+        // Find the button's own interactive element. The block's root is
+        // a wrapper <div class="wp-block-button"> — the first next_tag()
+        // lands there and must be left alone; the second reaches the
+        // inner <a> (tagName: 'a', the default) or <button> (tagName:
+        // 'button'), whichever the block actually rendered. Same two-call
+        // pattern as filter_close_trigger() below.
+        if ( $processor->next_tag() && $processor->next_tag() ) {
             // A <button> is natively focusable and keyboard-operable
             // without an href — only an <a> needs one. The Modal Button
             // variation ships no url of its own, so without this an
@@ -335,6 +337,13 @@ class BlockSupport
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->add_class( 'has-pikari-modal' );
+
+            // The button's own visible text is already its accessible
+            // name; only override it when the author explicitly typed one.
+            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+            if ( '' !== $custom_label ) {
+                $processor->set_attribute( 'aria-label', $custom_label );
+            }
         }
 
         return $processor->get_updated_html();
@@ -389,6 +398,13 @@ class BlockSupport
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->set_attribute( 'href', '#' . $inline_anchor );
             $processor->add_class( 'has-pikari-modal' );
+
+            // The button's own visible text is already its accessible
+            // name; only override it when the author explicitly typed one.
+            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+            if ( '' !== $custom_label ) {
+                $processor->set_attribute( 'aria-label', $custom_label );
+            }
         }
 
         return $processor->get_updated_html();
