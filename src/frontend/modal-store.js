@@ -18,6 +18,8 @@ import {
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
 import { isVideoEmbedUrl } from './video-providers';
+import { resolveGeometry } from './modal-geometry';
+import { shouldDeferToElement } from './trigger-click';
 
 // Prefetch delay in milliseconds - filters out accidental mouse movements
 const PREFETCH_DELAY_MS = 200;
@@ -78,6 +80,7 @@ const { state, actions } = store( 'pikari-modal', {
 				postId,
 				modalId,
 				size,
+				placement,
 				contentSource,
 				inlineAnchor,
 				templatePart,
@@ -117,6 +120,7 @@ const { state, actions } = store( 'pikari-modal', {
 					activeContainer.style.display = 'none';
 					activeContainer.classList.remove( 'is-closing' );
 					activeContainer.removeAttribute( 'data-size' );
+					activeContainer.removeAttribute( 'data-placement' );
 					const prevBody = activeContainer.querySelector( '.modal-body' );
 					if ( prevBody ) {
 						prevBody.removeAttribute( 'id' );
@@ -157,11 +161,27 @@ const { state, actions } = store( 'pikari-modal', {
 			modal.classList.add( 'is-open' );
 			modal.classList.remove( 'is-closing' );
 
-			// Apply size from trigger context
-			if ( size ) {
-				modal.setAttribute( 'data-size', size );
+			// Geometry: the trigger's override wins, else the Modal Dialog
+			// block's own placement, else centered. The size slug is dropped
+			// when it does not belong to the resolved placement.
+			const dialogEl = modal.querySelector( '.modal-content' );
+			const geometry = resolveGeometry( {
+				triggerPlacement: placement,
+				dialogPlacement:
+					dialogEl?.getAttribute( 'data-default-placement' ) || '',
+				size,
+			} );
+
+			if ( geometry.size ) {
+				modal.setAttribute( 'data-size', geometry.size );
 			} else {
 				modal.removeAttribute( 'data-size' );
+			}
+
+			if ( geometry.placement ) {
+				modal.setAttribute( 'data-placement', geometry.placement );
+			} else {
+				modal.removeAttribute( 'data-placement' );
 			}
 
 			// Set up accessibility features
@@ -370,6 +390,7 @@ const { state, actions } = store( 'pikari-modal', {
 					modal.style.display = 'none';
 					modal.classList.remove( 'is-closing' );
 					modal.removeAttribute( 'data-size' );
+					modal.removeAttribute( 'data-placement' );
 				}
 				state.content = '';
 				// Clear innerHTML directly since data-wp-html doesn't exist
@@ -429,20 +450,9 @@ const { state, actions } = store( 'pikari-modal', {
 		 * Supports both role="group" (detected link) and role="button" (URL/inline) wrappers.
 		 */
 		handleGroupTriggerClick: withSyncEvent( ( event ) => {
-			const clickedElement = event.target;
-
-			// Check if clicked element is an interactive element that should NOT trigger modal
-			const interactiveSelector =
-				'a:not(.is-primary-link), button, input, select, textarea, [role="button"]';
-			const clickedInteractive = clickedElement.closest( interactiveSelector );
-
-			// If clicked on a non-primary interactive element (not the trigger wrapper itself),
-			// let it handle the event normally
-			if (
-				clickedInteractive &&
-				clickedInteractive !== event.currentTarget &&
-				! clickedInteractive.classList.contains( 'is-primary-link' )
-			) {
+			// Genuine interactive content inside the trigger keeps working;
+			// see trigger-click.js for why an href-less anchor is not that.
+			if ( shouldDeferToElement( event.target, event.currentTarget ) ) {
 				return; // Don't prevent default, let the element work normally
 			}
 

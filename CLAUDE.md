@@ -111,6 +111,7 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 10. **Theme per-block styles** — `BlockStyleCollector::collect_render_enqueued_styles()` captures styles enqueued during `do_blocks()` by comparing `wp_styles()->queue` before/after rendering (catches theme button styles registered via `wp_enqueue_block_style()`)
 11. **Block support CSS in wp_footer** — `BlockSupport::render_modal_containers()` snapshots block support CSS before rendering template parts and outputs any newly generated layout/spacing CSS in a `<style>` tag (needed because `wp_enqueue_block_support_styles()` runs earlier)
 12. **Style architecture split** — `modal-dialog/style.css` owns ALL modal visual styles (overlay, `.modal-content`, `.modal-chrome`, animations, keyframes, size variants, mobile, print, reduced motion, CSS custom properties). `frontend/style.scss` contains only trigger-specific styles (inline triggers, group triggers, close triggers). This separation means the modal chrome appearance is governed by WordPress block styles on the `modal-chrome` Group, not by custom CSS properties on `:root`.
+13. **Placement is container geometry** — The Modal Dialog block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
 
 ### Critical Implementation Gotchas
 
@@ -145,6 +146,7 @@ pikari_gutenberg_modals_blocked_domains        // Domain blocklist for external 
 
 // Editor
 pikari_gutenberg_modals_modal_sizes            // Add/modify modal size options in the editor dropdown
+pikari_gutenberg_modals_panel_widths           // Add/modify panel width options for edge-placed modals
 
 // Prefetch
 pikari_gutenberg_modals_enable_prefetch_hints  // Enable auto <link rel="prefetch"> (default: false)

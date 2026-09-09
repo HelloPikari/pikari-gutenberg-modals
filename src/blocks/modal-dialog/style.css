@@ -11,6 +11,9 @@
 	--modal-max-width: 1024px;
 	--modal-max-width-small: 500px;
 	--modal-max-width-large: 1200px;
+	--modal-panel-width: 420px;
+	--modal-panel-width-narrow: 320px;
+	--modal-panel-width-wide: 600px;
 	--modal-focus-color: #3b82f6;
 }
 
@@ -118,6 +121,82 @@
 	border-radius: 0 !important;
 }
 
+/* Placement — applied via data-placement on .modal-overlay.
+   Geometry belongs to the container; the chrome Group inside fills it.
+   Author-set background, padding and shadow are untouched. */
+.modal-overlay[data-placement="left"],
+.modal-overlay[data-placement="right"] {
+	align-items: stretch;
+}
+.modal-overlay[data-placement="left"] {
+	justify-content: flex-start;
+}
+.modal-overlay[data-placement="right"] {
+	justify-content: flex-end;
+}
+/* Each panel width is followed by the breakpoint below which it gives up and
+   fills the viewport — a panel narrower than the screen by less than a margin
+   leaves an unusable strip of page beside it. A media query cannot read a
+   custom property, so the breakpoints are hardcoded at the default width plus
+   48px: overriding --modal-panel-width* moves the panel but not the point at
+   which it goes full width. */
+.modal-overlay[data-placement="left"] .modal-content,
+.modal-overlay[data-placement="right"] .modal-content {
+	width: var(--modal-panel-width, 420px);
+	max-width: 100%;
+	max-height: 100%;
+	height: 100%;
+}
+
+@media (max-width: 468px) {
+	.modal-overlay[data-placement="left"] .modal-content,
+	.modal-overlay[data-placement="right"] .modal-content {
+		width: 100%;
+	}
+}
+.modal-overlay[data-placement="left"][data-size="narrow"] .modal-content,
+.modal-overlay[data-placement="right"][data-size="narrow"] .modal-content {
+	width: var(--modal-panel-width-narrow, 320px);
+}
+
+@media (max-width: 368px) {
+	.modal-overlay[data-placement="left"][data-size="narrow"] .modal-content,
+	.modal-overlay[data-placement="right"][data-size="narrow"] .modal-content {
+		width: 100%;
+	}
+}
+.modal-overlay[data-placement="left"][data-size="wide"] .modal-content,
+.modal-overlay[data-placement="right"][data-size="wide"] .modal-content {
+	width: var(--modal-panel-width-wide, 600px);
+}
+
+@media (max-width: 648px) {
+	.modal-overlay[data-placement="left"][data-size="wide"] .modal-content,
+	.modal-overlay[data-placement="right"][data-size="wide"] .modal-content {
+		width: 100%;
+	}
+}
+
+/* Square off the corners against the viewport edge, the same way
+   fullscreen and mobile already beat the Group's inline radius. */
+.modal-overlay[data-placement] .modal-content .modal-chrome {
+	border-radius: 0 !important;
+}
+
+/* Panels slide in from their edge rather than scaling from the centre. */
+.modal-overlay[data-placement="left"].is-open .modal-content {
+	animation: modal-slide-in-left 300ms ease-out forwards;
+}
+.modal-overlay[data-placement="right"].is-open .modal-content {
+	animation: modal-slide-in-right 300ms ease-out forwards;
+}
+.modal-overlay[data-placement="left"].is-closing .modal-content {
+	animation: modal-slide-out-left 200ms ease-in forwards;
+}
+.modal-overlay[data-placement="right"].is-closing .modal-content {
+	animation: modal-slide-out-right 200ms ease-in forwards;
+}
+
 /* Mobile responsiveness */
 @media (max-width: 768px) {
 	.modal-overlay {
@@ -182,6 +261,50 @@
 	}
 }
 
+@keyframes modal-slide-in-left {
+	from {
+		opacity: 0;
+		transform: translateX(-100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes modal-slide-out-left {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(-100%);
+	}
+}
+
+@keyframes modal-slide-in-right {
+	from {
+		opacity: 0;
+		transform: translateX(100%);
+	}
+	to {
+		opacity: 1;
+		transform: translateX(0);
+	}
+}
+
+@keyframes modal-slide-out-right {
+	from {
+		opacity: 1;
+		transform: translateX(0);
+	}
+	to {
+		opacity: 0;
+		transform: translateX(100%);
+	}
+}
+
 /* Accessibility — disable animations for reduced motion */
 @media (prefers-reduced-motion: reduce) {
 	.modal-overlay,
@@ -194,6 +317,12 @@
 	}
 	.modal-overlay.is-open .modal-content,
 	.modal-overlay.is-closing .modal-content {
+		animation: none;
+	}
+	.modal-overlay[data-placement="left"].is-open .modal-content,
+	.modal-overlay[data-placement="right"].is-open .modal-content,
+	.modal-overlay[data-placement="left"].is-closing .modal-content,
+	.modal-overlay[data-placement="right"].is-closing .modal-content {
 		animation: none;
 	}
 }

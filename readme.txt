@@ -162,6 +162,35 @@ Then add the CSS for your custom size:
 
 Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 
+= Modal Placement =
+
+Set placement on the Modal Dialog block: Centered (default), Left edge, or Right edge. Edge placements pin the dialog full height at a panel width. A trigger can override the dialog's placement.
+
+Panel widths are set with CSS custom properties:
+
+`--modal-panel-width: 420px;         /* default */
+--modal-panel-width-narrow: 320px;
+--modal-panel-width-wide: 600px;`
+
+**pikari_gutenberg_modals_panel_widths**
+Add or modify the panel width options offered in the editor for edge-placed modals. Each entry needs a `label` (display text) and `value` (slug used as the `data-size` attribute). Custom widths require matching CSS.
+
+`add_filter( 'pikari_gutenberg_modals_panel_widths', function( $widths ) {
+    $widths[] = array(
+        'label' => 'Extra wide',
+        'value' => 'xwide',
+    );
+    return $widths;
+} );`
+
+Then add the CSS for your custom width:
+
+`.modal-overlay[data-placement="right"][data-size="xwide"] .modal-content {
+    width: 720px;
+}`
+
+Default panel widths: Default (420px), Narrow (320px), Wide (600px)
+
 = Domain Restrictions =
 
 **pikari_gutenberg_modals_allowed_domains**
@@ -194,29 +223,30 @@ Override the modal template markup for hybrid (non-block) themes. Return block m
 
 The plugin exposes CSS custom properties on `:root` for easy theming without filters or PHP:
 
-`/* Modal appearance */
---modal-overlay-bg: rgba(0, 0, 0, 0.8);
---modal-content-bg: #fff;
---modal-content-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06);
---modal-border-radius: 20px;
-
-/* Modal widths */
+`/* Centered dialog widths */
 --modal-max-width: 1024px;          /* Default size */
 --modal-max-width-small: 500px;     /* Small size */
 --modal-max-width-large: 1200px;    /* Large size */
 
-/* Interaction */
---modal-focus-color: #3b82f6;
---modal-transition: all 0.2s ease;`
+/* Edge panel widths */
+--modal-panel-width: 420px;         /* Default */
+--modal-panel-width-narrow: 320px;  /* Narrow */
+--modal-panel-width-wide: 600px;    /* Wide */
 
-Override any of these in your theme's CSS to customize the modal appearance:
+/* Interaction */
+--modal-focus-color: #3b82f6;`
+
+Override any of these in your theme's CSS to customize the modal:
 
 `/* In your theme's style.css or editor styles */
 :root {
-    --modal-border-radius: 8px;
     --modal-max-width: 800px;
-    --modal-content-bg: #f9f9f9;
+    --modal-panel-width: 480px;
 }`
+
+Dialog appearance — background, border radius, padding and shadow — is set with block attributes on the modal-chrome Group inside the Modal Dialog block, not with custom properties.
+
+The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
 
 == Screenshots ==
 
@@ -230,6 +260,8 @@ Override any of these in your theme's CSS to customize the modal appearance:
 
 = Unreleased =
 * Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
+* Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Modal Trigger can override the dialog's placement
+* pikari_gutenberg_modals_panel_widths filter for adding or changing the panel widths offered in the editor, alongside --modal-panel-width, --modal-panel-width-narrow and --modal-panel-width-wide custom properties
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
 
 = 1.3.0 =
