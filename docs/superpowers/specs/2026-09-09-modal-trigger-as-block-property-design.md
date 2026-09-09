@@ -209,11 +209,37 @@ runs a real foreground browser (`visibility: visible`, `hasFocus: true`,
 Button opens; a Button with a real link inside a Group card still navigates rather than
 opening; focus enters the dialog; the card pattern works inside a Query Loop.
 
-## Open questions
+## Resolved: core/image is out of scope
 
-1. **`core/image` — worth including in the first pass?** It is in the link-detection
-   list already, but an image trigger has no obvious affordance and may want a cursor
-   or focus style the other two get for free from their own block styles.
-2. **What replaces the block's inserter entry for people who learned it?** The two
-   variations cover group and button. Nothing covers "I want a modal, where do I start" —
-   a starter pattern may be the better answer than a third variation.
+Verified against WordPress 7.1 rather than assumed. Core's image lightbox was **renamed,
+not removed** — the author-facing toggle is now labelled **"Enlarge on click"**, which is
+why it appeared to have gone. It is fully alive:
+
+- `"Enlarge on click"` ships in `block-library.min.js`, with 28 live `lightbox`
+  references and `lightbox: a?.enabled ? …` resolution logic.
+- `block_core_image_render_lightbox()` is hooked on `render_block_core/image` in
+  `wp-includes/blocks/image.php`, with a gallery equivalent.
+- Core's own `theme.json` sets `settings.blocks.core/image.lightbox.allowEditing: true`,
+  so the toggle is offered to every author unless a theme opts out. Twenty Twenty-Five
+  does not override it.
+
+The decisive reason to exclude `core/image` is not that core already does something
+similar — it is that **core attaches a competing click handler to that same block**.
+Enabling both "Enlarge on click" and an "Open in modal" action would put two handlers on
+one click, and core's is available by default. `core/group` and `core/button` have no
+such conflict.
+
+The use case is covered anyway: an image inside a Group, with the Group as the trigger,
+is exactly the employee-card pattern.
+
+**Supported blocks are therefore `core/group` and `core/button`**, extensible via
+`pikari_gutenberg_modals_trigger_blocks`. A site that genuinely wants an image trigger
+can add it through that filter and accept the lightbox conflict knowingly.
+
+## Open question
+
+**What replaces the block's inserter entry for someone who does not know where to
+start?** The two variations cover "I have a group" and "I have a button". Neither
+answers "I want a modal". Recommendation: a starter pattern (a pre-toggled Group card
+with a heading and image inside) rather than a third variation, because it also gives
+people a working card layout instead of an empty container. Not yet decided.
