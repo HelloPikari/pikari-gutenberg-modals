@@ -23,28 +23,16 @@ Always use these agents proactively:
    - Supported blocks: paragraph, heading, list, list-item, quote, verse, preformatted, navigation-link
    - **Close mode:** `data-modal-action="close"` attribute converts span to inline button with close action (for use in modal template parts)
 
-2. **Button Block Modals** — extends core/button with a toggle
+2. **`pikariModalAction` on Group and Button blocks** — a modal action set directly as a block attribute, so the block keeps its own styling, alignment and layout instead of needing a wrapper block
 
-   - Adds `pikariOpenInModal` boolean attribute
-   - Editor: `src/editor/button-modal-extension.js`
-   - Server: `BlockSupport::filter_button_block()` adds Interactivity API attributes
-
-3. **Group Block Modal Triggers** — makes entire group blocks clickable (card pattern) _(deprecated — use Modal Trigger block instead)_
-
-   - Adds `pikariModalTrigger` + `pikariModalTriggerBlockId` attributes
-   - Editor: `src/editor/group-modal-trigger-extension.js` — recursively detects links in inner blocks
-   - Server: `includes/GroupModalTriggerSupport.php` — two-phase rendering for Query Loop support
-   - Supported link sources: button, image, navigation-link, heading/paragraph (inline links), post-title, post-featured-image, post-date, read-more, post-excerpt
-
-4. **Modal Trigger Block** — dedicated block for clickable card pattern and close triggers
-   - Block: `pikari-gutenberg-modals/modal-trigger` in `src/blocks/modal-trigger/`
-   - **Open mode:** Three content source modes (Detected Link, Custom URL, Page Content)
-   - **Close mode:** `triggerAction: "close"` makes block or specific child element close the modal (for use in modal template parts)
-   - Editor: `edit.js` — InspectorControls with mode-specific UI, link detection for close-mode targeting
-   - Server: `render.php` — routes to open/close handlers, adds Interactivity API attributes, keyboard support, domain validation
-   - Transforms: `transforms.js` — bidirectional transforms between `core/group` and modal-trigger
-   - Shared utility: `src/editor/find-links-in-blocks.js` — link detection used by both group extension and modal trigger
-   - No visual block supports — styling is done on inner blocks
+   - Attribute schema (`pikariModalAction` plus `pikariModalContentSource`, `pikariModalDirectUrl`, `pikariModalPrimaryLinkId`, `pikariModalInlineAnchor`, `pikariModalSize`, `pikariModalPlacement`, `pikariModalTemplatePart`, `pikariModalAccessibleLabel`) is defined in `src/editor/trigger-blocks.js` and registered on every trigger block via a `blocks.registerBlockType` filter in `src/editor/modal-trigger-attributes.js`
+   - Which blocks qualify: `isTriggerBlock()` reads `window.pikariGutenbergModals.triggerBlocks` (localized from the `pikari_gutenberg_modals_trigger_blocks` PHP filter), falling back to the hardcoded default `['core/group', 'core/button']` when the global is absent (e.g. Jest)
+   - Editor: one "Modal" panel — `src/editor/modal-trigger-panel.js`, added via a single `editor.BlockEdit` filter; hidden in `contentOnly` editing mode
+     - **Open mode** (`pikariModalAction: 'open'`) content source: Detected link (`core/group` only — finds links in inner blocks via `src/editor/find-links-in-blocks.js`; a `core/button`'s own URL is its detected link and needs no picker), Custom URL, or Inline content (anchor into a Modal Content block)
+     - **Close mode** (`pikariModalAction: 'close'`) — for use inside modal template parts
+   - Discovery: two block variations pre-fill attributes for the inserter — `pikari-modal-clickable-card` (`core/group`) and `pikari-modal-button` (`core/button`) — registered in `src/editor/modal-trigger-variations.js`
+   - Server: `BlockSupport::filter_button_block()` handles open mode for `core/button`; `GroupModalTriggerSupport` handles open mode for `core/group` (two-phase rendering, Query Loop support); `BlockSupport::filter_close_mode_block()` handles close mode generically for every block `get_trigger_blocks()` returns. Each decorates the block's own rendered root element (or, for a `core/button` close trigger, its inner `<a>`/`<button>`) rather than adding a wrapper
+   - `core/image` is deliberately not a trigger block — see gotcha below
 
 ### PHP Classes (`includes/`)
 
@@ -64,14 +52,16 @@ Always use these agents proactively:
 
 **Editor (`src/editor/`):**
 
-| File                               | Lines | Purpose                                                                  |
-| ---------------------------------- | ----- | ------------------------------------------------------------------------ |
-| `group-modal-trigger-extension.js` | ~365  | HOC for group block — link detection, auto-selection, Query Loop support |
-| `modal-trigger-edit.js`            | ~290  | RichText format toolbar UI, LinkControl popover, post search             |
-| `button-modal-extension.js`        | ~115  | HOC for button block — modal toggle in InspectorControls                 |
-| `modal-format.js`                  | ~20   | RichText format type registration                                        |
-| `index.js`                         | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`         |
-| `style.scss`                       | ~65   | Editor visual indicators (dashed purple underline on modal triggers)     |
+| File                          | Lines | Purpose                                                                                                       |
+| ----------------------------- | ----- | ------------------------------------------------------------------------------------------------------------- |
+| `modal-trigger-edit.js`       | ~290  | RichText format toolbar UI, LinkControl popover, post search                                                  |
+| `modal-trigger-panel.js`      | ~350  | The single "Modal" inspector panel shown on every trigger block                                               |
+| `trigger-blocks.js`           | ~70   | Pure, import-free: `TRIGGER_BLOCKS`, `MODAL_ATTRIBUTES`, `isTriggerBlock()`, `hasModalAction()` — unit tested |
+| `modal-trigger-attributes.js` | ~30   | Registers `MODAL_ATTRIBUTES` on every trigger block via `blocks.registerBlockType`                            |
+| `modal-trigger-variations.js` | ~40   | Registers the Clickable Card and Modal Button block variations                                                |
+| `modal-format.js`             | ~20   | RichText format type registration                                                                             |
+| `index.js`                    | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`                                              |
+| `style.scss`                  | ~65   | Editor visual indicators (dashed purple underline on modal triggers)                                          |
 
 **Frontend (`src/frontend/`):**
 
@@ -115,7 +105,7 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 
 ### Critical Implementation Gotchas
 
-1. **Close triggers must NOT add `data-wp-interactive`** — Close triggers exist inside modal template parts where the parent modal container already provides `data-wp-interactive="pikari-modal"` scope. Adding it to close trigger wrappers in `render.php` creates nested Interactivity API islands that break event handling. Open triggers need it because they're outside the modal container; close triggers inherit scope.
+1. **Close triggers must NOT add `data-wp-interactive`** — Close triggers exist inside modal template parts where the parent modal container already provides `data-wp-interactive="pikari-modal"` scope. Adding it in `BlockSupport::filter_close_mode_block()` (or the inline format's close-mode handling in `filter_block()`) creates nested Interactivity API islands that break event handling. Open triggers need it because they're outside the modal container; close triggers inherit scope.
 
 2. **render.php lives in build/, not src/** — WordPress reads `render.php` from `build/blocks/`, not `src/blocks/`. After editing any `render.php` file, you MUST run `npm run build` for changes to take effect in wp-env. The `@wordpress/scripts` build process copies PHP files from `src/` to `build/`.
 
@@ -127,11 +117,16 @@ One or more modal containers are rendered in `wp_footer` (only if triggers are d
 
 6. **Fallback close button injection** — `modal-dialog/render.php` detects whether the rendered content contains a close trigger (by scanning for `actions.closeModal` or `actions.handleCloseClick`). If none is found, it injects a visually hidden `sr-only` fallback close button so keyboard/AT users always have a way to dismiss the modal.
 
+7. **A block variation is not visible server-side** — `src/editor/modal-trigger-variations.js` pre-fills attributes and supplies an inserter entry; the variation name (e.g. `pikari-modal-clickable-card`) is never serialized into saved content. `render_block` (and `isTriggerBlock()`/`hasModalAction()` on the JS side) must key on `pikariModalAction`, never on the variation.
+
+8. **`core/image` is excluded from trigger blocks on purpose** — Core's own lightbox ("Enlarge on click") attaches a competing click handler via `render_block_core/image` and is offered by default. Adding `core/image` to `pikari_gutenberg_modals_trigger_blocks` would put two click handlers on one element. A site that wants it anyway can add it through that filter, deliberately.
+
 ## Custom Hooks & Filters
 
 ```php
 // Content processing
 pikari_gutenberg_modals_supported_blocks       // Customize blocks supporting inline modal triggers
+pikari_gutenberg_modals_trigger_blocks         // Customize which blocks can carry a modal action (default: core/group, core/button)
 pikari_gutenberg_modals_post_content           // Filter post content before modal rendering
 pikari_gutenberg_modals_url_content            // Filter external URL content
 pikari_gutenberg_modals_content                // General content filter
