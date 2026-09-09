@@ -49,9 +49,8 @@ const INNER_BLOCKS_TEMPLATE = [
 				{ layout: { type: 'flex', justifyContent: 'right' } },
 				[
 					[
-						'pikari-gutenberg-modals/modal-trigger',
-						{ triggerAction: 'close' },
-						[ [ 'core/button', { text: 'Close' } ] ],
+						'core/button',
+						{ text: 'Close', pikariModalAction: 'close' },
 					],
 				],
 			],

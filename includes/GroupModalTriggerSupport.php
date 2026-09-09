@@ -4,9 +4,8 @@
  *
  * Handles server-side rendering for modal trigger functionality on core/group
  * blocks, reading the unified pikariModal* attributes (see trigger-blocks.js).
- * This is the current mechanism for group-based modal triggers — the Modal
- * Trigger wrapper block (pikari-gutenberg-modals/modal-trigger) is being
- * retired in favor of it.
+ * This is the current mechanism for group-based modal triggers, replacing
+ * the retired Modal Trigger wrapper block.
  *
  * @package PikariGutenbergModals
  */

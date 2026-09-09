@@ -357,8 +357,8 @@ class EditorIntegration
      *
      * Note: Close Button and Content Area use the `ancestor` property in
      * block.json to restrict themselves to modal-dialog contexts. Modal
-     * Content and Modal Trigger are unregistered client-side in the Site
-     * Editor via domReady in src/editor/index.js.
+     * Content is unregistered client-side in the Site Editor via domReady
+     * in src/editor/index.js.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
