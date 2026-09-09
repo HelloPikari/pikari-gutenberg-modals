@@ -72,6 +72,7 @@ class EditorIntegration
             'pikariGutenbergModals',
             [
                 'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
+                'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
                 'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
                 'nonce'              => wp_create_nonce('wp_rest'),
                 'modalSizes'         => $this->get_modal_sizes(),

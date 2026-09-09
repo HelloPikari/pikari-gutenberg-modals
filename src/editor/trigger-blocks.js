@@ -41,10 +41,23 @@ export const MODAL_ATTRIBUTES = {
 /**
  * Whether a block name can carry a modal action.
  *
+ * Prefers the list localized by PHP (window.pikariGutenbergModals.triggerBlocks),
+ * which reflects the `pikari_gutenberg_modals_trigger_blocks` filter — so a
+ * block added through that filter gets both the editor panel and the
+ * server-side decoration. Falls back to the hardcoded default when the
+ * global is absent or empty (e.g. this module used outside the block
+ * editor, such as in Jest).
+ *
  * @param {string} name Block name.
  * @return {boolean} True when supported.
  */
 export function isTriggerBlock( name ) {
+	const localized = window.pikariGutenbergModals?.triggerBlocks;
+
+	if ( Array.isArray( localized ) && localized.length > 0 ) {
+		return localized.includes( name );
+	}
+
 	return TRIGGER_BLOCKS.includes( name );
 }
 

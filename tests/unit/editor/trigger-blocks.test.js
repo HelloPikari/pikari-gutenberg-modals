@@ -24,6 +24,10 @@ describe( 'TRIGGER_BLOCKS', () => {
 } );
 
 describe( 'isTriggerBlock', () => {
+	afterEach( () => {
+		delete window.pikariGutenbergModals;
+	} );
+
 	it( 'accepts a supported block', () => {
 		expect( isTriggerBlock( 'core/group' ) ).toBe( true );
 		expect( isTriggerBlock( 'core/button' ) ).toBe( true );
@@ -37,6 +41,26 @@ describe( 'isTriggerBlock', () => {
 	it( 'rejects empty input', () => {
 		expect( isTriggerBlock( '' ) ).toBe( false );
 		expect( isTriggerBlock( undefined ) ).toBe( false );
+	} );
+
+	it( 'honours a non-empty localized list over the hardcoded default', () => {
+		window.pikariGutenbergModals = { triggerBlocks: [ 'core/quote' ] };
+
+		expect( isTriggerBlock( 'core/quote' ) ).toBe( true );
+		expect( isTriggerBlock( 'core/group' ) ).toBe( false );
+	} );
+
+	it( 'falls back to the hardcoded default when the localized list is empty', () => {
+		window.pikariGutenbergModals = { triggerBlocks: [] };
+
+		expect( isTriggerBlock( 'core/group' ) ).toBe( true );
+		expect( isTriggerBlock( 'core/button' ) ).toBe( true );
+	} );
+
+	it( 'falls back to the hardcoded default when the global is absent', () => {
+		delete window.pikariGutenbergModals;
+
+		expect( isTriggerBlock( 'core/group' ) ).toBe( true );
 	} );
 } );
 
