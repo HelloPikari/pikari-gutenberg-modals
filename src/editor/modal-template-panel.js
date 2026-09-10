@@ -19,11 +19,14 @@ import {
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- Stable layout primitive, used throughout core inspector UI (e.g. the navigation block).
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
+import { useSelect } from '@wordpress/data';
+import { store as blockEditorStore } from '@wordpress/block-editor';
 import { __ } from '@wordpress/i18n';
-import { plus } from '@wordpress/icons';
+import { plus, pencil } from '@wordpress/icons';
 import { useInstanceId } from '@wordpress/compose';
 import useModalTemplateEntities from './use-modal-template-entities';
 import ModalTemplateCreateModal from './modal-template-create-modal';
+import { createTemplatePartId } from './modal-template-parts';
 
 export default function ModalTemplatePanel( {
 	value,
@@ -37,8 +40,15 @@ export default function ModalTemplatePanel( {
 		'pikari-modal-template-panel-heading'
 	);
 
-	const { parts, options, isResolving, hasResolved, isBlockTheme } =
-		useModalTemplateEntities( value );
+	const {
+		parts,
+		options,
+		selectedPart,
+		currentTheme,
+		isResolving,
+		hasResolved,
+		isBlockTheme,
+	} = useModalTemplateEntities( value );
 
 	const [ isCreating, setIsCreating ] = useState( false );
 
@@ -46,6 +56,27 @@ export default function ModalTemplatePanel( {
 	const canCreate = showCreate && isBlockTheme;
 
 	const isEmpty = hasResolved && parts.length === 0;
+
+	const onNavigateToEntityRecord = useSelect(
+		( select ) =>
+			select( blockEditorStore ).getSettings().onNavigateToEntityRecord,
+		[]
+	);
+
+	const theme = selectedPart?.theme || currentTheme;
+
+	const onEdit = () => {
+		if ( ! selectedPart || ! theme || ! onNavigateToEntityRecord ) {
+			return;
+		}
+
+		const postId = createTemplatePartId( theme, selectedPart.slug );
+
+		onNavigateToEntityRecord( {
+			postId,
+			postType: 'wp_template_part',
+		} );
+	};
 
 	const helpText = isEmpty
 		? __( 'No modal templates found.', 'pikari-gutenberg-modals' )
@@ -104,7 +135,24 @@ export default function ModalTemplatePanel( {
 								help={ helpText }
 							/>
 						</FlexBlock>
-						<FlexItem>{ /* Edit button added in Task 8. */ }</FlexItem>
+						<FlexItem>
+							{ isBlockTheme &&
+								selectedPart &&
+								hasResolved &&
+								onNavigateToEntityRecord && (
+								<Button
+									__next40pxDefaultSize
+									variant="secondary"
+									icon={ pencil }
+									onClick={ onEdit }
+									label={ __(
+										'Edit modal template',
+										'pikari-gutenberg-modals'
+									) }
+									showTooltip
+								/>
+							) }
+						</FlexItem>
 					</HStack>
 				</>
 			) }
