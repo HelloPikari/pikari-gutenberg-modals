@@ -102,8 +102,8 @@ class BlockSupport
     /**
      * Blocks that can carry a modal action.
      *
-     * core/image is excluded deliberately — core's own lightbox attaches a
-     * competing click handler to it via render_block_core/image.
+     * The core/image block is excluded deliberately: core's own lightbox
+     * attaches a competing click handler to it via render_block_core/image.
      *
      * @return string[] Block names.
      */
