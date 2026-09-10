@@ -236,7 +236,7 @@ Override the modal template markup for hybrid themes. Return block markup to byp
 ```php
 add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $slug ) {
     if ( 'compact' === $slug ) {
-        return '<!-- wp:pikari-gutenberg-modals/modal-dialog -->...<!-- /wp:pikari-gutenberg-modals/modal-dialog -->';
+        return '<!-- wp:pikari-gutenberg-modals/modal-overlay -->...<!-- /wp:pikari-gutenberg-modals/modal-overlay -->';
     }
     return $content;
 }, 10, 2 );

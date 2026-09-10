@@ -1,0 +1,45 @@
+{
+	"$schema": "https://schemas.wp.org/trunk/block.json",
+	"apiVersion": 3,
+	"name": "pikari-gutenberg-modals/modal-overlay",
+	"version": "0.1.0",
+	"title": "Modal Overlay",
+	"category": "design",
+	"description": "The modal backdrop. Controls the overlay appearance (color, gradient, image) and where the dialog sits within it.",
+	"textdomain": "pikari-gutenberg-modals",
+	"attributes": {
+		"overlayColor": {
+			"type": "string"
+		},
+		"overlayGradient": {
+			"type": "string"
+		},
+		"overlayOpacity": {
+			"type": "number",
+			"default": 100
+		},
+		"backgroundImage": {
+			"type": "object"
+		},
+		"focalPoint": {
+			"type": "object"
+		},
+		"hasParallax": {
+			"type": "boolean",
+			"default": false
+		},
+		"placement": {
+			"type": "string",
+			"default": ""
+		}
+	},
+	"supports": {
+		"html": false,
+		"multiple": false,
+		"reusable": false
+	},
+	"editorScript": "file:../../../build/blocks/modal-overlay/index.js",
+	"editorStyle": "file:./editor.css",
+	"style": "file:./style.css",
+	"render": "file:./render.php"
+}

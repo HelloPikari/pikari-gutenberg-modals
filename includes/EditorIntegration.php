@@ -358,7 +358,7 @@ class EditorIntegration
      * open — since WordPress 6.3 the Site Editor edits both.
      *
      * Note: Close Button and Content Area use the `ancestor` property in
-     * block.json to restrict themselves to modal-dialog contexts.
+     * block.json to restrict themselves to modal-overlay contexts.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
@@ -413,7 +413,7 @@ class EditorIntegration
         $context_name = $editor_context->name ?? '';
 
         if ( $context_name === 'core/edit-post' ) {
-            return [ 'pikari-gutenberg-modals/modal-dialog' ];
+            return [ 'pikari-gutenberg-modals/modal-overlay' ];
         }
 
         if ( $context_name !== 'core/edit-site' ) {
@@ -427,6 +427,6 @@ class EditorIntegration
             return [ 'pikari-gutenberg-modals/modal-content' ];
         }
 
-        return [ 'pikari-gutenberg-modals/modal-dialog' ];
+        return [ 'pikari-gutenberg-modals/modal-overlay' ];
     }
 }

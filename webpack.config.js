@@ -19,7 +19,7 @@ const editorConfig = {
 		'blocks/close-button/index': path.resolve( __dirname, 'src/blocks/close-button/index.js' ),
 		'blocks/content-area/index': path.resolve( __dirname, 'src/blocks/content-area/index.js' ),
 		'blocks/modal-content/index': path.resolve( __dirname, 'src/blocks/modal-content/index.js' ),
-		'blocks/modal-dialog/index': path.resolve( __dirname, 'src/blocks/modal-dialog/index.js' ),
+		'blocks/modal-overlay/index': path.resolve( __dirname, 'src/blocks/modal-overlay/index.js' ),
 	},
 	output: {
 		...scriptConfig.output,

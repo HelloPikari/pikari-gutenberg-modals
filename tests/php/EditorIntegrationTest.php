@@ -27,7 +27,7 @@ class EditorIntegrationTest extends TestCase {
      */
     private array $all_blocks = [
         'core/paragraph',
-        'pikari-gutenberg-modals/modal-dialog',
+        'pikari-gutenberg-modals/modal-overlay',
         'pikari-gutenberg-modals/modal-content',
     ];
 
@@ -64,13 +64,13 @@ class EditorIntegrationTest extends TestCase {
     /**
      * The Modal Dialog block is only meaningful inside a template part.
      */
-    public function test_post_editor_hides_the_modal_dialog_block(): void {
+    public function test_post_editor_hides_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-post' )
         );
 
-        $this->assertNotContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertNotContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**
@@ -88,13 +88,13 @@ class EditorIntegrationTest extends TestCase {
     /**
      * The Site Editor is where template parts are edited, so Modal Dialog stays.
      */
-    public function test_site_editor_keeps_the_modal_dialog_block(): void {
+    public function test_site_editor_keeps_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-site', 'wp_template_part' )
         );
 
-        $this->assertContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**
@@ -152,13 +152,13 @@ class EditorIntegrationTest extends TestCase {
      * Editing a page in the Site Editor is post content, so Modal Dialog is
      * as meaningless there as it is in the post editor.
      */
-    public function test_site_editor_hides_the_modal_dialog_block_when_editing_a_page(): void {
+    public function test_site_editor_hides_the_modal_overlay_block_when_editing_a_page(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-site', 'page' )
         );
 
-        $this->assertNotContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertNotContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**

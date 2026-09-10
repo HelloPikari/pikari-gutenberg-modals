@@ -24,7 +24,7 @@
 $trimmed_content = trim( $content );
 if ( str_starts_with( $trimmed_content, '<div' ) ) {
     $processor = new WP_HTML_Tag_Processor( $trimmed_content );
-    if ( $processor->next_tag( 'div' ) && $processor->has_class( 'wp-block-pikari-gutenberg-modals-modal-dialog' ) ) {
+    if ( $processor->next_tag( 'div' ) && $processor->has_class( 'wp-block-pikari-gutenberg-modals-modal-overlay' ) ) {
         $content = preg_replace(
             '/^\s*<div\b[^>]*>(.*)<\/div>\s*$/s',
             '$1',
