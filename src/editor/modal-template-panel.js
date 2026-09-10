@@ -10,6 +10,7 @@
  * cannot be resolved by Jest.
  */
 
+import { useState } from '@wordpress/element';
 import {
 	SelectControl,
 	Button,
@@ -22,6 +23,7 @@ import { __ } from '@wordpress/i18n';
 import { plus } from '@wordpress/icons';
 import { useInstanceId } from '@wordpress/compose';
 import useModalTemplateEntities from './use-modal-template-entities';
+import ModalTemplateCreateModal from './modal-template-create-modal';
 
 export default function ModalTemplatePanel( {
 	value,
@@ -37,6 +39,8 @@ export default function ModalTemplatePanel( {
 
 	const { parts, options, isResolving, hasResolved, isBlockTheme } =
 		useModalTemplateEntities( value );
+
+	const [ isCreating, setIsCreating ] = useState( false );
 
 	// Hybrid themes have no Site Editor and no entities: select only.
 	const canCreate = showCreate && isBlockTheme;
@@ -59,6 +63,7 @@ export default function ModalTemplatePanel( {
 					variant="secondary"
 					disabled={ isResolving }
 					accessibleWhenDisabled
+					onClick={ () => setIsCreating( true ) }
 					className="pikari-modal-template-panel__create-prominent"
 				>
 					{ __( 'Create modal template', 'pikari-gutenberg-modals' ) }
@@ -76,6 +81,7 @@ export default function ModalTemplatePanel( {
 								'pikari-gutenberg-modals'
 							) }
 							showTooltip
+							onClick={ () => setIsCreating( true ) }
 							className="pikari-modal-template-panel__create"
 						/>
 					) }
@@ -101,6 +107,17 @@ export default function ModalTemplatePanel( {
 						<FlexItem>{ /* Edit button added in Task 8. */ }</FlexItem>
 					</HStack>
 				</>
+			) }
+
+			{ isCreating && (
+				<ModalTemplateCreateModal
+					parts={ parts }
+					onClose={ () => setIsCreating( false ) }
+					onCreated={ ( created ) => {
+						setIsCreating( false );
+						onChange( created.slug );
+					} }
+				/>
 			) }
 		</div>
 	);

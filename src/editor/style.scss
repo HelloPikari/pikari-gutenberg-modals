@@ -114,3 +114,24 @@ span[data-modal-action="close"],
 		align-items: flex-start;
 	}
 }
+// Modal template create dialog
+.pikari-modal-template-create {
+	&__patterns {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+	&__pattern {
+		background: none;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		cursor: pointer;
+		padding: 8px;
+		text-align: center;
+		&.is-selected {
+			border-color: var(--wp-admin-theme-color);
+			box-shadow: 0 0 0 1px var(--wp-admin-theme-color);
+		}
+	}
+}
