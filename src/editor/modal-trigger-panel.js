@@ -23,7 +23,7 @@ import { __ } from '@wordpress/i18n';
 import { isTriggerBlock, hasModalAction } from './trigger-blocks';
 import findLinksInBlocks from './find-links-in-blocks';
 import useModalContentBlocks from './use-modal-content-blocks';
-import useModalTemplateParts from './use-modal-template-parts';
+import ModalTemplatePanel from './modal-template-panel';
 
 // Modal sizes from PHP filter (pikari_gutenberg_modals_modal_sizes). Read
 // once at module scope, same as the deleted group/button extensions this
@@ -55,7 +55,6 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 			pikariModalAccessibleLabel,
 		} = attributes;
 
-		const templateParts = useModalTemplateParts();
 		const modalContentBlocks = useModalContentBlocks();
 
 		// Don't expose block settings in contentOnly editing mode (e.g.
@@ -348,18 +347,14 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 										}
 									/>
 
-									{ templateParts.hasMultiple && (
-										<SelectControl
-											__next40pxDefaultSize
-											__nextHasNoMarginBottom
-											label={ __( 'Modal template', 'pikari-gutenberg-modals' ) }
-											value={ pikariModalTemplatePart }
-											options={ templateParts.options }
-											onChange={ ( value ) =>
-												setAttributes( { pikariModalTemplatePart: value } )
-											}
-										/>
-									) }
+									<ModalTemplatePanel
+										value={ pikariModalTemplatePart }
+										onChange={ ( next ) =>
+											setAttributes( {
+												pikariModalTemplatePart: next,
+											} )
+										}
+									/>
 
 									{ ! isLinkSource && (
 										<TextControl
