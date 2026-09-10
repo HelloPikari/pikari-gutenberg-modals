@@ -77,6 +77,8 @@ Always use these agents proactively:
 
 One or more modal containers are rendered in `wp_footer` (only if triggers are detected on the page) — one per unique template part slug used by triggers. The default container ID is `pikari-modal`; custom template parts produce `pikari-modal--{slug}`. Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
 
+Each container's `aria-labelledby` points at a title element that doesn't exist until modal content loads, so assistive tech falls through to `aria-label` at open time. The container ships a static `aria-label="Modal dialog"`; the store overwrites it with the trigger's own accessible name (the `label` key in Interactivity context, derived once for every trigger surface by `TriggerContext::build()`) when the modal opens, and restores the original on close.
+
 ### REST API Endpoints
 
 **Modal Content** — `GET /pikari-gutenberg-modals/v1/modal-content/{id}`

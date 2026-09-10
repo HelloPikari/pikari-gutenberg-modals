@@ -611,21 +611,23 @@ class BlockSupport
         // Generate unique ID for focus management
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
+        // The format carries its settings as span data attributes rather than
+        // block attributes, so they are handed to TriggerContext in the shape
+        // it reads. Going through it means an inline trigger names its dialog
+        // the same way every other trigger surface does.
+        $attributes = [ 'pikariModalSize' => $size ];
+
         // Handle inline content (Modal Content block on the page)
         if ( $content_type === 'inline' ) {
-            $context = [
-                'contentSource' => 'inline',
-                'inlineAnchor'  => $content_id,
-                'modalId'       => 'inline-' . $content_id,
-            ];
-
-            if ( ! empty( $size ) ) {
-                $context['size'] = $size;
-            }
-
-            if ( ! empty( $template_part ) ) {
-                $context['templatePart'] = $template_part;
-            }
+            $context = TriggerContext::build(
+                $attributes,
+                [
+                    'contentSource' => 'inline',
+                    'inlineAnchor'  => $content_id,
+                    'modalId'       => 'inline-' . $content_id,
+                ],
+                $template_part
+            );
 
             return sprintf(
                 '<a
@@ -658,22 +660,16 @@ class BlockSupport
         }
 
         // Build context data
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $content_type . '-' . $content_id,
         ];
 
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        if ( ! empty( $size ) ) {
-            $context['size'] = $size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $attributes, $base, $template_part );
 
         return sprintf(
             '<a

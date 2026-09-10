@@ -233,4 +233,31 @@ class BlockSupportRenderTest extends TestCase
         // Nothing else in the markup gets decorated.
         $this->assertFalse( $processor->next_tag() );
     }
+
+    /**
+     * The inline RichText format builds its own trigger markup rather than
+     * decorating a block, so it was the one open-mode surface that never
+     * reached TriggerContext::build() — and so the one that still opened an
+     * unnamed dialog after the label work.
+     */
+    public function test_inline_format_trigger_names_its_dialog(): void
+    {
+        $instance = new BlockSupport();
+
+        $link_data = htmlspecialchars( (string) wp_json_encode( [ 'url' => 'https://example.com/page' ] ), ENT_QUOTES );
+        $input     = '<p><span class="modal-trigger" data-modal-trigger="' . $link_data . '" ' .
+            'data-modal-content-type="url" data-modal-content-id="https://example.com/page">Read more</span></p>';
+
+        $result = $instance->filter_block( $input, [ 'blockName' => 'core/paragraph' ] );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag( 'a' ) );
+
+        $context = json_decode(
+            html_entity_decode( (string) $processor->get_attribute( 'data-wp-context' ) ),
+            true
+        );
+
+        $this->assertSame( 'example.com', $context['label'] ?? null );
+    }
 }
