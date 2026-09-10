@@ -28,6 +28,7 @@ const PREFETCH_DELAY_MS = 200;
 // DOM refs should not live in reactive state.
 let activeContainer = null;
 let closeTimeoutId = null;
+let previousAriaLabel = null;
 
 /**
  * Resolve the modal container element for a given template part slug.
@@ -38,6 +39,31 @@ let closeTimeoutId = null;
 function getContainerElement( slug ) {
 	const id = slug === 'modal' ? 'pikari-modal' : `pikari-modal--${ slug }`;
 	return document.getElementById( id );
+}
+
+/**
+ * Name the dialog after the content it is about to show.
+ *
+ * The container's aria-labelledby points at a heading that does not exist
+ * until content loads, so at announcement time the name falls through to
+ * aria-label. The original is captured only once per open session
+ * (previousAriaLabel is null between closes) — otherwise a same-container
+ * reopen with no intervening close would capture an already-overwritten
+ * label instead of the true original.
+ *
+ * @param {HTMLElement} modal - The modal container element.
+ * @param {string}      label - The name to apply. Empty leaves the container alone.
+ */
+function applyDialogLabel( modal, label ) {
+	if ( ! label ) {
+		return;
+	}
+
+	if ( previousAriaLabel === null ) {
+		previousAriaLabel = modal.getAttribute( 'aria-label' );
+	}
+
+	modal.setAttribute( 'aria-label', label );
 }
 
 const { state, actions } = store( 'pikari-modal', {
@@ -84,6 +110,7 @@ const { state, actions } = store( 'pikari-modal', {
 				contentSource,
 				inlineAnchor,
 				templatePart,
+				label,
 			} = context;
 
 			// Validate required context based on content source
@@ -121,6 +148,13 @@ const { state, actions } = store( 'pikari-modal', {
 					activeContainer.classList.remove( 'is-closing' );
 					activeContainer.removeAttribute( 'data-size' );
 					activeContainer.removeAttribute( 'data-placement' );
+					if ( previousAriaLabel !== null ) {
+						activeContainer.setAttribute(
+							'aria-label',
+							previousAriaLabel
+						);
+						previousAriaLabel = null;
+					}
 					const prevBody = activeContainer.querySelector( '.modal-body' );
 					if ( prevBody ) {
 						prevBody.removeAttribute( 'id' );
@@ -184,6 +218,11 @@ const { state, actions } = store( 'pikari-modal', {
 				modal.removeAttribute( 'data-placement' );
 			}
 
+			// Carry the trigger's own name across to the dialog. Inline content
+			// has a second chance below: its own title stands in when the
+			// trigger supplies nothing.
+			applyDialogLabel( modal, label );
+
 			// Set up accessibility features
 			setupFocusTrap( modal );
 			setBackgroundInert( true, modal );
@@ -206,6 +245,12 @@ const { state, actions } = store( 'pikari-modal', {
 				if ( sourceElement ) {
 					if ( modalBody ) {
 						const titleText = sourceElement.getAttribute( 'data-modal-inline-title' ) || '';
+
+						// No label in the context — the content's own title is
+						// the best name available for the dialog.
+						if ( ! label ) {
+							applyDialogLabel( modal, titleText );
+						}
 						const htmlContent = `
 							<article class="modal-entry">
 								<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( titleText ) }</h2>
@@ -391,6 +436,10 @@ const { state, actions } = store( 'pikari-modal', {
 					modal.classList.remove( 'is-closing' );
 					modal.removeAttribute( 'data-size' );
 					modal.removeAttribute( 'data-placement' );
+					if ( previousAriaLabel !== null ) {
+						modal.setAttribute( 'aria-label', previousAriaLabel );
+						previousAriaLabel = null;
+					}
 				}
 				state.content = '';
 				// Clear innerHTML directly since data-wp-html doesn't exist

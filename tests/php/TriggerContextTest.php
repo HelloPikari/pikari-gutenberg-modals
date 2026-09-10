@@ -4,9 +4,21 @@ namespace Pikari\Tests\GutenbergModals;
 
 use Pikari\Tests\TestCase;
 use Pikari\GutenbergModals\TriggerContext;
+use Brain\Monkey\Functions;
 
 class TriggerContextTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        // Label derivation reaches for these on every build; tests that care
+        // about the label override them.
+        Functions\when( 'get_the_title' )->justReturn( '' );
+        Functions\when( 'wp_strip_all_tags' )->returnArg();
+        Functions\when( 'wp_parse_url' )->alias( 'parse_url' );
+    }
+
     public function test_returns_base_unchanged_when_no_options_set(): void
     {
         $base = [ 'postId' => 12, 'modalId' => 'post-12' ];
@@ -102,5 +114,95 @@ class TriggerContextTest extends TestCase
         );
 
         $this->assertArrayNotHasKey( 'placement', $context );
+    }
+
+    public function test_names_the_dialog_after_the_linked_post(): void
+    {
+        Functions\when( 'get_the_title' )->justReturn( 'Annual report' );
+
+        $context = TriggerContext::build( [], [ 'postId' => '7', 'modalId' => 'page-7' ] );
+
+        $this->assertSame( 'Annual report', $context['label'] );
+    }
+
+    public function test_decodes_entities_in_the_dialog_name(): void
+    {
+        // get_the_title() runs wptexturize, so an apostrophe comes back as an
+        // entity. The context travels as JSON and the store applies it with
+        // setAttribute(), which does not decode — so assistive tech would
+        // otherwise read the entity out.
+        Functions\when( 'get_the_title' )->justReturn( 'Steve&#8217;s report' );
+
+        $context = TriggerContext::build( [], [ 'postId' => '7' ] );
+
+        $this->assertSame( "Steve\u{2019}s report", $context['label'] );
+    }
+
+    public function test_omits_the_label_when_the_post_has_no_title(): void
+    {
+        Functions\when( 'get_the_title' )->justReturn( '' );
+
+        $context = TriggerContext::build( [], [ 'postId' => '7' ] );
+
+        $this->assertArrayNotHasKey( 'label', $context );
+    }
+
+    public function test_does_not_ask_for_the_title_of_a_zero_post_id(): void
+    {
+        // get_the_title( 0 ) falls back to the global post, which would name
+        // the dialog after whatever page the trigger happens to sit on.
+        Functions\expect( 'get_the_title' )->never();
+
+        $context = TriggerContext::build( [], [ 'postId' => '0' ] );
+
+        $this->assertArrayNotHasKey( 'label', $context );
+    }
+
+    public function test_names_an_external_dialog_after_its_host(): void
+    {
+        $context = TriggerContext::build(
+            [],
+            [
+                'postId'        => 'https://example.com/some/page',
+                'contentSource' => 'url',
+                'modalId'       => 'url-https://example.com/some/page',
+            ]
+        );
+
+        $this->assertSame( 'example.com', $context['label'] );
+    }
+
+    public function test_leaves_inline_content_to_name_itself(): void
+    {
+        // The store reads data-modal-inline-title once the content is in the
+        // DOM; the anchor slug is an authoring identifier, not a name.
+        $context = TriggerContext::build(
+            [],
+            [ 'contentSource' => 'inline', 'inlineAnchor' => 'promo' ]
+        );
+
+        $this->assertArrayNotHasKey( 'label', $context );
+    }
+
+    public function test_author_label_wins_over_the_post_title(): void
+    {
+        Functions\when( 'get_the_title' )->justReturn( 'Annual report' );
+
+        $context = TriggerContext::build(
+            [ 'pikariModalAccessibleLabel' => 'Our 2026 results' ],
+            [ 'postId' => '7' ]
+        );
+
+        $this->assertSame( 'Our 2026 results', $context['label'] );
+    }
+
+    public function test_author_label_names_an_inline_dialog(): void
+    {
+        $context = TriggerContext::build(
+            [ 'pikariModalAccessibleLabel' => 'Newsletter signup' ],
+            [ 'contentSource' => 'inline', 'inlineAnchor' => 'promo' ]
+        );
+
+        $this->assertSame( 'Newsletter signup', $context['label'] );
     }
 }

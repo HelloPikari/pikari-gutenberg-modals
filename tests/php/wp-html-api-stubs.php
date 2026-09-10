@@ -41,8 +41,8 @@ function esc_url_raw( $url ) {
 function _doing_it_wrong( $function_name, $message, $version ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 }
 
-function wp_parse_url( $url ) {
-    return parse_url( $url ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+function wp_parse_url( $url, $component = -1 ) {
+    return parse_url( $url, $component ); // phpcs:ignore WordPress.WP.AlternativeFunctions
 }
 
 function apply_filters( $tag, $value, ...$args ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter

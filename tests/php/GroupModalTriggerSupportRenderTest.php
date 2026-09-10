@@ -250,4 +250,30 @@ class GroupModalTriggerSupportRenderTest extends TestCase
         $this->assertTrue( $processor->next_tag() );
         $this->assertSame( 'my-custom-anchor', $processor->get_attribute( 'id' ) );
     }
+
+    /**
+     * The derived name has to survive the trip into the serialized context —
+     * the whole point of the label is that it reaches the dialog element.
+     */
+    public function test_group_url_mode_carries_the_host_as_the_dialog_label(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p>Card content</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'url',
+                'pikariModalDirectUrl'     => 'https://example.com/page',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+
+        $context = json_decode( (string) $processor->get_attribute( 'data-wp-context' ), true );
+        $this->assertSame( 'example.com', $context['label'] ?? null );
+    }
 }

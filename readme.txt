@@ -280,6 +280,7 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 * pikari_gutenberg_modals_trigger_blocks filter
 * Breaking: the Modal Trigger block has been removed. Opening a modal is now an action set on a Group or Button block, so the block keeps its own styling, alignment and layout. Existing Modal Trigger blocks will not render and must be rebuilt.
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+* Fixed modal dialogs being named after the trigger's button label ("Open Watch the Talks in modal dialog") or, for triggers using a detected link, not being named at all: a dialog now takes the post title, an author-set accessible label, the inline content's title, or an external URL's host
 * Fixed: a Button with no link set inside a trigger no longer ignores clicks
 
 = 1.3.0 =
