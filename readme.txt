@@ -274,11 +274,13 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 
 = Unreleased =
 * Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
-* Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Modal Trigger can override the dialog's placement
+* Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Group or Button trigger can override the dialog's placement
 * pikari_gutenberg_modals_panel_widths filter for adding or changing the panel widths offered in the editor, alongside --modal-panel-width, --modal-panel-width-narrow and --modal-panel-width-wide custom properties
 * Clickable Card and Modal Button block variations
 * pikari_gutenberg_modals_trigger_blocks filter
 * Breaking: the Modal Trigger block has been removed. Opening a modal is now an action set on a Group or Button block, so the block keeps its own styling, alignment and layout. Existing Modal Trigger blocks will not render and must be rebuilt.
+* Breaking: dialog chrome — background, padding, border radius and shadow — now belongs to an inner Group block with the class modal-chrome, not to the Modal Dialog block itself. A site whose modal template part was customised before this release renders a transparent dialog, with page content showing through the text, until a chrome Group is added. Sites using the template part as shipped are unaffected.
+* Breaking: Group and Button blocks that were already set to open a modal stop doing so on update. The trigger is now carried by a single pikariModalAction attribute, and the previous pikariModalTrigger (Group) and pikariOpenInModal (Button) attributes are no longer read. Nothing is lost from the page — the blocks keep their content and styling — but the modal action has to be set again on each one, under Block settings > Modal.
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
 * Fixed modal dialogs being named after the trigger's button label ("Open Watch the Talks in modal dialog") or, for triggers using a detected link, not being named at all: a dialog now takes the post title, an author-set accessible label, the inline content's title, or an external URL's host
 * Fixed: a Button with no link set inside a trigger no longer ignores clicks
