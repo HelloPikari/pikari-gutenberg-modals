@@ -38,6 +38,26 @@ class ModalPatternsTest extends TestCase
         $this->assertNotFalse( has_action( 'init' ) );
     }
 
+    /**
+     * Registering onto 'init' at the default priority 10 is a real bug:
+     * ModalPatterns is constructed from inside pikari_gutenberg_modals_init(),
+     * itself an 'init' callback at priority 10, so add_action( 'init', ..., 10 )
+     * would append to the priority-10 bucket mid-iteration and never run on a
+     * normal request (WP_Hook's foreach has already passed it). Priority 11 is
+     * a new bucket, which WP_Hook::resort_active_iterations() still visits
+     * during the same pass. This pins that priority so a revert to the
+     * default goes red instead of silently reintroducing the bug.
+     */
+    public function test_constructor_registers_init_hook_at_priority_eleven(): void
+    {
+        $instance = new ModalPatterns();
+
+        $this->assertSame(
+            11,
+            has_action( 'init', [ $instance, 'register_patterns' ] )
+        );
+    }
+
     public function test_register_patterns_registers_three_modal_starters(): void
     {
         Functions\stubTranslationFunctions();
