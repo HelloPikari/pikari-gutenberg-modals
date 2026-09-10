@@ -1,84 +1,83 @@
-# QA script — modal overlay templates (#444)
+# QA — modal overlay templates (#444)
 
-Branch `feature/modal-overlay-templates`. Produced by the whole-branch review, which
-found no Critical issues but could verify nothing in a running editor: **no part of this
-branch has ever been opened in a browser**, because the editor needs a login. Static
-reasoning, unit tests and live REST probes are all that stand behind it.
+Merged to `main` (fast-forward, 6097a1e → 3486c1b). The whole-branch review found no
+Critical issues and named two steps as gating the merge; **both passed in a real
+browser**.
 
-Automated state at the time of writing: 91 PHP tests, 130 JS tests, production build,
-`composer lint`, `npm run lint:js`, `npm run lint:css` — all green. `lint:md:docs` fails
-on 26 pre-existing markdown violations (todo #443), unchanged in count by this branch.
+**8 of 14 steps verified** by driving wp-env with Playwright, as admin and again as a
+real Editor. Zero application console errors across the whole session — the only noise
+was a favicon 404, plus a `/wp/v2/settings` 403 for the Editor, which is core's own
+behaviour for non-admins.
 
-Run on a block theme (Twenty Twenty-Five) in wp-env, as an administrator unless a step
-says otherwise.
+Automated state: 91 PHP tests, 130 JS tests, production build, `composer lint`,
+`lint:js`, `lint:css` — all green. `lint:md:docs` fails on 26 pre-existing markdown
+violations (todo #443), unchanged in count by this branch.
 
-## The two steps that gate merge
+Test environment: wp-env on Twenty Twenty-Five, admin unless a step says otherwise.
 
-Everything else is confirmation. These two are the checks that could still overturn the
-static reasoning:
+## Verified
 
-- [ ] **2. The preview renders real content.** Insert a Group → Block settings → Modal →
-      Action = _Open a modal_. The preview box below the select should show the white
-      chrome card with a Close button and the Content Area placeholder — not an empty
-      200px box. A blank box means the reasoning about `content` arriving as a string
-      (rather than `{ raw, block_version }`) is wrong.
-- [ ] **3. Pattern tiles select when you click the thumbnail.** Click `+` → three tiles
-      with rendered previews. Click the **thumbnail**, not the caption, on "Right panel".
-      The tile should gain a blue selected border. The preview iframe is rendered with
-      `pointer-events: none`, so clicks should fall through to the button — if they do
-      not, the picker is unusable by mouse.
+- [x] **1. Panel appears.** Renders an `h3` "Modal template", a select reading
+      **Default**, the Create (`+`) and Edit (pencil) buttons, and a preview. Both Edit
+      and preview appear on the _default_ selection — that is the Critical fix working;
+      before it they were permanently hidden on any site whose only template is the
+      default.
+- [x] **2. The preview renders real content.** _(merge gate)_ The iframe contains the
+      real chrome card — "Close / Modal Content Area", 6 blocks, `.modal-chrome` and the
+      close button present, 202px tall, no stuck spinner. Confirms `content` arrives as
+      a string, which was reasoning, not observation, until now.
+- [x] **3. Pattern tiles select on thumbnail click.** _(merge gate)_ Clicking the
+      _iframe_ of the "Right panel" tile moved `aria-pressed` and applied `is-selected`,
+      so `pointer-events: none` on the preview does let clicks through.
+- [x] **4. Blank name.** Produced "Modal 2" / slug `modal-2`, and the select switched to
+      it immediately — the thing the old localized array could not do.
+- [x] **5. A name that cleans to `modal`.** `MODAL!` produced slug `wp-custom-part`,
+      shown as "MODAL!" in the select. No masquerading as Default.
+- [x] **6. Post-create settle.** No visible glitch; the select landed on the new
+      template and the stored block attribute matched it.
+- [x] **11. Non-admin.** As a real Editor: `canUser('create')` false, the select still
+      populated with all three templates, and **both** the `+` and pencil absent while
+      the preview remained. The capability gating added in the final fix wave works for
+      the role it was written for.
+- [x] **14. Frontend smoke.** Clicking the card opened `pikari-modal--wp-custom-part` —
+      the container for the part created through the new panel, not the default — with
+      `aria-label="example.com"`, while the untouched default container still read the
+      generic "Modal dialog". No `modal-dialog` class anywhere in the rendered page.
 
-## Full script, in order
+Incidental: the Group's parent-block label reads **"Clickable Card"**, so the block
+variation resolves in a real editor.
 
-- [ ] **1. Panel appears at all.** New post → Group → Modal → Action = _Open a modal_.
-      Expect: a "Modal template" heading, a `+` button top-right, a select reading
-      **Default**, a pencil Edit button, and a preview.
-- [ ] **2.** See above.
-- [ ] **3.** See above.
-- [ ] **4. Blank name.** Leave Name empty → Create. Expect a part titled **"Modal 2"**,
-      slug `modal-2`. Wrong: anything that shows up as "Default".
-- [ ] **5. A name that cleans to `modal`.** Name = `MODAL!` → Create. Expect slug
-      `wp-custom-part` (check Site Editor → Patterns → Template Parts). Wrong: a second
-      part with slug `modal`, which would masquerade as the default.
-- [ ] **6. Post-create settle.** Immediately after Create, watch the select for ~1s. It
-      should land on the new template's name. Note any flash of blank or "Default" —
-      known, self-correcting, but judge whether it reads as a glitch.
-- [ ] **7. Edit round-trip.** Type into the post body and leave it **unsaved** → click
-      the pencil. Expect focus mode on the template part with a Back arrow; go Back and
-      confirm your unsaved text survived. This is the behaviour the plan flagged as
-      unobserved — if it discards the post, report it rather than working around it.
-- [ ] **8. Inline format heading order.** Select text → Cmd+M. The popover's own heading
-      is `h4` and the panel now renders `h5` beneath it. Confirm the order reads
-      correctly to a screen reader, and note that the h5 has no dedicated CSS so it
-      renders smaller than the inspector's h3 — expected, but check it does not look
-      broken.
+## Still to check by hand
+
+- [ ] **7. Edit round-trip.** Type into the post body, leave it **unsaved**, click the
+      pencil. Expect focus mode on the template part with a Back arrow; go Back and
+      confirm the unsaved text survived. The plan flagged this behaviour as unobserved —
+      if it discards the post, report it rather than working around it.
+- [ ] **8. Inline format heading order.** I could not open the inline-format popover
+      through automation: synthetic text selection does not trigger the RichText
+      shortcut. The code path is statically confirmed (`modal-trigger-edit.js` passes
+      `headingLevel={5}`), but nobody has seen it. Select text → Cmd+M, and check the
+      popover's `h4` is followed by the panel's `h5`, and that the smaller heading does
+      not look broken.
 - [ ] **9. Inline re-apply persists.** On an **already-active** inline trigger, change
-      the template from the popover. Save, reload, inspect the markup for
-      `data-modal-template-part="…"`. Wrong: the attribute is missing — that was a real
-      defect the plan would have shipped, and this is its regression check.
-- [ ] **10. Stale carry-over.** Apply a trigger using template X → click into plain text
-      in the same paragraph → select new text → Cmd+M → apply. Check whether the new
-      trigger silently inherited X. Pre-existing behaviour for `size` and
-      `contentSource`; this branch extends the pattern to the template field.
-- [ ] **11. Non-admin.** Log in as an **Editor**. The select should populate (reading is
-      allowed — verified by REST probe), but the `+` and pencil should NOT appear. This
-      is the capability gating added in the final fix wave; before it, an Editor got a
-      raw _"Sorry, you are not allowed to access the templates on this site."_ Watch
-      also for the known one-paint delay before the controls appear for an admin.
+      the template from the popover, save, reload, and confirm
+      `data-modal-template-part="…"` is in the markup. This is the regression check for
+      a real defect the plan would otherwise have shipped.
+- [ ] **10. Stale carry-over.** Apply a trigger using template X, click into plain text
+      in the same paragraph, select new text, Cmd+M, apply — check whether the new
+      trigger inherited X. Pre-existing behaviour for `size` and `contentSource`; this
+      branch extends the pattern to the template field.
 - [ ] **12. Hybrid theme.** Switch to a classic theme declaring `block-template-parts`
       support. Expect select only — no `+`, no pencil, no preview — populated from the
-      localized array, and **zero console errors**. Confirm the select is not stuck
-      disabled.
-- [ ] **13. Site Editor.** Edit the modal template part. The close-trigger toolbar button
-      should still appear for inline text, and Modal Close Button / Modal Content Area
-      should be insertable — this exercises the renamed `ancestor` arrays in a real
+      localized array, zero console errors, and the select **not** stuck disabled.
+- [ ] **13. Site Editor.** Edit the modal template part: the close-trigger toolbar
+      button should still appear for inline text, and Modal Close Button / Modal Content
+      Area should be insertable. This exercises the renamed `ancestor` arrays in a real
       inserter, which no test covers.
-- [ ] **14. Frontend smoke.** Point a trigger at a newly created template, view the page,
-      open the modal. Confirm the right container renders and Close works.
 
 ## Do not chase this
 
-The panel's prominent **"Create modal template"** empty state can never render. The
+The panel's prominent **"Create modal template"** empty state can never render: the
 plugin always provides a synthetic default template part, so `parts` is never empty on a
 block theme, and PHP injects a default on hybrid themes too. The small `+` is the create
 affordance. The dead branch was kept deliberately for fidelity to the spec's two-state
