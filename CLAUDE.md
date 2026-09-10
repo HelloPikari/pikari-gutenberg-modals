@@ -120,7 +120,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 3. **Interactivity API namespace inheritance** — Elements with `data-wp-on--*` directives don't need their own `data-wp-interactive` if they're inside a parent element that has it. The namespace is inherited through the island's vdom tree. Adding unnecessary `data-wp-interactive` creates nested islands which cause hydration/event issues.
 
-4. **Modal Overlay block controls overlay only** — Dialog chrome (background, border, padding, shadow) belongs on an inner `core/group` block with class `modal-chrome`, not on the Modal Overlay block itself. The editor shows a deprecation `Notice` when legacy chrome attributes are detected directly on the Modal Overlay. The `INNER_BLOCKS_TEMPLATE` in `edit.js` sets up the correct structure: Modal Overlay wraps a `core/group.modal-chrome` (white bg, 20px radius, 1.5rem padding, shadow, vertical flex) which contains the close trigger row and content area.
+4. **Modal Overlay block controls overlay only** — Dialog chrome (background, border, padding, shadow) belongs on an inner `core/group` block with class `modal-chrome`, not on the Modal Overlay block itself. The block has no chrome supports and no deprecation `Notice` for legacy chrome attributes — both were removed in 1.3. The `INNER_BLOCKS_TEMPLATE` in `edit.js` sets up the correct structure: Modal Overlay wraps a `core/group.modal-chrome` (white bg, 20px radius, 1.5rem padding, shadow, vertical flex) which contains the close trigger row and content area.
 
 5. **`.modal-chrome` flex bridge** — The `modal-chrome` Group is the scroll architecture bridge between `.modal-content` (90vh cap) and the scrollable content area. Mobile and fullscreen overrides zero border-radius with `!important` (in `modal-overlay/style.css`). CSS custom properties `--modal-content-bg`, `--modal-content-shadow`, and `--modal-border-radius` were removed in the UX simplification — use block attributes on the chrome Group instead.
 
@@ -277,4 +277,4 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 
 ---
 
-Last updated: 2026-09-10 (v1.2.2..HEAD)
+Last updated: 2026-09-10 (v1.3.0..HEAD)

@@ -486,6 +486,7 @@ const ModalTriggerEdit = ( { isActive, value, onChange, contentRef } ) => {
 					/>
 					<ModalTemplatePanel
 						value={ templatePart }
+						headingLevel={ 5 }
 						onChange={ ( newTemplatePart ) => {
 							setTemplatePart( newTemplatePart );
 

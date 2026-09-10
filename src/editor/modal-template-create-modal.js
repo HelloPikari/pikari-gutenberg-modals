@@ -12,10 +12,12 @@ import {
 	Button,
 	TextControl,
 	Notice,
+	BaseControl,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- Stable layout primitive, used throughout core inspector UI (e.g. the navigation block).
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
+import { useInstanceId } from '@wordpress/compose';
 import { selectModalPatterns } from './modal-template-parts';
 import useCreateModalTemplate from './use-create-modal-template';
 
@@ -24,6 +26,11 @@ export default function ModalTemplateCreateModal( {
 	onClose,
 	onCreated,
 } ) {
+	const patternsLabelId = useInstanceId(
+		ModalTemplateCreateModal,
+		'pikari-modal-template-create-patterns-label'
+	);
+
 	const patterns = useSelect(
 		( select ) =>
 			selectModalPatterns( select( coreStore ).getBlockPatterns() ),
@@ -115,7 +122,14 @@ export default function ModalTemplateCreateModal( {
 					</Notice>
 				) }
 
-				<div className="pikari-modal-template-create__patterns">
+				<BaseControl.VisualLabel id={ patternsLabelId }>
+					{ __( 'Starter pattern', 'pikari-gutenberg-modals' ) }
+				</BaseControl.VisualLabel>
+				<div
+					className="pikari-modal-template-create__patterns"
+					role="group"
+					aria-labelledby={ patternsLabelId }
+				>
 					{ parsedPatterns.map( ( pattern ) => (
 						<button
 							key={ pattern.name }

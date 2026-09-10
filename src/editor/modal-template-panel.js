@@ -21,6 +21,7 @@ import {
 } from '@wordpress/components';
 import { useSelect } from '@wordpress/data';
 import { store as blockEditorStore } from '@wordpress/block-editor';
+import { store as coreStore } from '@wordpress/core-data';
 import { __ } from '@wordpress/i18n';
 import { plus, pencil } from '@wordpress/icons';
 import { useInstanceId } from '@wordpress/compose';
@@ -34,6 +35,7 @@ export default function ModalTemplatePanel( {
 	onChange,
 	showCreate = true,
 	showPreview = true,
+	headingLevel = 3,
 } ) {
 	const headingId = useInstanceId(
 		ModalTemplatePanel,
@@ -52,16 +54,50 @@ export default function ModalTemplatePanel( {
 
 	const [ isCreating, setIsCreating ] = useState( false );
 
+	const {
+		onNavigateToEntityRecord,
+		canCreateTemplatePart,
+		canEditSelectedPart,
+	} = useSelect(
+		( select ) => {
+			const { canUser } = select( coreStore );
+
+			return {
+				onNavigateToEntityRecord: select( blockEditorStore ).getSettings()
+					.onNavigateToEntityRecord,
+				// Hybrid themes never show Create/Edit (see canCreate below), so
+				// skip the OPTIONS request entirely there -- same reasoning as
+				// useModalTemplateEntities()'s `{ enabled: isBlockTheme }`.
+				canCreateTemplatePart: isBlockTheme
+					? canUser( 'create', {
+						kind: 'postType',
+						name: 'wp_template_part',
+					} )
+					: false,
+				canEditSelectedPart:
+					isBlockTheme && selectedPart?.id
+						? canUser( 'update', {
+							kind: 'postType',
+							name: 'wp_template_part',
+							id: selectedPart.id,
+						} )
+						: false,
+			};
+		},
+		[ isBlockTheme, selectedPart?.id ]
+	);
+
 	// Hybrid themes have no Site Editor and no entities: select only.
-	const canCreate = showCreate && isBlockTheme;
+	// canUser() returns `undefined` while its resolution is in flight, and
+	// again briefly whenever selectedPart.id changes; `!!` treats that the
+	// same as "no" so the control never renders as usable before we actually
+	// know the current user can create template parts. Creating a template
+	// part requires edit_theme_options (administrator), while everything
+	// else in this panel needs only edit_posts, so on a multi-role site an
+	// Editor must never see Create/Edit render, then fail, then disappear.
+	const canCreate = showCreate && isBlockTheme && !! canCreateTemplatePart;
 
 	const isEmpty = hasResolved && parts.length === 0;
-
-	const onNavigateToEntityRecord = useSelect(
-		( select ) =>
-			select( blockEditorStore ).getSettings().onNavigateToEntityRecord,
-		[]
-	);
 
 	const theme = selectedPart?.theme || currentTheme;
 
@@ -82,11 +118,20 @@ export default function ModalTemplatePanel( {
 		? __( 'No modal templates found.', 'pikari-gutenberg-modals' )
 		: __( 'Select a template for this modal.', 'pikari-gutenberg-modals' );
 
+	// Nests under the popover's own <Heading level={ 4 }> when rendered from
+	// the inline-format toolbar, so the heading level is a prop rather than a
+	// hardcoded <h3> -- a fixed level would make the panel a heading sibling
+	// of the popover instead of a subsection of it.
+	const HeadingTag = `h${ headingLevel }`;
+
 	return (
 		<div className="pikari-modal-template-panel">
-			<h3 id={ headingId } className="pikari-modal-template-panel__heading">
+			<HeadingTag
+				id={ headingId }
+				className="pikari-modal-template-panel__heading"
+			>
 				{ __( 'Modal template', 'pikari-gutenberg-modals' ) }
-			</h3>
+			</HeadingTag>
 
 			{ canCreate && isEmpty ? (
 				<Button
@@ -130,7 +175,7 @@ export default function ModalTemplatePanel( {
 								value={ value || '' }
 								options={ options }
 								onChange={ ( next ) => onChange( next ) }
-								disabled={ isResolving }
+								disabled={ ! hasResolved || isResolving }
 								accessibleWhenDisabled
 								help={ helpText }
 							/>
@@ -139,7 +184,8 @@ export default function ModalTemplatePanel( {
 							{ isBlockTheme &&
 								selectedPart &&
 								hasResolved &&
-								onNavigateToEntityRecord && (
+								onNavigateToEntityRecord &&
+								!! canEditSelectedPart && (
 								<Button
 									__next40pxDefaultSize
 									variant="secondary"
