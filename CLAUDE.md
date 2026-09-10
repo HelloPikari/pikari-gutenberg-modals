@@ -47,21 +47,28 @@ Always use these agents proactively:
 | `EditorIntegration`        | ~130  | Editor assets, localized config, block context restrictions           |     |
 | `ModalTemplatePart`        | ~285  | Template part registration (block themes), file-based fallback        |     |
 | `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)        |     |
+| `ModalPatterns`            | ~110  | Starter patterns registered to the modal template part area           |     |
 
 ### JavaScript Files
 
 **Editor (`src/editor/`):**
 
-| File                          | Lines | Purpose                                                                                                       |
-| ----------------------------- | ----- | ------------------------------------------------------------------------------------------------------------- |
-| `modal-trigger-edit.js`       | ~290  | RichText format toolbar UI, LinkControl popover, post search                                                  |
-| `modal-trigger-panel.js`      | ~350  | The single "Modal" inspector panel shown on every trigger block                                               |
-| `trigger-blocks.js`           | ~70   | Pure, import-free: `TRIGGER_BLOCKS`, `MODAL_ATTRIBUTES`, `isTriggerBlock()`, `hasModalAction()` — unit tested |
-| `modal-trigger-attributes.js` | ~30   | Registers `MODAL_ATTRIBUTES` on every trigger block via `blocks.registerBlockType`                            |
-| `modal-trigger-variations.js` | ~40   | Registers the Clickable Card and Modal Button block variations                                                |
-| `modal-format.js`             | ~20   | RichText format type registration                                                                             |
-| `index.js`                    | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`                                              |
-| `style.scss`                  | ~65   | Editor visual indicators (dashed purple underline on modal triggers)                                          |
+| File                             | Lines | Purpose                                                                                                                      |
+| -------------------------------- | ----- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `modal-trigger-edit.js`          | ~290  | RichText format toolbar UI, LinkControl popover, post search                                                                 |
+| `modal-trigger-panel.js`         | ~350  | The single "Modal" inspector panel shown on every trigger block                                                              |
+| `trigger-blocks.js`              | ~70   | Pure, import-free: `TRIGGER_BLOCKS`, `MODAL_ATTRIBUTES`, `isTriggerBlock()`, `hasModalAction()` — unit tested                |
+| `modal-trigger-attributes.js`    | ~30   | Registers `MODAL_ATTRIBUTES` on every trigger block via `blocks.registerBlockType`                                           |
+| `modal-trigger-variations.js`    | ~40   | Registers the Clickable Card and Modal Button block variations                                                               |
+| `modal-format.js`                | ~20   | RichText format type registration                                                                                            |
+| `index.js`                       | ~13   | Entry point, exports `toggleFormat`/`applyFormat`/`removeFormat`                                                             |
+| `style.scss`                     | ~65   | Editor visual indicators (dashed purple underline on modal triggers)                                                         |
+| `modal-template-parts.js`        | ~190  | Pure helpers (imports nothing but `@wordpress/i18n`): option building, slug/title utilities, pattern selection — unit tested |
+| `modal-template-panel.js`        | ~175  | Shared "Modal template" panel rendered on every trigger — select, create, edit, preview                                      |
+| `use-modal-template-entities.js` | ~80   | Reads modal template parts from core-data entities; falls back to a localized array on hybrid themes                         |
+| `use-create-modal-template.js`   | ~75   | Creates a new modal template part from a starter pattern                                                                     |
+| `modal-template-create-modal.js` | ~165  | Create-modal-template dialog: starter pattern picker, title field, error handling                                            |
+| `modal-template-preview.js`      | ~90   | Read-only preview of the selected modal template part's content                                                              |
 
 **Frontend (`src/frontend/`):**
 
@@ -103,7 +110,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 10. **Theme per-block styles** — `BlockStyleCollector::collect_render_enqueued_styles()` captures styles enqueued during `do_blocks()` by comparing `wp_styles()->queue` before/after rendering (catches theme button styles registered via `wp_enqueue_block_style()`)
 11. **Block support CSS in wp_footer** — `BlockSupport::render_modal_containers()` snapshots block support CSS before rendering template parts and outputs any newly generated layout/spacing CSS in a `<style>` tag (needed because `wp_enqueue_block_support_styles()` runs earlier)
 12. **Style architecture split** — `modal-overlay/style.css` owns ALL modal visual styles (overlay, `.modal-content`, `.modal-chrome`, animations, keyframes, size variants, mobile, print, reduced motion, CSS custom properties). `frontend/style.scss` contains only trigger-specific styles (inline triggers, group triggers, close triggers). This separation means the modal chrome appearance is governed by WordPress block styles on the `modal-chrome` Group, not by custom CSS properties on `:root`.
-13. **Placement is container geometry** — The Modal Dialog block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
+13. **Placement is container geometry** — The Modal Overlay block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
 
 ### Critical Implementation Gotchas
 
@@ -113,7 +120,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 3. **Interactivity API namespace inheritance** — Elements with `data-wp-on--*` directives don't need their own `data-wp-interactive` if they're inside a parent element that has it. The namespace is inherited through the island's vdom tree. Adding unnecessary `data-wp-interactive` creates nested islands which cause hydration/event issues.
 
-4. **Modal Dialog block controls overlay only** — Dialog chrome (background, border, padding, shadow) belongs on an inner `core/group` block with class `modal-chrome`, not on the Modal Dialog block itself. The editor shows a deprecation `Notice` when legacy chrome attributes are detected directly on the Modal Dialog. The `INNER_BLOCKS_TEMPLATE` in `edit.js` sets up the correct structure: Modal Dialog wraps a `core/group.modal-chrome` (white bg, 20px radius, 1.5rem padding, shadow, vertical flex) which contains the close trigger row and content area.
+4. **Modal Overlay block controls overlay only** — Dialog chrome (background, border, padding, shadow) belongs on an inner `core/group` block with class `modal-chrome`, not on the Modal Overlay block itself. The editor shows a deprecation `Notice` when legacy chrome attributes are detected directly on the Modal Overlay. The `INNER_BLOCKS_TEMPLATE` in `edit.js` sets up the correct structure: Modal Overlay wraps a `core/group.modal-chrome` (white bg, 20px radius, 1.5rem padding, shadow, vertical flex) which contains the close trigger row and content area.
 
 5. **`.modal-chrome` flex bridge** — The `modal-chrome` Group is the scroll architecture bridge between `.modal-content` (90vh cap) and the scrollable content area. Mobile and fullscreen overrides zero border-radius with `!important` (in `modal-overlay/style.css`). CSS custom properties `--modal-content-bg`, `--modal-content-shadow`, and `--modal-border-radius` were removed in the UX simplification — use block attributes on the chrome Group instead.
 
@@ -122,6 +129,14 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 7. **A block variation is not visible server-side** — `src/editor/modal-trigger-variations.js` pre-fills attributes and supplies an inserter entry; the variation name (e.g. `pikari-modal-clickable-card`) is never serialized into saved content. `render_block` (and `isTriggerBlock()`/`hasModalAction()` on the JS side) must key on `pikariModalAction`, never on the variation.
 
 8. **`core/image` is excluded from trigger blocks on purpose** — Core's own lightbox ("Enlarge on click") attaches a competing click handler via `render_block_core/image` and is offered by default. Adding `core/image` to `pikari_gutenberg_modals_trigger_blocks` would put two click handlers on one element. A site that wants it anyway can add it through that filter, deliberately.
+
+9. **Editor packages are webpack externals, not devDependencies.** `@wordpress/data`, `core-data`, `components`, `block-editor`, `compose`, `html-entities`, `notices`, `url`, and `blocks` are not installed. Jest cannot resolve them. Any logic that needs unit tests must live in a module importing nothing from `@wordpress/*` except `@wordpress/i18n` — see `src/editor/modal-template-parts.js`.
+
+10. **The default modal part maps to an empty slug.** Triggers store `''` to mean the default. The entity list contains a part with slug `modal`; `buildPartOptions()` (`src/editor/modal-template-parts.js`) collapses the two so the select never offers "Default" twice.
+
+11. **`useEntityRecords`'s fourth argument is unverified below WP 7.1.** `use-modal-template-entities.js` passes `{ enabled: isBlockTheme }` to skip the entity fetch on hybrid themes. That option was confirmed honoured in WordPress 7.1; the plugin's floor is 6.8, which was not checked. If 6.8 ignores it, the only consequence is one wasted REST request on hybrid themes whose response is never read — the hybrid branch bypasses `records` entirely and hard-overrides `hasResolved`/`isResolving` to `true`/`false` regardless of what the hook returns.
+
+12. **The panel's "no modal templates yet" empty state can't occur in practice.** `ModalTemplatePanel`'s prominent "Create modal template" button renders when `isEmpty` (`hasResolved && parts.length === 0`), reading as a real two-state component — but `parts` is never empty: `ModalTemplatePart` always registers a synthetic default template part for block themes, and `EditorIntegration::get_modal_template_parts()` injects a default `modal` entry for hybrid themes too. Only the small `+` create button (the non-empty branch) ever actually renders.
 
 ## Custom Hooks & Filters
 
@@ -218,7 +233,8 @@ pikari-gutenberg-modals/
 ├── src/editor/                   # Block editor JS + SCSS
 ├── src/frontend/                 # Frontend Interactivity API JS + SCSS
 ├── build/                        # Compiled assets (gitignored)
-├── parts/                        # Block template parts (modal.html — Modal Dialog > modal-chrome Group > close row + content area)
+├── parts/                        # Block template parts (modal.html — Modal Overlay > modal-chrome Group > close row + content area)
+├── patterns/                     # Starter patterns for the "modal" template part area (registered by ModalPatterns)
 ├── languages/                    # Translation files (.pot, .po, .mo)
 ├── _playground/                  # WordPress Playground blueprints
 ├── docs/                         # Documentation
@@ -261,4 +277,4 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 
 ---
 
-Last updated: 2026-02-27 (v1.2.2..HEAD)
+Last updated: 2026-09-10 (v1.2.2..HEAD)

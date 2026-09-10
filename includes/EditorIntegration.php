@@ -366,7 +366,7 @@ class EditorIntegration
     /**
      * Restrict modal blocks to the editing context they belong in.
      *
-     * The Modal Dialog block is only meaningful inside a template part; the
+     * The Modal Overlay block is only meaningful inside a template part; the
      * Modal Content block is only meaningful in post content. Which of the two
      * is hidden depends on what is being edited, not on which admin screen is
      * open — since WordPress 6.3 the Site Editor edits both.
@@ -412,7 +412,7 @@ class EditorIntegration
     /**
      * Decide which modal blocks to hide for a given editor context.
      *
-     * Editing post content hides Modal Dialog; editing a template or template
+     * Editing post content hides Modal Overlay; editing a template or template
      * part hides Modal Content. The Site Editor serves both, so the answer
      * comes from the post in the context rather than the context name:
      * `wp-admin/site-editor.php` populates it when a page is being edited

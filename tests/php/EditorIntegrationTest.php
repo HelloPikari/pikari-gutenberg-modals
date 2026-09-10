@@ -62,7 +62,7 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * The Modal Dialog block is only meaningful inside a template part.
+     * The Modal Overlay block is only meaningful inside a template part.
      */
     public function test_post_editor_hides_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
@@ -86,7 +86,7 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * The Site Editor is where template parts are edited, so Modal Dialog stays.
+     * The Site Editor is where template parts are edited, so Modal Overlay stays.
      */
     public function test_site_editor_keeps_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
@@ -149,7 +149,7 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * Editing a page in the Site Editor is post content, so Modal Dialog is
+     * Editing a page in the Site Editor is post content, so Modal Overlay is
      * as meaningless there as it is in the post editor.
      */
     public function test_site_editor_hides_the_modal_overlay_block_when_editing_a_page(): void {

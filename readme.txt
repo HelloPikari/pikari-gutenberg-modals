@@ -28,7 +28,7 @@ Apply the modal action to a Group or Button, or highlight text and use the inlin
 * **Template Part Customization** — Customize the modal dialog layout (close button, content area) via the Site Editor template part system
 * **Multiple Modal Templates** — Create different modal designs and assign them per trigger
 * **Overlay Styling** — Solid colors, gradients, or images with alpha transparency on the overlay backdrop
-* **Dialog Chrome** — Background color, border, padding, and box shadow on the dialog container via block supports
+* **Dialog Chrome** — Background color, border, padding, and box shadow, set on the inner modal-chrome Group block
 * **Four Size Options** — Default, Small, Large, and Fullscreen (extendable via filter)
 * **Smooth Animations** — CSS transitions with reduced-motion support
 * **WordPress Interactivity API** — Built on the core Interactivity API for optimal performance
@@ -178,7 +178,7 @@ Default sizes: Default (empty), Small (500px), Large (1200px), Fullscreen (100%)
 
 = Modal Placement =
 
-Set placement on the Modal Dialog block: Centered (default), Left edge, or Right edge. Edge placements pin the dialog full height at a panel width. A trigger can override the dialog's placement.
+Set placement on the Modal Overlay block: Centered (default), Left edge, or Right edge. Edge placements pin the dialog full height at a panel width. A trigger can override the dialog's placement.
 
 Panel widths are set with CSS custom properties:
 
@@ -204,6 +204,10 @@ Then add the CSS for your custom width:
 }`
 
 Default panel widths: Default (420px), Narrow (320px), Wide (600px)
+
+= Modal Templates =
+
+Modal starter patterns are registered with `blockTypes` set to `core/template-part/modal`. Themes and plugins can register their own with `register_block_pattern()` using the same block type, and they will appear in the Create modal template picker.
 
 = Domain Restrictions =
 
@@ -258,7 +262,7 @@ Override any of these in your theme's CSS to customize the modal:
     --modal-panel-width: 480px;
 }`
 
-Dialog appearance — background, border radius, padding and shadow — is set with block attributes on the modal-chrome Group inside the Modal Dialog block, not with custom properties.
+Dialog appearance — background, border radius, padding and shadow — is set with block attributes on the modal-chrome Group inside the Modal Overlay block, not with custom properties.
 
 The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
 
@@ -284,6 +288,9 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
 * Fixed modal dialogs being named after the trigger's button label ("Open Watch the Talks in modal dialog") or, for triggers using a detected link, not being named at all: a dialog now takes the post title, an author-set accessible label, the inline content's title, or an external URL's host
 * Fixed: a Button with no link set inside a trigger no longer ignores clicks
+* Breaking: the pikari-gutenberg-modals/modal-dialog block is now pikari-gutenberg-modals/modal-overlay. Customized modal template parts containing the old block will render as an unrecognised block and must be recreated.
+* Modal template panel on every trigger: select, create from a starter pattern, edit, and preview a modal template part.
+* Three starter patterns — Centered dialog, Right panel, Left panel — registered to the modal template part area.
 
 = 1.3.0 =
 * Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action
