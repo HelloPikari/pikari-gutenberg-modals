@@ -138,3 +138,19 @@ span[data-modal-action="close"],
 		}
 	}
 }
+// Modal template preview
+.pikari-modal-template-preview {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-top: 12px;
+	overflow: hidden;
+	&.is-loading {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+		min-height: 200px;
+	}
+	&__placeholder {
+		min-height: 200px;
+	}
+}

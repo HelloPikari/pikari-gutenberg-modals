@@ -26,13 +26,13 @@ import { plus, pencil } from '@wordpress/icons';
 import { useInstanceId } from '@wordpress/compose';
 import useModalTemplateEntities from './use-modal-template-entities';
 import ModalTemplateCreateModal from './modal-template-create-modal';
+import ModalTemplatePreview from './modal-template-preview';
 import { createTemplatePartId } from './modal-template-parts';
 
 export default function ModalTemplatePanel( {
 	value,
 	onChange,
 	showCreate = true,
-	// eslint-disable-next-line no-unused-vars -- consumed by the preview added in Task 9.
 	showPreview = true,
 } ) {
 	const headingId = useInstanceId(
@@ -166,6 +166,10 @@ export default function ModalTemplatePanel( {
 						onChange( created.slug );
 					} }
 				/>
+			) }
+
+			{ showPreview && isBlockTheme && selectedPart && (
+				<ModalTemplatePreview slug={ selectedPart.slug } theme={ theme } />
 			) }
 		</div>
 	);
