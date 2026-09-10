@@ -2,22 +2,31 @@
 
 **Date:** 2026-09-07
 **Status:** Approved, not yet implemented
-**Depends on:** `feature/modal-placement` (blocked on browser QA, Pikari todo #441)
+**Depends on:** `feature/modal-placement` — merged to `main` (PR #112, `1db0e1f`); Pikari
+todo #441 is closed. `feature/simplify-modal-dialog-ux` also merged (PR #113, `460a9c2`).
+As of the 2026-09-09 amendments below, this plan additionally depends on
+`feature/modal-trigger-as-property`, which has not yet merged.
 
 ## Problem
 
 Users have no discoverable way to choose — or create — a modal template part.
 
-A selector is in fact already wired into all four trigger surfaces:
+A selector is in fact already wired into both trigger surfaces:
 
-| Surface                 | File                                          | Line |
-| ----------------------- | --------------------------------------------- | ---- |
-| Modal Trigger block     | `src/blocks/modal-trigger/edit.js`            | 465  |
-| Inline RichText format  | `src/editor/modal-trigger-edit.js`            | 489  |
-| `core/button` extension | `src/editor/button-modal-extension.js`        | 245  |
-| `core/group` extension  | `src/editor/group-modal-trigger-extension.js` | 358  |
+> **Amended 2026-09-09.** This originally listed four surfaces: the Modal Trigger block,
+> the inline RichText format, and separate `core/button`/`core/group` extensions.
+> `feature/modal-trigger-as-property` deleted the block and both extensions, replacing them
+> with `pikariModalAction` and related attributes registered directly on `core/group` and
+> `core/button`, surfaced through one shared "Modal" panel
+> (`src/editor/modal-trigger-panel.js`). That leaves two surfaces: the shared panel
+> (serving both blocks) and the inline format.
 
-All four render behind the same gate in `src/editor/use-modal-template-parts.js`:
+| Surface                                            | File                                | Line |
+| -------------------------------------------------- | ----------------------------------- | ---- |
+| Shared "Modal" panel (`core/group`, `core/button`) | `src/editor/modal-trigger-panel.js` | 308  |
+| Inline RichText format                             | `src/editor/modal-trigger-edit.js`  | 489  |
+
+Both render behind the same gate in `src/editor/use-modal-template-parts.js`:
 
 ```js
 hasMultiple: parts.length >= 2;
@@ -275,13 +284,20 @@ Editor. The panel degrades to select-only — no create, no edit, no preview —
 retained localized array. Detect via a localized `isBlockTheme` flag; the panel must degrade,
 not error.
 
+**Amended 2026-09-09.** The two bullets below originally named three surfaces: the inline
+RichText format; a `core/group` extension — kept its own old select, never given the new
+panel — deprecated in favour of the Modal Trigger block; and that block itself, named only
+as the extension's replacement, not as a degraded surface of its own.
+`feature/modal-trigger-as-property` removed the block and both the `core/group` and
+`core/button` extensions, replacing them with attributes on `core/group` and `core/button`
+directly, served by one shared "Modal" panel (`src/editor/modal-trigger-panel.js`). There is
+no `core/group`-specific degraded mode left to describe. The inline format still degrades,
+for the reason below — and, per the Hybrid themes bullet directly above, so does the
+select-only experience on classic themes without Site Editor support.
+
 **Inline RichText format.** The format's UI is a transient `Popover`, not `InspectorControls`.
 A `BlockPreview` there is cramped and disappears on blur. That surface gets select + Edit
-only; create and preview live on the three block surfaces.
-
-**`core/group` extension.** Deprecated in favour of the Modal Trigger block. It keeps its
-existing select as-is and does **not** receive the new panel. Removing the extension is
-separate work.
+only; create and preview live on the shared block panel (`core/group` and `core/button`).
 
 ## 7. Testing
 
@@ -348,5 +364,7 @@ never captured. It only mattered for the fallback, which no longer exists.
 
 - `modalSize` stays on the trigger; the size-vs-placement interaction that #441 flags
   ("a fullscreen size on a trigger pointing at a panel dialog") is a separate question.
-- Removing the `core/group` modal trigger extension.
+- ~~Removing the `core/group` modal trigger extension.~~ Superseded by
+  `feature/modal-trigger-as-property`, which removes it as part of its own work; that
+  branch has not yet merged. See the amendment note in §6.
 - Any migration or deprecation shim for the renamed block.

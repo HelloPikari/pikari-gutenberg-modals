@@ -41,6 +41,13 @@ class BlockSupport
         // Add filter for button blocks with modal attribute
         add_filter('render_block_core/button', [$this, 'filter_button_block'], 10, 2);
 
+        // Add close-mode handling for every block that can carry a modal action.
+        // Open-mode handling stays block-specific (filter_button_block() here,
+        // GroupModalTriggerSupport for core/group); close mode is generic.
+        foreach ( $this->get_trigger_blocks() as $block_name ) {
+            add_filter( "render_block_{$block_name}", [ $this, 'filter_close_mode_block' ], 10, 2 );
+        }
+
         // Add single modal container to footer (only renders if triggers were found)
         add_action('wp_footer', [$this, 'render_single_modal_container'], 999);
     }
@@ -90,6 +97,22 @@ class BlockSupport
     public function get_supported_blocks_for_js(): array
     {
         return $this->supported_blocks;
+    }
+
+    /**
+     * Blocks that can carry a modal action.
+     *
+     * The core/image block is excluded deliberately: core's own lightbox
+     * attaches a competing click handler to it via render_block_core/image.
+     *
+     * @return string[] Block names.
+     */
+    public function get_trigger_blocks(): array
+    {
+        return apply_filters(
+            'pikari_gutenberg_modals_trigger_blocks',
+            [ 'core/group', 'core/button' ]
+        );
     }
 
     /**
@@ -192,9 +215,9 @@ class BlockSupport
     /**
      * Filter button block to add modal trigger functionality.
      *
-     * When a button has the pikariOpenInModal attribute set to true,
-     * this method transforms the button's anchor tag to work with the
-     * Interactivity API modal system.
+     * When a button has pikariModalAction set to 'open', this method
+     * transforms the button's anchor tag to work with the Interactivity
+     * API modal system.
      *
      * @param string $block_content The block content HTML.
      * @param array  $block         The block data array.
@@ -202,14 +225,15 @@ class BlockSupport
      */
     public function filter_button_block( string $block_content, array $block ): string
     {
-        // Check if modal is enabled for this button
-        $open_in_modal = $block['attrs']['pikariOpenInModal'] ?? false;
+        // Check if the button is configured to open a modal
+        $open_in_modal = ( $block['attrs']['pikariModalAction'] ?? '' ) === 'open';
 
         if ( ! $open_in_modal ) {
             return $block_content;
         }
 
-        // Check content source: 'inline' for page content, 'link' (default) for URL
+        // Check content source: 'inline' for page content, 'url' for a custom
+        // URL, 'link' (default) for the button's own href.
         $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
         $inline_anchor  = $block['attrs']['pikariModalInlineAnchor'] ?? '';
         $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
@@ -218,14 +242,26 @@ class BlockSupport
             return $this->filter_button_block_inline( $block_content, $block, $inline_anchor, $template_part );
         }
 
-        // Get the URL - first try block attributes, then extract from HTML
-        $url = $block['attrs']['url'] ?? '';
+        if ( $content_source === 'url' ) {
+            // Custom URL: the button's own href stays untouched, the modal
+            // content is fetched from the URL typed into the panel instead.
+            // Validated against the domain allow/block lists — this is
+            // author-typed input, unlike the button's own link below.
+            $url = esc_url_raw( $block['attrs']['pikariModalDirectUrl'] ?? '' );
 
-        // If URL not in attributes, extract from the anchor href
-        if ( empty( $url ) ) {
-            $processor = new \WP_HTML_Tag_Processor( $block_content );
-            if ( $processor->next_tag( 'a' ) ) {
-                $url = $processor->get_attribute( 'href' ) ?? '';
+            if ( ! ModalHandler::validate_url( $url ) ) {
+                return $block_content;
+            }
+        } else {
+            // Detected link (default): the button's own URL is its link.
+            $url = $block['attrs']['url'] ?? '';
+
+            // If URL not in attributes, extract from the anchor href
+            if ( empty( $url ) ) {
+                $processor = new \WP_HTML_Tag_Processor( $block_content );
+                if ( $processor->next_tag( 'a' ) ) {
+                    $url = $processor->get_attribute( 'href' ) ?? '';
+                }
             }
         }
 
@@ -254,9 +290,6 @@ class BlockSupport
             }
         }
 
-        // Get modal size setting
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
-
         // Generate unique trigger ID
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
@@ -264,25 +297,33 @@ class BlockSupport
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
         // Build context data
-        $context = [
+        $base = [
             'postId'  => $content_id,
             'modalId' => $content_type . '-' . $content_id,
         ];
 
         if ( $content_type === 'url' ) {
-            $context['contentSource'] = 'url';
+            $base['contentSource'] = 'url';
         }
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        // Find the button's own interactive element. The block's root is
+        // a wrapper <div class="wp-block-button"> — the first next_tag()
+        // lands there and must be left alone; the second reaches the
+        // inner <a> (tagName: 'a', the default) or <button> (tagName:
+        // 'button'), whichever the block actually rendered. Same two-call
+        // pattern as filter_close_trigger() below.
+        if ( $processor->next_tag() && $processor->next_tag() ) {
+            // A <button> is natively focusable and keyboard-operable
+            // without an href — only an <a> needs one. The Modal Button
+            // variation ships no url of its own, so without this an
+            // <a>-shaped button with no link would be unfocusable and
+            // mouse-only.
+            if ( 'A' === $processor->get_tag() && ! $processor->get_attribute( 'href' ) ) {
+                $processor->set_attribute( 'href', $url );
+            }
 
-        // Find the anchor tag (button link)
-        if ( $processor->next_tag( 'a' ) ) {
             $processor->set_attribute( 'id', $trigger_id );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
@@ -296,6 +337,13 @@ class BlockSupport
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
             $processor->add_class( 'has-pikari-modal' );
+
+            // The button's own visible text is already its accessible
+            // name; only override it when the author explicitly typed one.
+            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+            if ( '' !== $custom_label ) {
+                $processor->set_attribute( 'aria-label', $custom_label );
+            }
         }
 
         return $processor->get_updated_html();
@@ -323,28 +371,26 @@ class BlockSupport
         $slug = ! empty( $template_part ) ? $template_part : 'modal';
         self::set_has_modal_triggers( $slug );
 
-        $modal_size = $block['attrs']['pikariModalSize'] ?? '';
         $trigger_id = 'modal-trigger-' . wp_unique_id();
 
         // Build context data for inline content
-        $context = [
+        $base = [
             'contentSource' => 'inline',
             'inlineAnchor'  => $inline_anchor,
             'modalId'       => 'inline-' . $inline_anchor,
         ];
 
-        if ( ! empty( $modal_size ) ) {
-            $context['size'] = $modal_size;
-        }
-
-        if ( ! empty( $template_part ) ) {
-            $context['templatePart'] = $template_part;
-        }
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
-        // Find the anchor tag (button link)
-        if ( $processor->next_tag( 'a' ) ) {
+        // Find the button's own interactive element. The block's root is
+        // a wrapper <div class="wp-block-button"> — the first next_tag()
+        // lands there and must be left alone; the second reaches the
+        // inner <a> (tagName: 'a', the default) or <button> (tagName:
+        // 'button'), whichever the block actually rendered. Same two-call
+        // pattern as filter_button_block() and filter_close_trigger().
+        if ( $processor->next_tag() && $processor->next_tag() ) {
             $processor->set_attribute( 'id', $trigger_id );
             $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
             $processor->set_attribute(
@@ -355,8 +401,102 @@ class BlockSupport
             $processor->set_attribute( 'aria-haspopup', 'dialog' );
             $processor->set_attribute( 'aria-expanded', 'false' );
             $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->set_attribute( 'href', '#' . $inline_anchor );
+
+            // A <button> has no href and is already natively focusable and
+            // keyboard-operable without one — only an <a> needs it, to
+            // point at the inline content's in-page anchor for
+            // progressive enhancement.
+            if ( 'A' === $processor->get_tag() ) {
+                $processor->set_attribute( 'href', '#' . $inline_anchor );
+            }
+
             $processor->add_class( 'has-pikari-modal' );
+
+            // The button's own visible text is already its accessible
+            // name; only override it when the author explicitly typed one.
+            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+            if ( '' !== $custom_label ) {
+                $processor->set_attribute( 'aria-label', $custom_label );
+            }
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Apply close-mode handling to a trigger block.
+     *
+     * Runs for every block name returned by get_trigger_blocks(). Open-mode
+     * handling stays block-specific (filter_button_block() here,
+     * GroupModalTriggerSupport for core/group); close mode needs no
+     * block-specific knowledge, so it is shared across all of them.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @return string Modified block content.
+     */
+    public function filter_close_mode_block( string $block_content, array $block ): string
+    {
+        if ( ( $block['attrs']['pikariModalAction'] ?? '' ) !== 'close' ) {
+            return $block_content;
+        }
+
+        return $this->filter_close_trigger( $block_content, $block['blockName'] ?? '' );
+    }
+
+    /**
+     * Turn a block into a close trigger.
+     *
+     * Most trigger blocks close on their own root element (core/group's
+     * wrapper div). A core/button's root is a wrapper div around its real
+     * link or button, so decorating the wrapper itself would put a second
+     * focusable, interactive element inside a role="button" element — a
+     * nested-interactive ARIA violation — and would let the generic
+     * aria-label below win over the button's own visible text on the
+     * wrong element. So for core/button this descends into that inner
+     * element instead, mirroring the targeted-close behavior the Modal
+     * Trigger block used for a specific child element: an already-native
+     * <button> needs no role/tabindex/aria-label override (its own type
+     * and visible text already make it a correct close control), and an
+     * <a> has its href removed first so it cannot also navigate.
+     *
+     * No data-wp-interactive is added: close triggers live inside modal
+     * template parts, where the container already provides the namespace.
+     * Adding it here creates a nested Interactivity island and breaks events.
+     *
+     * @param string $block_content Rendered block HTML.
+     * @param string $block_name    Block name (e.g. 'core/group'), used to
+     *                              find the right element to decorate.
+     * @return string Decorated HTML.
+     */
+    private function filter_close_trigger( string $block_content, string $block_name = '' ): string
+    {
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        if ( ! $processor->next_tag() ) {
+            return $processor->get_updated_html();
+        }
+
+        if ( 'core/button' === $block_name && ! $processor->next_tag() ) {
+            // No inner link/button found; leave the wrapper unmodified.
+            return $processor->get_updated_html();
+        }
+
+        $processor->set_attribute( 'data-wp-on--click', 'actions.handleCloseClick' );
+        $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleCloseKeydown' );
+        $processor->add_class( 'modal-close-trigger' );
+
+        if ( 'BUTTON' !== $processor->get_tag() ) {
+            if ( 'A' === $processor->get_tag() ) {
+                $processor->remove_attribute( 'href' );
+            }
+
+            $processor->set_attribute( 'role', 'button' );
+            $processor->set_attribute( 'tabindex', '0' );
+            $processor->set_attribute(
+                'aria-label',
+                __( 'Close dialog', 'pikari-gutenberg-modals' )
+            );
         }
 
         return $processor->get_updated_html();

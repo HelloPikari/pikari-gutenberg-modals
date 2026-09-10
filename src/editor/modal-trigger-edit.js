@@ -19,7 +19,7 @@ import {
 } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { __, sprintf } from '@wordpress/i18n';
-import modalTriggerIcon from '../blocks/modal-trigger/icon';
+import modalTriggerIcon from './modal-trigger-icon';
 import { close as closeIcon } from '@wordpress/icons';
 import { applyFormat, removeFormat, useAnchor } from '@wordpress/rich-text';
 import useModalContentBlocks from './use-modal-content-blocks';

@@ -10,10 +10,10 @@ namespace Pikari\GutenbergModals;
 /**
  * Merges the optional `data-wp-context` keys shared by every open-mode trigger.
  *
- * Each of the four content-source branches in the Modal Trigger block's
- * render.php still builds its own base keys and passes them in. What the four
- * have in common is the set of optional keys — size, template part, placement
- * — so those are added here once rather than four times.
+ * Each content-source branch across GroupModalTriggerSupport and BlockSupport
+ * still builds its own base keys and passes them in. What they have in
+ * common is the set of optional keys — size, template part, placement — so
+ * those are added here once rather than in every branch.
  */
 class TriggerContext
 {
@@ -32,7 +32,7 @@ class TriggerContext
     {
         $context = $base;
 
-        $size = $attributes['modalSize'] ?? '';
+        $size = $attributes['pikariModalSize'] ?? '';
         if ( ! empty( $size ) ) {
             $context['size'] = $size;
         }
@@ -44,7 +44,7 @@ class TriggerContext
         // Only known placements travel. An unknown slug would reach the store
         // and be discarded there anyway; dropping it here keeps the context
         // honest about what it can express.
-        $placement = $attributes['modalPlacement'] ?? '';
+        $placement = $attributes['pikariModalPlacement'] ?? '';
         if ( in_array( $placement, [ 'left', 'right' ], true ) ) {
             $context['placement'] = $placement;
         }

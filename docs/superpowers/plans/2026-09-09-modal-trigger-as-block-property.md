@@ -55,12 +55,13 @@ Merges the attribute halves of `button-modal-extension.js` and
 **Interfaces:**
 
 - Consumes: nothing
-- Produces:
 
-  - `TRIGGER_BLOCKS` — array, default `[ 'core/group', 'core/button' ]`
-  - `isTriggerBlock( name: string ) => boolean`
-  - `MODAL_ATTRIBUTES` — the attribute schema object
-  - `hasModalAction( attributes: Object ) => boolean`
+**Produces:**
+
+- `TRIGGER_BLOCKS` — array, default `[ 'core/group', 'core/button' ]`
+- `isTriggerBlock( name: string ) => boolean`
+- `MODAL_ATTRIBUTES` — the attribute schema object
+- `hasModalAction( attributes: Object ) => boolean`
 
 - [ ] **Step 1: Write the failing test**
 

@@ -204,8 +204,8 @@ close-mode decoration; the `pikari_gutenberg_modals_trigger_blocks` filter.
 
 **Browser, via Playwright** — this is now first-class, not a fallback. The MCP driver
 runs a real foreground browser (`visibility: visible`, `hasFocus: true`,
-`requestAnimationFrame` fires, `setViewportSize` relayouts), which is what made the
-#441 follow-up possible. Cover: a styled Group card opens and keeps its styling; a plain
+`requestAnimationFrame` fires, `setViewportSize` relayouts), which is what made the #441
+follow-up possible. Cover: a styled Group card opens and keeps its styling; a plain
 Button opens; a Button with a real link inside a Group card still navigates rather than
 opening; focus enters the dialog; the card pattern works inside a Query Loop.
 

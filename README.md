@@ -12,9 +12,11 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 ### Trigger Types
 
+Apply the modal action to a Group or Button, or highlight text and use the inline format.
+
 - **Inline Modal Triggers** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
-- **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
-- **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
+- **Modal Action on Group and Button** — Set the "Modal" panel's Action to open a clickable card (Group) or a button, with auto-detected link, custom URL, or inline content modes
+- **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger for fully customizable close buttons
 
 ### Features
 
@@ -39,7 +41,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 1. Download the latest release or clone this repository
 2. Upload plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 3. Activate through the Plugins screen
-4. Use any of the three trigger types in the block editor
+4. Apply the modal action to a Group or Button block, or highlight text and use the inline format, to create modal triggers
 
 ### Block Themes
 
@@ -86,6 +88,19 @@ add_filter( 'pikari_gutenberg_modals_supported_blocks', function( $blocks ) {
 ```
 
 Default blocks: `core/paragraph`, `core/heading`, `core/list`, `core/list-item`, `core/quote`, `core/verse`, `core/preformatted`, `core/navigation-link`
+
+#### `pikari_gutenberg_modals_trigger_blocks`
+
+Customize which block types can carry a modal action (the "Modal" inspector panel and the `pikariModalAction` attribute). This filter is also localized to the editor, so the panel and attribute registration stay in sync, and close-mode `render_block` decoration honours it too. Open-mode decoration and the block variations are hardcoded to `core/group` and `core/button`.
+
+```php
+add_filter( 'pikari_gutenberg_modals_trigger_blocks', function( $blocks ) {
+    $blocks[] = 'my-plugin/custom-block';
+    return $blocks;
+} );
+```
+
+Default blocks: `core/group`, `core/button`
 
 #### `pikari_gutenberg_modals_content_response`
 
@@ -269,7 +284,15 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 
 - `pikari_gutenberg_modals_panel_widths` filter for adding or changing the panel widths offered in the editor, alongside `--modal-panel-width`, `--modal-panel-width-narrow` and `--modal-panel-width-wide` custom properties
 
+- Clickable Card and Modal Button block variations
+
+- `pikari_gutenberg_modals_trigger_blocks` filter
+
+- **Breaking:** the Modal Trigger block has been removed. Opening a modal is now an action set on a Group or Button block, so the block keeps its own styling, alignment and layout. Existing Modal Trigger blocks will not render and must be rebuilt.
+
 - Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+
+- Fixed: a Button with no link set inside a trigger no longer ignores clicks
 
 ### 1.3.0
 

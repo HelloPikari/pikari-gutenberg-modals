@@ -16,9 +16,11 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 **Trigger Types:**
 
+Apply the modal action to a Group or Button, or highlight text and use the inline format.
+
 * **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
-* **Modal Trigger Block** — Dedicated clickable card wrapper with auto-detected link, custom URL, or inline content modes
-* **Close Triggers** — Modal Trigger block and inline triggers support a "Close modal" action for fully customizable close buttons
+* **Modal Action on Group and Button** — Set the "Modal" panel's Action to open a clickable card (Group) or a button, with auto-detected link, custom URL, or inline content modes
+* **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger for fully customizable close buttons
 
 **Key Features:**
 
@@ -45,7 +47,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 1. Download the latest release or clone this repository
 2. Upload the plugin files to `/wp-content/plugins/pikari-gutenberg-modals/`, or install through the WordPress plugins screen
 3. Activate the plugin through the 'Plugins' screen in WordPress
-4. Use any of the three trigger types in the block editor to create modal triggers
+4. Apply the modal action to a Group or Button block, or highlight text and use the inline format, to create modal triggers
 
 = Block Themes =
 
@@ -81,9 +83,11 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 = What are the trigger types? =
 
+Apply the modal action to a Group or Button, or highlight text and use the inline format.
+
 1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
-2. **Modal Trigger Block** — Add a Modal Trigger block, place any content inside, and the plugin detects the primary link (from buttons, images, headings, etc.) to make the whole card clickable. Also supports custom URL and inline content modes.
-3. **Close Triggers** — Set the Modal Trigger block or inline trigger to "Close modal" action. Use inside modal template parts to create custom close buttons with full design flexibility.
+2. **Modal action on Group and Button** — Set the "Modal" panel's Action to "Open a modal" on a Group or Button block. On a Group, the plugin detects the primary link (from a button, image, heading, etc.) inside it to make the whole card clickable; a Button's own link is the default. Both also support a custom URL or inline content.
+3. **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger. Use inside modal template parts to create custom close buttons with full design flexibility.
 
 = Does it work without JavaScript? =
 
@@ -106,6 +110,16 @@ Customize which block types support the inline modal trigger format.
 } );`
 
 Default blocks: `core/paragraph`, `core/heading`, `core/list`, `core/list-item`, `core/quote`, `core/verse`, `core/preformatted`, `core/navigation-link`
+
+**pikari_gutenberg_modals_trigger_blocks**
+Customize which block types can carry a modal action (the "Modal" inspector panel and the `pikariModalAction` attribute). This filter is also localized to the editor, so the panel and attribute registration stay in sync, and close-mode `render_block` decoration honours it too. Open-mode decoration and the block variations are hardcoded to `core/group` and `core/button`.
+
+`add_filter( 'pikari_gutenberg_modals_trigger_blocks', function( $blocks ) {
+    $blocks[] = 'my-plugin/custom-block';
+    return $blocks;
+} );`
+
+Default blocks: `core/group`, `core/button`
 
 **pikari_gutenberg_modals_content_response**
 Modify the REST API response for modal content.
@@ -251,7 +265,7 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 == Screenshots ==
 
 1. Inline modal trigger in the editor with link picker
-2. Button block with "Open in Modal" toggle
+2. Button block with the "Modal" panel's Action set to open a modal
 3. Clickable group card pattern
 4. Live modal with smooth animations
 5. Template part customization in the Site Editor
@@ -262,7 +276,11 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 * Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
 * Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Modal Trigger can override the dialog's placement
 * pikari_gutenberg_modals_panel_widths filter for adding or changing the panel widths offered in the editor, alongside --modal-panel-width, --modal-panel-width-narrow and --modal-panel-width-wide custom properties
+* Clickable Card and Modal Button block variations
+* pikari_gutenberg_modals_trigger_blocks filter
+* Breaking: the Modal Trigger block has been removed. Opening a modal is now an action set on a Group or Button block, so the block keeps its own styling, alignment and layout. Existing Modal Trigger blocks will not render and must be rebuilt.
 * Fixed prefers-reduced-motion having no effect: the override named class names the modal never applies, so animations still ran for users who had asked for reduced motion
+* Fixed: a Button with no link set inside a trigger no longer ignores clicks
 
 = 1.3.0 =
 * Close-mode triggers: Modal Trigger block and inline triggers now support a "Close modal" action

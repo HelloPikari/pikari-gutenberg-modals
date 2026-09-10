@@ -16,14 +16,14 @@ class TriggerContextTest extends TestCase
 
     public function test_adds_size_when_set(): void
     {
-        $context = TriggerContext::build( [ 'modalSize' => 'large' ], [ 'postId' => 1 ] );
+        $context = TriggerContext::build( [ 'pikariModalSize' => 'large' ], [ 'postId' => 1 ] );
 
         $this->assertSame( 'large', $context['size'] );
     }
 
     public function test_omits_empty_size(): void
     {
-        $context = TriggerContext::build( [ 'modalSize' => '' ], [ 'postId' => 1 ] );
+        $context = TriggerContext::build( [ 'pikariModalSize' => '' ], [ 'postId' => 1 ] );
 
         $this->assertArrayNotHasKey( 'size', $context );
     }
@@ -45,7 +45,7 @@ class TriggerContextTest extends TestCase
     public function test_preserves_base_keys_alongside_options(): void
     {
         $context = TriggerContext::build(
-            [ 'modalSize' => 'small' ],
+            [ 'pikariModalSize' => 'small' ],
             [ 'contentSource' => 'inline', 'inlineAnchor' => 'promo' ],
             'promo'
         );
@@ -58,21 +58,48 @@ class TriggerContextTest extends TestCase
 
     public function test_adds_placement_when_valid(): void
     {
-        $context = TriggerContext::build( [ 'modalPlacement' => 'right' ], [ 'postId' => 1 ] );
+        $context = TriggerContext::build( [ 'pikariModalPlacement' => 'right' ], [ 'postId' => 1 ] );
 
         $this->assertSame( 'right', $context['placement'] );
     }
 
     public function test_omits_empty_placement(): void
     {
-        $context = TriggerContext::build( [ 'modalPlacement' => '' ], [ 'postId' => 1 ] );
+        $context = TriggerContext::build( [ 'pikariModalPlacement' => '' ], [ 'postId' => 1 ] );
 
         $this->assertArrayNotHasKey( 'placement', $context );
     }
 
     public function test_omits_unknown_placement(): void
     {
-        $context = TriggerContext::build( [ 'modalPlacement' => 'top' ], [ 'postId' => 1 ] );
+        $context = TriggerContext::build( [ 'pikariModalPlacement' => 'top' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'placement', $context );
+    }
+
+    public function test_build_reads_the_unified_attribute_names(): void
+    {
+        $context = TriggerContext::build(
+            [
+                'pikariModalSize'         => 'wide',
+                'pikariModalPlacement'    => 'right',
+                'pikariModalTemplatePart' => 'sidebar',
+            ],
+            [ 'postId' => '7', 'modalId' => 'page-7' ],
+            'sidebar'
+        );
+
+        $this->assertSame( 'wide', $context['size'] );
+        $this->assertSame( 'right', $context['placement'] );
+        $this->assertSame( 'sidebar', $context['templatePart'] );
+    }
+
+    public function test_build_omits_an_unknown_placement(): void
+    {
+        $context = TriggerContext::build(
+            [ 'pikariModalPlacement' => 'diagonal' ],
+            [ 'postId' => '7', 'modalId' => 'page-7' ]
+        );
 
         $this->assertArrayNotHasKey( 'placement', $context );
     }
