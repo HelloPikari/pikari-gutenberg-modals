@@ -350,15 +350,15 @@ class EditorIntegration
     }
 
     /**
-     * Restrict modal template blocks to template part editors.
+     * Restrict modal blocks to the editing context they belong in.
      *
-     * The Modal Dialog block is only meaningful inside a template part.
-     * This filter hides it from the block inserter in post and page editors.
+     * The Modal Dialog block is only meaningful inside a template part; the
+     * Modal Content block is only meaningful in post content. Which of the two
+     * is hidden depends on what is being edited, not on which admin screen is
+     * open — since WordPress 6.3 the Site Editor edits both.
      *
      * Note: Close Button and Content Area use the `ancestor` property in
-     * block.json to restrict themselves to modal-dialog contexts. Modal
-     * Content is unregistered client-side in the Site Editor via domReady
-     * in src/editor/index.js.
+     * block.json to restrict themselves to modal-dialog contexts.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
@@ -367,18 +367,11 @@ class EditorIntegration
      */
     public function restrict_modal_template_blocks( $allowed_block_types, $editor_context )
     {
-        // Only restrict blocks in the post editor. The Site Editor needs
-        // all blocks available because template parts are edited within it.
-        if (
-            ! isset( $editor_context->name ) ||
-            $editor_context->name !== 'core/edit-post'
-        ) {
+        $restricted_blocks = $this->get_restricted_blocks( $editor_context );
+
+        if ( empty( $restricted_blocks ) ) {
             return $allowed_block_types;
         }
-
-        $restricted_blocks = [
-            'pikari-gutenberg-modals/modal-dialog',
-        ];
 
         // When $allowed_block_types is true (WordPress default: all blocks allowed),
         // convert to an explicit array so we can filter out our blocks.
@@ -400,5 +393,40 @@ class EditorIntegration
         }
 
         return $allowed_block_types;
+    }
+
+    /**
+     * Decide which modal blocks to hide for a given editor context.
+     *
+     * Editing post content hides Modal Dialog; editing a template or template
+     * part hides Modal Content. The Site Editor serves both, so the answer
+     * comes from the post in the context rather than the context name:
+     * `wp-admin/site-editor.php` populates it when a page is being edited
+     * (`?p=/page/{id}` or a numeric `?postId=`) and leaves it null on the
+     * template routes. Verified in WordPress 6.8, 7.0 and 7.1.
+     *
+     * @param \WP_Block_Editor_Context $editor_context The editor context.
+     * @return string[] Block names to hide, empty for contexts we do not restrict.
+     */
+    private function get_restricted_blocks( $editor_context ): array
+    {
+        $context_name = $editor_context->name ?? '';
+
+        if ( $context_name === 'core/edit-post' ) {
+            return [ 'pikari-gutenberg-modals/modal-dialog' ];
+        }
+
+        if ( $context_name !== 'core/edit-site' ) {
+            return [];
+        }
+
+        $post_type      = $editor_context->post->post_type ?? '';
+        $template_types = [ 'wp_template', 'wp_template_part' ];
+
+        if ( $post_type === '' || in_array( $post_type, $template_types, true ) ) {
+            return [ 'pikari-gutenberg-modals/modal-content' ];
+        }
+
+        return [ 'pikari-gutenberg-modals/modal-dialog' ];
     }
 }
