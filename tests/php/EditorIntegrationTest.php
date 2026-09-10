@@ -184,4 +184,73 @@ class EditorIntegrationTest extends TestCase {
 
         $this->assertSame( $this->all_blocks, $result );
     }
+
+    /**
+     * Editor config exposes block theme status as true for block themes.
+     */
+    public function test_get_editor_config_reports_block_theme(): void {
+        Functions\when( 'wp_is_block_theme' )->justReturn( true );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_block_templates' )->justReturn( [] );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertTrue( $config['isBlockTheme'] );
+    }
+
+    /**
+     * Editor config exposes block theme status as false for hybrid themes.
+     */
+    public function test_get_editor_config_reports_hybrid_theme(): void {
+        Functions\when( 'wp_is_block_theme' )->justReturn( false );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_stylesheet_directory' )->justReturn( '/wp-content/themes/test' );
+        Functions\when( 'get_template_directory' )->justReturn( '/wp-content/themes/test' );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertFalse( $config['isBlockTheme'] );
+    }
+
+    /**
+     * Editor config contains exactly nine keys in the documented order.
+     */
+    public function test_get_editor_config_contains_exactly_nine_keys_in_correct_order(): void {
+        $expected_keys = [
+            'supportedBlocks',
+            'triggerBlocks',
+            'restUrl',
+            'nonce',
+            'modalSizes',
+            'panelWidths',
+            'modalTemplateParts',
+            'isBlockTheme',
+            'defaultSettings',
+        ];
+
+        Functions\when( 'wp_is_block_theme' )->justReturn( false );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_stylesheet_directory' )->justReturn( '/wp-content/themes/test' );
+        Functions\when( 'get_template_directory' )->justReturn( '/wp-content/themes/test' );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertCount( 9, $config );
+        $this->assertSame( $expected_keys, array_keys( $config ) );
+    }
 }

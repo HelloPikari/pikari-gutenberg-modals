@@ -61,32 +61,46 @@ class EditorIntegration
             true
         );
 
-        // Get block support instance
-        if ( ! isset($this->block_support) ) {
-            $this->block_support = new BlockSupport();
-        }
-
         // Localize script with data
         wp_localize_script(
             'pikari-gutenberg-modals-editor',
             'pikariGutenbergModals',
-            [
-                'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
-                'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
-                'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
-                'nonce'              => wp_create_nonce('wp_rest'),
-                'modalSizes'         => $this->get_modal_sizes(),
-                'panelWidths'        => $this->get_panel_widths(),
-                'modalTemplateParts' => $this->get_modal_template_parts(),
-                'defaultSettings'    => [
-                    'size' => 'medium',
-                    'animation' => 'fade',
-                    'closeOnClickOutside' => true,
-                    'showCloseButton' => true,
-                    'overlayOpacity' => 0.8,
-                ],
-            ]
+            $this->get_editor_config()
         );
+    }
+
+    /**
+     * Build the config object localized to the editor script.
+     *
+     * `isBlockTheme` drives the Modal template panel's degraded mode: hybrid
+     * themes have no wp_template_part entities and no Site Editor, so the
+     * panel falls back to a plain select over `modalTemplateParts`.
+     *
+     * @return array Editor configuration.
+     */
+    public function get_editor_config(): array
+    {
+        if ( ! isset( $this->block_support ) ) {
+            $this->block_support = new BlockSupport();
+        }
+
+        return [
+            'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
+            'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
+            'restUrl'            => rest_url( 'pikari-gutenberg-modals/v1/' ),
+            'nonce'              => wp_create_nonce( 'wp_rest' ),
+            'modalSizes'         => $this->get_modal_sizes(),
+            'panelWidths'        => $this->get_panel_widths(),
+            'modalTemplateParts' => $this->get_modal_template_parts(),
+            'isBlockTheme'       => wp_is_block_theme(),
+            'defaultSettings'    => [
+                'size' => 'medium',
+                'animation' => 'fade',
+                'closeOnClickOutside' => true,
+                'showCloseButton' => true,
+                'overlayOpacity' => 0.8,
+            ],
+        ];
     }
 
     /**
