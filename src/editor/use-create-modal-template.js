@@ -15,6 +15,7 @@ import {
 	getUniqueTitle,
 	getCleanSlug,
 	MODAL_TEMPLATE_PART_AREA,
+	DEFAULT_MODAL_SLUG,
 } from './modal-template-parts';
 
 export default function useCreateModalTemplate( parts ) {
@@ -36,7 +37,20 @@ export default function useCreateModalTemplate( parts ) {
 			// back to a fixed slug, relying on WordPress's own
 			// wp_unique_post_slug() to suffix it on collision. Mirror that
 			// fallback here rather than inventing a new one.
-			const slug = getCleanSlug( uniqueTitle ) || 'wp-custom-part';
+			//
+			// getUniqueTitle() only dedupes on exact title string, while
+			// getCleanSlug() also lowercases and strips punctuation, so a
+			// title like "MODAL" or "Modal!" cleans to the same slug as the
+			// literal word "modal" without ever colliding on title. That
+			// slug is exactly DEFAULT_MODAL_SLUG, which buildPartOptions()
+			// collapses into the { value: '' } Default option -- so the new
+			// part's slug would match no option the SelectControl renders.
+			// Route it through the same fallback as the empty-slug case.
+			const cleanSlug = getCleanSlug( uniqueTitle );
+			const slug =
+				! cleanSlug || cleanSlug === DEFAULT_MODAL_SLUG
+					? 'wp-custom-part'
+					: cleanSlug;
 
 			const blocks = patternContent
 				? parse( patternContent, { __unstableSkipMigrationLogs: true } )

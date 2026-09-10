@@ -2,7 +2,7 @@
  * Create-modal-template dialog: pick a starter pattern, name it, create it.
  */
 
-import { useState } from '@wordpress/element';
+import { useMemo, useState } from '@wordpress/element';
 import { useSelect } from '@wordpress/data';
 import { store as coreStore } from '@wordpress/core-data';
 import { parse } from '@wordpress/blocks';
@@ -11,6 +11,7 @@ import {
 	Modal,
 	Button,
 	TextControl,
+	Notice,
 	// eslint-disable-next-line @wordpress/no-unsafe-wp-apis -- Stable layout primitive, used throughout core inspector UI (e.g. the navigation block).
 	__experimentalHStack as HStack,
 } from '@wordpress/components';
@@ -29,6 +30,23 @@ export default function ModalTemplateCreateModal( {
 		[]
 	);
 
+	// selectModalPatterns() filters with Array.prototype.filter(), so
+	// `patterns` is a new array on every render -- including renders caused
+	// by unrelated state changes, like each keystroke in the Name field.
+	// Memoising on that reference would still re-run every keystroke, so key
+	// the memo on a primitive derived from the pattern names instead: it
+	// only changes when the registered pattern set actually changes.
+	const patternsKey = patterns.map( ( pattern ) => pattern.name ).join( '|' );
+	const parsedPatterns = useMemo(
+		() =>
+			patterns.map( ( pattern ) => ( {
+				...pattern,
+				blocks: parse( pattern.content ),
+			} ) ),
+		// eslint-disable-next-line react-hooks/exhaustive-deps -- patternsKey is a stable proxy for `patterns`, which is a new array reference every render.
+		[ patternsKey ]
+	);
+
 	// getBlockPatterns() is a resolved selector: patterns can still be an
 	// empty array on the render that mounts this modal. Seeding useState
 	// from patterns[ 0 ] would then latch onto '' and never recover once
@@ -37,16 +55,30 @@ export default function ModalTemplateCreateModal( {
 	const [ selectedName, setSelectedName ] = useState( '' );
 	const [ title, setTitle ] = useState( '' );
 	const [ isBusy, setIsBusy ] = useState( false );
+	const [ error, setError ] = useState( '' );
 
 	const createModalTemplate = useCreateModalTemplate( parts );
-	const effectiveName = selectedName || patterns[ 0 ]?.name || '';
-	const selectedPattern = patterns.find(
+	const effectiveName = selectedName || parsedPatterns[ 0 ]?.name || '';
+	const selectedPattern = parsedPatterns.find(
 		( pattern ) => pattern.name === effectiveName
 	);
+
+	// The Modal's built-in close affordances (Escape, backdrop click, the X
+	// button) and the Cancel button all funnel through here. Refusing to
+	// close while a create is in flight means a "cancelled" dialog can never
+	// still be mounted when the request settles, so onCreated() can never
+	// fire after the user believed they had cancelled.
+	const handleClose = () => {
+		if ( isBusy ) {
+			return;
+		}
+		onClose();
+	};
 
 	const onSubmit = async ( event ) => {
 		event.preventDefault();
 		setIsBusy( true );
+		setError( '' );
 
 		try {
 			const created = await createModalTemplate( {
@@ -54,6 +86,14 @@ export default function ModalTemplateCreateModal( {
 				patternContent: selectedPattern?.content,
 			} );
 			onCreated( created );
+		} catch ( err ) {
+			setError(
+				err?.message ||
+					__(
+						'Could not create the modal template. Please try again.',
+						'pikari-gutenberg-modals'
+					)
+			);
 		} finally {
 			setIsBusy( false );
 		}
@@ -62,11 +102,21 @@ export default function ModalTemplateCreateModal( {
 	return (
 		<Modal
 			title={ __( 'Create modal template', 'pikari-gutenberg-modals' ) }
-			onRequestClose={ onClose }
+			onRequestClose={ handleClose }
 		>
 			<form onSubmit={ onSubmit }>
+				{ error && (
+					<Notice
+						status="error"
+						isDismissible={ false }
+						className="pikari-modal-template-create__error"
+					>
+						{ error }
+					</Notice>
+				) }
+
 				<div className="pikari-modal-template-create__patterns">
-					{ patterns.map( ( pattern ) => (
+					{ parsedPatterns.map( ( pattern ) => (
 						<button
 							key={ pattern.name }
 							type="button"
@@ -76,10 +126,7 @@ export default function ModalTemplateCreateModal( {
 							aria-pressed={ pattern.name === effectiveName }
 							onClick={ () => setSelectedName( pattern.name ) }
 						>
-							<BlockPreview
-								blocks={ parse( pattern.content ) }
-								viewportWidth={ 800 }
-							/>
+							<BlockPreview blocks={ pattern.blocks } viewportWidth={ 800 } />
 							<span>{ pattern.title }</span>
 						</button>
 					) ) }
@@ -94,7 +141,12 @@ export default function ModalTemplateCreateModal( {
 				/>
 
 				<HStack justify="right">
-					<Button variant="tertiary" onClick={ onClose }>
+					<Button
+						variant="tertiary"
+						onClick={ handleClose }
+						disabled={ isBusy }
+						accessibleWhenDisabled
+					>
 						{ __( 'Cancel', 'pikari-gutenberg-modals' ) }
 					</Button>
 					<Button

@@ -116,6 +116,9 @@ span[data-modal-action="close"],
 }
 // Modal template create dialog
 .pikari-modal-template-create {
+	&__error {
+		margin: 0 0 16px;
+	}
 	&__patterns {
 		display: grid;
 		grid-template-columns: repeat(3, 1fr);
