@@ -14,6 +14,7 @@ import {
 	filterModalParts,
 	buildPartOptions,
 	getPartTitle,
+	DEFAULT_MODAL_SLUG,
 } from './modal-template-parts';
 
 export default function useModalTemplateEntities( selectedSlug ) {
@@ -59,7 +60,10 @@ export default function useModalTemplateEntities( selectedSlug ) {
 	);
 
 	const selectedPart = useMemo(
-		() => parts.find( ( part ) => part.slug === selectedSlug ) || null,
+		() =>
+			parts.find(
+				( part ) => part.slug === ( selectedSlug || DEFAULT_MODAL_SLUG )
+			) || null,
 		[ parts, selectedSlug ]
 	);
 

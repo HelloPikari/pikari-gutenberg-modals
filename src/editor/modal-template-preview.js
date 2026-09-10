@@ -29,12 +29,7 @@ export default function ModalTemplatePreview( { slug, theme } ) {
 			const { getEditedEntityRecord, hasFinishedResolution } =
 				select( coreStore );
 
-			const args = [
-				'postType',
-				'wp_template_part',
-				templatePartId,
-				{ context: 'view' },
-			];
+			const args = [ 'postType', 'wp_template_part', templatePartId ];
 
 			const record = getEditedEntityRecord( ...args );
 
