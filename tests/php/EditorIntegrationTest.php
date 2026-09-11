@@ -27,7 +27,7 @@ class EditorIntegrationTest extends TestCase {
      */
     private array $all_blocks = [
         'core/paragraph',
-        'pikari-gutenberg-modals/modal-dialog',
+        'pikari-gutenberg-modals/modal-overlay',
         'pikari-gutenberg-modals/modal-content',
     ];
 
@@ -62,15 +62,15 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * The Modal Dialog block is only meaningful inside a template part.
+     * The Modal Overlay block is only meaningful inside a template part.
      */
-    public function test_post_editor_hides_the_modal_dialog_block(): void {
+    public function test_post_editor_hides_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-post' )
         );
 
-        $this->assertNotContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertNotContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**
@@ -86,15 +86,15 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * The Site Editor is where template parts are edited, so Modal Dialog stays.
+     * The Site Editor is where template parts are edited, so Modal Overlay stays.
      */
-    public function test_site_editor_keeps_the_modal_dialog_block(): void {
+    public function test_site_editor_keeps_the_modal_overlay_block(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-site', 'wp_template_part' )
         );
 
-        $this->assertContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**
@@ -149,16 +149,16 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
-     * Editing a page in the Site Editor is post content, so Modal Dialog is
+     * Editing a page in the Site Editor is post content, so Modal Overlay is
      * as meaningless there as it is in the post editor.
      */
-    public function test_site_editor_hides_the_modal_dialog_block_when_editing_a_page(): void {
+    public function test_site_editor_hides_the_modal_overlay_block_when_editing_a_page(): void {
         $result = $this->instance->restrict_modal_template_blocks(
             $this->all_blocks,
             $this->context( 'core/edit-site', 'page' )
         );
 
-        $this->assertNotContains( 'pikari-gutenberg-modals/modal-dialog', $result );
+        $this->assertNotContains( 'pikari-gutenberg-modals/modal-overlay', $result );
     }
 
     /**
@@ -183,5 +183,74 @@ class EditorIntegrationTest extends TestCase {
         );
 
         $this->assertSame( $this->all_blocks, $result );
+    }
+
+    /**
+     * Editor config exposes block theme status as true for block themes.
+     */
+    public function test_get_editor_config_reports_block_theme(): void {
+        Functions\when( 'wp_is_block_theme' )->justReturn( true );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_block_templates' )->justReturn( [] );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertTrue( $config['isBlockTheme'] );
+    }
+
+    /**
+     * Editor config exposes block theme status as false for hybrid themes.
+     */
+    public function test_get_editor_config_reports_hybrid_theme(): void {
+        Functions\when( 'wp_is_block_theme' )->justReturn( false );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_stylesheet_directory' )->justReturn( '/wp-content/themes/test' );
+        Functions\when( 'get_template_directory' )->justReturn( '/wp-content/themes/test' );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertFalse( $config['isBlockTheme'] );
+    }
+
+    /**
+     * Editor config contains exactly nine keys in the documented order.
+     */
+    public function test_get_editor_config_contains_exactly_nine_keys_in_correct_order(): void {
+        $expected_keys = [
+            'supportedBlocks',
+            'triggerBlocks',
+            'restUrl',
+            'nonce',
+            'modalSizes',
+            'panelWidths',
+            'modalTemplateParts',
+            'isBlockTheme',
+            'defaultSettings',
+        ];
+
+        Functions\when( 'wp_is_block_theme' )->justReturn( false );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_stylesheet_directory' )->justReturn( '/wp-content/themes/test' );
+        Functions\when( 'get_template_directory' )->justReturn( '/wp-content/themes/test' );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertCount( 9, $config );
+        $this->assertSame( $expected_keys, array_keys( $config ) );
     }
 }

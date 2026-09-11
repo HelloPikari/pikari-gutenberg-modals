@@ -195,7 +195,7 @@ const { state, actions } = store( 'pikari-modal', {
 			modal.classList.add( 'is-open' );
 			modal.classList.remove( 'is-closing' );
 
-			// Geometry: the trigger's override wins, else the Modal Dialog
+			// Geometry: the trigger's override wins, else the Modal Overlay
 			// block's own placement, else centered. The size slug is dropped
 			// when it does not belong to the resolved placement.
 			const dialogEl = modal.querySelector( '.modal-content' );

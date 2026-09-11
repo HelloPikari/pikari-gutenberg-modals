@@ -61,32 +61,46 @@ class EditorIntegration
             true
         );
 
-        // Get block support instance
-        if ( ! isset($this->block_support) ) {
-            $this->block_support = new BlockSupport();
-        }
-
         // Localize script with data
         wp_localize_script(
             'pikari-gutenberg-modals-editor',
             'pikariGutenbergModals',
-            [
-                'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
-                'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
-                'restUrl'            => rest_url('pikari-gutenberg-modals/v1/'),
-                'nonce'              => wp_create_nonce('wp_rest'),
-                'modalSizes'         => $this->get_modal_sizes(),
-                'panelWidths'        => $this->get_panel_widths(),
-                'modalTemplateParts' => $this->get_modal_template_parts(),
-                'defaultSettings'    => [
-                    'size' => 'medium',
-                    'animation' => 'fade',
-                    'closeOnClickOutside' => true,
-                    'showCloseButton' => true,
-                    'overlayOpacity' => 0.8,
-                ],
-            ]
+            $this->get_editor_config()
         );
+    }
+
+    /**
+     * Build the config object localized to the editor script.
+     *
+     * `isBlockTheme` drives the Modal template panel's degraded mode: hybrid
+     * themes have no wp_template_part entities and no Site Editor, so the
+     * panel falls back to a plain select over `modalTemplateParts`.
+     *
+     * @return array Editor configuration.
+     */
+    public function get_editor_config(): array
+    {
+        if ( ! isset( $this->block_support ) ) {
+            $this->block_support = new BlockSupport();
+        }
+
+        return [
+            'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
+            'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
+            'restUrl'            => rest_url( 'pikari-gutenberg-modals/v1/' ),
+            'nonce'              => wp_create_nonce( 'wp_rest' ),
+            'modalSizes'         => $this->get_modal_sizes(),
+            'panelWidths'        => $this->get_panel_widths(),
+            'modalTemplateParts' => $this->get_modal_template_parts(),
+            'isBlockTheme'       => wp_is_block_theme(),
+            'defaultSettings'    => [
+                'size' => 'medium',
+                'animation' => 'fade',
+                'closeOnClickOutside' => true,
+                'showCloseButton' => true,
+                'overlayOpacity' => 0.8,
+            ],
+        ];
     }
 
     /**
@@ -352,13 +366,13 @@ class EditorIntegration
     /**
      * Restrict modal blocks to the editing context they belong in.
      *
-     * The Modal Dialog block is only meaningful inside a template part; the
+     * The Modal Overlay block is only meaningful inside a template part; the
      * Modal Content block is only meaningful in post content. Which of the two
      * is hidden depends on what is being edited, not on which admin screen is
      * open — since WordPress 6.3 the Site Editor edits both.
      *
      * Note: Close Button and Content Area use the `ancestor` property in
-     * block.json to restrict themselves to modal-dialog contexts.
+     * block.json to restrict themselves to modal-overlay contexts.
      *
      * @param bool|string[]            $allowed_block_types Array of allowed block type slugs,
      *                                                      or true for all registered blocks.
@@ -398,7 +412,7 @@ class EditorIntegration
     /**
      * Decide which modal blocks to hide for a given editor context.
      *
-     * Editing post content hides Modal Dialog; editing a template or template
+     * Editing post content hides Modal Overlay; editing a template or template
      * part hides Modal Content. The Site Editor serves both, so the answer
      * comes from the post in the context rather than the context name:
      * `wp-admin/site-editor.php` populates it when a page is being edited
@@ -413,7 +427,7 @@ class EditorIntegration
         $context_name = $editor_context->name ?? '';
 
         if ( $context_name === 'core/edit-post' ) {
-            return [ 'pikari-gutenberg-modals/modal-dialog' ];
+            return [ 'pikari-gutenberg-modals/modal-overlay' ];
         }
 
         if ( $context_name !== 'core/edit-site' ) {
@@ -427,6 +441,6 @@ class EditorIntegration
             return [ 'pikari-gutenberg-modals/modal-content' ];
         }
 
-        return [ 'pikari-gutenberg-modals/modal-dialog' ];
+        return [ 'pikari-gutenberg-modals/modal-overlay' ];
     }
 }

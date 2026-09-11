@@ -1,5 +1,5 @@
 /*
- * Modal Dialog Block - Styles.
+ * Modal Overlay Block - Styles.
  *
  * Loaded in the editor via block.json and manually enqueued on the frontend
  * (the block renders in wp_footer via a template part, after WordPress's
@@ -18,7 +18,7 @@
 }
 
 /* Dialog container — editor preview */
-.wp-block-pikari-gutenberg-modals-modal-dialog {
+.wp-block-pikari-gutenberg-modals-modal-overlay {
 	position: relative;
 	width: 100%;
 	display: flex;

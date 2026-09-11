@@ -93,3 +93,64 @@ span[data-modal-action="close"],
 		overflow-y: auto;
 	}
 }
+.pikari-modal-template-panel {
+	position: relative;
+	&__heading {
+		font-size: 11px;
+		font-weight: 500;
+		text-transform: uppercase;
+		margin: 0 0 8px;
+	}
+	&__create {
+		position: absolute;
+		top: 0;
+		right: 0;
+	}
+	&__create-prominent {
+		width: 100%;
+		justify-content: center;
+	}
+	&__controls {
+		align-items: flex-start;
+	}
+}
+// Modal template create dialog
+.pikari-modal-template-create {
+	&__error {
+		margin: 0 0 16px;
+	}
+	&__patterns {
+		display: grid;
+		grid-template-columns: repeat(3, 1fr);
+		gap: 12px;
+		margin-bottom: 16px;
+	}
+	&__pattern {
+		background: none;
+		border: 1px solid #ddd;
+		border-radius: 4px;
+		cursor: pointer;
+		padding: 8px;
+		text-align: center;
+		&.is-selected {
+			border-color: var(--wp-admin-theme-color);
+			box-shadow: 0 0 0 1px var(--wp-admin-theme-color);
+		}
+	}
+}
+// Modal template preview
+.pikari-modal-template-preview {
+	border: 1px solid #ddd;
+	border-radius: 4px;
+	margin-top: 12px;
+	overflow: hidden;
+	&.is-loading {
+		align-items: center;
+		display: flex;
+		justify-content: center;
+		min-height: 200px;
+	}
+	&__placeholder {
+		min-height: 200px;
+	}
+}

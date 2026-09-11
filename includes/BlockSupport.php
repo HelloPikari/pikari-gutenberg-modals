@@ -152,7 +152,7 @@ class BlockSupport
 
         // Enqueue block styles for blocks rendered inside the modal template part.
         // These render in wp_footer after WordPress's normal block style enqueuing.
-        wp_enqueue_style( 'pikari-gutenberg-modals-modal-dialog-style' );
+        wp_enqueue_style( 'pikari-gutenberg-modals-modal-overlay-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-close-button-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-content-area-style' );
     }
@@ -971,7 +971,7 @@ class BlockSupport
      * Render a single modal container for a given template part slug.
      *
      * The outer structural wrapper handles overlay positioning, ARIA, and
-     * Interactivity API scope. The inner content (modal-dialog block) owns
+     * Interactivity API scope. The inner content (modal-overlay block) owns
      * the dialog chrome and overlay appearance.
      *
      * @param string $slug Template part slug.

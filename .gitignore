@@ -87,3 +87,6 @@ pikari-dev-setup-*/
 # yarn.lock
 # composer.lock
 .playwright-mcp/
+
+# Superpowers SDD scratch (ledger, briefs, review packages)
+.superpowers/

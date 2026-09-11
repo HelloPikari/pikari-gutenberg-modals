@@ -7,7 +7,7 @@
  * `is-open` / `is-closing`, so reduced-motion users kept getting the full
  * fade-and-scale.
  *
- * @see src/blocks/modal-dialog/style.css
+ * @see src/blocks/modal-overlay/style.css
  */
 
 import { readFileSync } from 'fs';
@@ -15,7 +15,7 @@ import { join } from 'path';
 
 const CSS_PATH = join(
 	__dirname,
-	'../../../src/blocks/modal-dialog/style.css'
+	'../../../src/blocks/modal-overlay/style.css'
 );
 
 /**

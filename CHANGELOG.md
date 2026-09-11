@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.0.0] - 2026-09-11
 
 ### Added
 
@@ -14,12 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pikari_gutenberg_modals_panel_widths` filter for adding or changing the panel widths offered in the editor, alongside `--modal-panel-width`, `--modal-panel-width-narrow` and `--modal-panel-width-wide` custom properties
 - Clickable Card and Modal Button block variations
 - `pikari_gutenberg_modals_trigger_blocks` filter
+- Modal template panel on every trigger: select, create from a starter pattern, edit, and preview a modal template part.
+- Three starter patterns — Centered dialog, Right panel, Left panel — registered to the `modal` template part area.
 
 ### Changed
 
 - **Breaking:** the Modal Trigger block has been removed. Opening a modal is now an action set on a Group or Button block, so the block keeps its own styling, alignment and layout. Existing Modal Trigger blocks will not render and must be rebuilt.
 - **Breaking:** dialog chrome — background, padding, border radius and shadow — now belongs to an inner Group block with the class `modal-chrome`, not to the Modal Dialog block itself. A site whose modal template part was customised before this release renders a transparent dialog, with page content showing through the text, until a chrome Group is added. Sites using the template part as shipped are unaffected.
 - **Breaking:** Group and Button blocks that were already set to open a modal stop doing so on update. The trigger is now carried by a single `pikariModalAction` attribute, and the previous `pikariModalTrigger` (Group) and `pikariOpenInModal` (Button) attributes are no longer read. Nothing is lost from the page — the blocks keep their content and styling — but the modal action has to be set again on each one, under Block settings → Modal.
+- **Breaking:** the `pikari-gutenberg-modals/modal-dialog` block is now `pikari-gutenberg-modals/modal-overlay`. Customized modal template parts containing the old block will render as an unrecognised block and must be recreated.
 
 ### Fixed
 

@@ -1,7 +1,7 @@
 /**
  * Geometry resolution for modal placement and size.
  *
- * Placement precedence: the trigger's override, else the Modal Dialog
+ * Placement precedence: the trigger's override, else the Modal Overlay
  * block's own value, else centered.
  *
  * Size is contextual. Centered modals measure a max-width; panels measure
@@ -30,7 +30,7 @@ export const CENTERED_SIZES = [ 'small', 'large', 'fullscreen' ];
  *
  * @param {Object} options                  Resolution inputs.
  * @param {string} options.triggerPlacement Placement from the trigger's context.
- * @param {string} options.dialogPlacement  Placement declared by the Modal Dialog block.
+ * @param {string} options.dialogPlacement  Placement declared by the Modal Overlay block.
  * @param {string} options.size             Size slug from the trigger's context.
  * @return {{placement: string, size: string}} Effective geometry. Empty strings mean default.
  */

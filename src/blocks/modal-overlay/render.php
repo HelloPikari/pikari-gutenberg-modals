@@ -1,13 +1,13 @@
 <?php
 /**
- * Modal Dialog Block - Server-side render.
+ * Modal Overlay Block - Server-side render.
  *
  * Outputs the overlay background elements and dialog container.
- * The dialog chrome (background, border, padding, shadow) is controlled
- * by block supports via get_block_wrapper_attributes().
  * The overlay (color, gradient, image) is controlled by custom
  * attributes rendered as separate elements. Overlay opacity is handled
  * via the alpha channel of the color value (e.g., rgba(0,0,0,0.8)).
+ * Dialog chrome (background, border, padding, shadow) belongs to the
+ * inner `modal-chrome` Group block, not to this block's supports.
  *
  * @package PikariGutenbergModals
  *
@@ -17,14 +17,14 @@
  */
 
 // --- Strip serialized block wrapper from $content ---
-// When the user sets block supports (background, border, shadow, etc.),
-// the editor serializes them into a wrapper <div> around the inner blocks.
-// Since render.php adds its own wrapper via get_block_wrapper_attributes(),
-// we strip the duplicate to avoid double-wrapping.
+// save() in index.js wraps the inner blocks in a <div> carrying this
+// block's own wrapper attributes. Since render.php adds its own wrapper via
+// get_block_wrapper_attributes(), we strip the duplicate to avoid
+// double-wrapping.
 $trimmed_content = trim( $content );
 if ( str_starts_with( $trimmed_content, '<div' ) ) {
     $processor = new WP_HTML_Tag_Processor( $trimmed_content );
-    if ( $processor->next_tag( 'div' ) && $processor->has_class( 'wp-block-pikari-gutenberg-modals-modal-dialog' ) ) {
+    if ( $processor->next_tag( 'div' ) && $processor->has_class( 'wp-block-pikari-gutenberg-modals-modal-overlay' ) ) {
         $content = preg_replace(
             '/^\s*<div\b[^>]*>(.*)<\/div>\s*$/s',
             '$1',

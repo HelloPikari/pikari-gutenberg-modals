@@ -19,7 +19,6 @@ import {
 	RangeControl,
 	SelectControl,
 	Button,
-	Notice,
 } from '@wordpress/components';
 import { __ } from '@wordpress/i18n';
 
@@ -73,32 +72,8 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 	const blockProps = useBlockProps();
 	const colorGradientSettings = useMultipleOriginColorsAndGradients();
 
-	const hasLegacyChromeStyles = Boolean(
-		attributes.backgroundColor ||
-		attributes.borderColor ||
-		attributes.style?.color?.background ||
-		attributes.style?.border ||
-		attributes.style?.spacing?.padding ||
-		attributes.style?.shadow
-	);
-
 	return (
 		<>
-			{ hasLegacyChromeStyles && (
-				<InspectorControls>
-					<Notice
-						status="warning"
-						isDismissible={ false }
-						className="modal-dialog-deprecation-notice"
-					>
-						{ __(
-							'Dialog styling (background, border, padding, shadow) should be applied to an inner Group block instead of directly on the Modal Dialog.',
-							'pikari-gutenberg-modals'
-						) }
-					</Notice>
-				</InspectorControls>
-			) }
-
 			<InspectorControls>
 				<PanelBody
 					title={ __( 'Placement', 'pikari-gutenberg-modals' ) }
@@ -226,7 +201,7 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 							allowedTypes={ [ 'image' ] }
 							value={ backgroundImage?.id }
 							render={ ( { open } ) => (
-								<div className="modal-dialog-image-control">
+								<div className="modal-overlay-image-control">
 									{ backgroundImage?.url ? (
 										<>
 											<img

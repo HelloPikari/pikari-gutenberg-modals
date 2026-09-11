@@ -3,7 +3,7 @@
  * Plugin Name: Pikari Gutenberg Modals
  * Plugin URI:  https://pikari.io
  * Description: Modal windows for the WordPress Gutenberg block editor. Adds accessible modal dialogs
- * Version:     1.3.0
+ * Version:     2.0.0
  * Author:      Pikari Inc.
  * Author URI:  https://pikari.io
  * License:     GPL-2.0-or-later
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version.
  */
-define( 'PIKARI_GUTENBERG_MODALS_VERSION', '1.3.0' );
+define( 'PIKARI_GUTENBERG_MODALS_VERSION', '2.0.0' );
 
 /**
  * Plugin directory path.
@@ -77,7 +77,7 @@ function pikari_gutenberg_modals_init() {
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/close-button' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/content-area' );
     register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-content' );
-    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-dialog' );
+    register_block_type( PIKARI_GUTENBERG_MODALS_DIR . 'build/blocks/modal-overlay' );
 
     // Initialize main components.
     new \Pikari\GutenbergModals\ModalHandler();
@@ -88,6 +88,7 @@ function pikari_gutenberg_modals_init() {
     new \Pikari\GutenbergModals\RestApi();
     new \Pikari\GutenbergModals\SpeculativeLoading();
     new \Pikari\GutenbergModals\ModalTemplatePart();
+    new \Pikari\GutenbergModals\ModalPatterns();
 }
 // add_action( 'plugins_loaded', 'pikari_gutenberg_modals_init' );
 add_action( 'init', 'pikari_gutenberg_modals_init' );
