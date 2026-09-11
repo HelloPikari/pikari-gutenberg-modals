@@ -280,7 +280,7 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 
 ## Changelog
 
-### Unreleased
+### 2.0.0
 
 - Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
 

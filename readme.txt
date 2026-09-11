@@ -4,7 +4,7 @@ Tags: modal, popup, dialog, gutenberg, block, accessible
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 8.4
-Stable tag: trunk
+Stable tag: 2.0.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -276,7 +276,7 @@ The breakpoint at which an edge panel gives up its width and fills the viewport 
 
 == Changelog ==
 
-= Unreleased =
+= 2.0.0 =
 * Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop
 * Modal placement: a Modal Dialog can be centered (the default) or pinned to the left or right viewport edge as a full-height panel, at narrow (320px), default (420px) or wide (600px) panel widths, and a Group or Button trigger can override the dialog's placement
 * pikari_gutenberg_modals_panel_widths filter for adding or changing the panel widths offered in the editor, alongside --modal-panel-width, --modal-panel-width-narrow and --modal-panel-width-wide custom properties
