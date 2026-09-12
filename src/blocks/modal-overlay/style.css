@@ -14,6 +14,7 @@
 	--modal-panel-width: 420px;
 	--modal-panel-width-narrow: 320px;
 	--modal-panel-width-wide: 600px;
+	--modal-video-max-height: 75vh;
 	--modal-focus-color: #3b82f6;
 }
 
@@ -119,6 +120,48 @@
 }
 .modal-overlay[data-size="fullscreen"] .modal-content .modal-chrome {
 	border-radius: 0 !important;
+}
+
+/* Fit to media — applied via data-fit on .modal-overlay, with the ratio
+   carried in --modal-video-ratio.
+
+   The default chain (.modal-chrome, the content area and .modal-body are all
+   `flex: 1` off a zero basis with `min-height: 0`) exists so a page in an
+   iframe can stretch to fill the dialog. It contributes no intrinsic height,
+   which is exactly wrong for media that should size the dialog around itself:
+   the ancestors collapse and the iframe gets clipped. Fit mode makes the same
+   chain content-driven and gives the iframe a definite size instead. */
+.modal-overlay[data-fit="video"] .modal-content {
+	width: fit-content;
+	height: auto;
+}
+.modal-overlay[data-fit="video"] .modal-content .modal-chrome,
+.modal-overlay[data-fit="video"]
+	.modal-content
+	.wp-block-pikari-gutenberg-modals-content-area,
+.modal-overlay[data-fit="video"] .modal-content .modal-body,
+.modal-overlay[data-fit="video"] .modal-content .modal-entry--iframe {
+	flex: 0 0 auto;
+	min-height: 0;
+	overflow: visible;
+}
+
+/* Width is derived from the height budget rather than the other way round.
+   A 9:16 video at `width: 100%` of a 1200px dialog asks for 2133px of height
+   and is clipped by the 90vh cap; deriving width from height is what makes a
+   portrait video work at all. --modal-video-max-height leaves room inside
+   that cap for the author's own chrome — close row, padding, border. */
+.modal-overlay[data-fit="video"] .modal-content .modal-entry--iframe iframe {
+	display: block;
+	flex: 0 0 auto;
+	width: min(
+		90vw,
+		calc(var(--modal-video-max-height, 75vh) * var(--modal-video-ratio, 16 / 9))
+	);
+	max-width: 100%;
+	aspect-ratio: var(--modal-video-ratio, 16 / 9);
+	height: auto;
+	min-height: 0;
 }
 
 /* Placement — applied via data-placement on .modal-overlay.

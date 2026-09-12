@@ -70,6 +70,7 @@ describe( 'MODAL_ATTRIBUTES', () => {
 			[
 				'pikariModalAccessibleLabel',
 				'pikariModalAction',
+				'pikariModalAspectRatio',
 				'pikariModalContentSource',
 				'pikariModalDirectUrl',
 				'pikariModalInlineAnchor',

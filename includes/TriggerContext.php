@@ -56,6 +56,14 @@ class TriggerContext
             $context['placement'] = $placement;
         }
 
+        // Same rule as placement: only slugs the store can act on travel.
+        // The list is duplicated in src/frontend/video-providers.js, which
+        // owns the slug-to-CSS-ratio mapping.
+        $aspect_ratio = $attributes['pikariModalAspectRatio'] ?? '';
+        if ( in_array( $aspect_ratio, [ '16-9', '9-16', '4-3', '1-1' ], true ) ) {
+            $context['aspectRatio'] = $aspect_ratio;
+        }
+
         return $context;
     }
 

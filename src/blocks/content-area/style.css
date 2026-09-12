@@ -23,6 +23,9 @@
 	overflow-y: auto;
 	flex: 1;
 }
+.modal-body.hidden {
+	display: none;
+}
 .modal-body > *:first-child {
 	margin-top: 0;
 }
@@ -51,18 +54,9 @@
 	flex: 1;
 }
 
-/* Known video hosts: hold 16:9 instead of stretching to the dialog height,
-   which otherwise letterboxes the video inside the iframe. */
-.modal-entry--iframe-16-9 {
-	flex: 0 1 auto;
-	justify-content: center;
-}
-.modal-entry--iframe-16-9 iframe {
-	flex: 0 0 auto;
-	aspect-ratio: 16 / 9;
-	height: auto;
-	min-height: 0;
-}
+/* Media that should size the dialog around itself is handled by fit mode —
+   see [data-fit="video"] in modal-overlay/style.css, which is driven by the
+   author's Aspect ratio choice rather than by the host alone. */
 
 /* Columns block vertical alignment (may not be loaded in modal context) */
 .modal-body .wp-block-columns.are-vertically-aligned-top {
@@ -98,6 +92,21 @@
 }
 .modal-loading.hidden {
 	display: none;
+}
+
+/* The spinner sits in flow while the body is empty — on the REST path there
+   is nothing else to give the dialog its size. Once the body holds something
+   (an iframe, which is inserted before it finishes loading) the spinner
+   becomes an overlay instead, so it stops pushing that content down the page. */
+.wp-block-pikari-gutenberg-modals-content-area:has(.modal-body:not(:empty)) {
+	position: relative;
+}
+.wp-block-pikari-gutenberg-modals-content-area:has(.modal-body:not(:empty))
+	.modal-loading {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	margin: 0;
 }
 .modal-loading .loading-spinner {
 	width: 40px;

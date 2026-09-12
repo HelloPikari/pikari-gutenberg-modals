@@ -261,6 +261,9 @@ The plugin exposes CSS custom properties on `:root` for theming:
 --modal-panel-width-narrow: 320px; /* Narrow */
 --modal-panel-width-wide: 600px; /* Wide */
 
+/* Media modals */
+--modal-video-max-height: 75vh; /* Height budget for an aspect-ratio modal */
+
 /* Interaction */
 --modal-focus-color: #3b82f6;
 ```
@@ -277,6 +280,18 @@ Override in your theme's CSS:
 Dialog appearance — background, border radius, padding and shadow — is set with block attributes on the `modal-chrome` Group inside the Modal Overlay block, not with custom properties.
 
 The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
+
+## Video and other framed media
+
+A trigger whose content source is an external URL frames that URL in an iframe. By default the iframe fills the dialog, which is what a page wants and what a video does not — so a URL on a known video host (YouTube, Vimeo) is held to 16:9 and the dialog sizes itself around the video instead.
+
+Set **Aspect ratio** in the trigger's Modal panel to override that: 16:9, 9:16, 4:3 or 1:1. An explicit ratio applies to any host, so a video platform the plugin has never heard of sizes correctly too.
+
+A portrait ratio has to be set by hand. A YouTube Shorts embed URL is byte-identical to a landscape one, and YouTube's own oEmbed reports 200x113 for both, so orientation cannot be detected from the URL.
+
+The dialog's height budget for a framed video is `--modal-video-max-height` (75vh by default), which leaves room inside the dialog's own 90vh cap for the chrome Group's close row and padding. Raise it if your chrome is minimal, lower it if it is generous.
+
+YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?v=...`, `youtu.be/...`, `youtube.com/shorts/...` or `vimeo.com/...` link is converted to its embed form before it reaches the iframe — including a `t=` start time. The trigger's own `href` is left alone, so the no-JavaScript fallback still goes to the human-facing page.
 
 ## Changelog
 

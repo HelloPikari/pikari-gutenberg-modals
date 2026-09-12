@@ -68,6 +68,27 @@ class TriggerContextTest extends TestCase
         $this->assertSame( 'promo', $context['templatePart'] );
     }
 
+    public function test_adds_aspect_ratio_when_valid(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '9-16' ], [ 'postId' => 1 ] );
+
+        $this->assertSame( '9-16', $context['aspectRatio'] );
+    }
+
+    public function test_omits_empty_aspect_ratio(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'aspectRatio', $context );
+    }
+
+    public function test_omits_unknown_aspect_ratio(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '21-9' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'aspectRatio', $context );
+    }
+
     public function test_adds_placement_when_valid(): void
     {
         $context = TriggerContext::build( [ 'pikariModalPlacement' => 'right' ], [ 'postId' => 1 ] );

@@ -110,7 +110,9 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 10. **Theme per-block styles** — `BlockStyleCollector::collect_render_enqueued_styles()` captures styles enqueued during `do_blocks()` by comparing `wp_styles()->queue` before/after rendering (catches theme button styles registered via `wp_enqueue_block_style()`)
 11. **Block support CSS in wp_footer** — `BlockSupport::render_modal_containers()` snapshots block support CSS before rendering template parts and outputs any newly generated layout/spacing CSS in a `<style>` tag (needed because `wp_enqueue_block_support_styles()` runs earlier)
 12. **Style architecture split** — `modal-overlay/style.css` owns ALL modal visual styles (overlay, `.modal-content`, `.modal-chrome`, animations, keyframes, size variants, mobile, print, reduced motion, CSS custom properties). `frontend/style.scss` contains only trigger-specific styles (inline triggers, group triggers, close triggers). This separation means the modal chrome appearance is governed by WordPress block styles on the `modal-chrome` Group, not by custom CSS properties on `:root`.
-13. **Placement is container geometry** — The Modal Overlay block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
+13. **Fit mode is container geometry too** — a URL modal whose content should be sized by its own aspect ratio gets `data-fit="video"` and a `--modal-video-ratio` custom property on `.modal-overlay`, written by the store at open time alongside `data-size`/`data-placement`. Under that hook the chrome → content-area → body chain flips from `flex: 1` off a zero basis to content-driven, and the iframe takes a definite size: `width: min(90vw, calc(var(--modal-video-max-height, 75vh) * var(--modal-video-ratio)))`. Deriving width from height is the whole point — a 9:16 video at `width: 100%` of a 1200px dialog asks for 2133px of height and is clipped. Fit mode is skipped when the resolved placement is a side panel, which has geometry of its own. The ratio slug list is duplicated in three places by design: `src/frontend/video-providers.js` (slug → CSS ratio), `TriggerContext::build()` (drops unknown slugs), and `modal-trigger-panel.js` (the select options).
+
+14. **Placement is container geometry** — The Modal Overlay block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
 
 ### Critical Implementation Gotchas
 
@@ -136,7 +138,11 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 11. **`useEntityRecords`'s fourth argument is unverified below WP 7.1.** `use-modal-template-entities.js` passes `{ enabled: isBlockTheme }` to skip the entity fetch on hybrid themes. That option was confirmed honoured in WordPress 7.1; the plugin's floor is 6.8, which was not checked. If 6.8 ignores it, the only consequence is one wasted REST request on hybrid themes whose response is never read — the hybrid branch bypasses `records` entirely and hard-overrides `hasResolved`/`isResolving` to `true`/`false` regardless of what the hook returns.
 
-12. **The panel's "no modal templates yet" empty state can't occur in practice.** `ModalTemplatePanel`'s prominent "Create modal template" button renders when `isEmpty` (`hasResolved && parts.length === 0`), reading as a real two-state component — but `parts` is never empty: `ModalTemplatePart` always registers a synthetic default template part for block themes, and `EditorIntegration::get_modal_template_parts()` injects a default `modal` entry for hybrid themes too. Only the small `+` create button (the non-empty branch) ever actually renders.
+12. **A YouTube Shorts URL is indistinguishable from a landscape one.** The embed URL is byte-identical, and YouTube's oEmbed reports `200x113` for both (probed, not assumed). Portrait orientation therefore cannot be auto-detected by any route — the author's Aspect ratio choice is the only signal, which is why "auto" can only ever mean 16:9.
+
+13. **`normalizeEmbedUrl()` converts the iframe source, never the trigger's `href`.** The trigger is a real link for progressive enhancement, and its destination should stay the human-facing watch page. Normalizing server-side would collapse the two.
+
+14. **The panel's "no modal templates yet" empty state can't occur in practice.** `ModalTemplatePanel`'s prominent "Create modal template" button renders when `isEmpty` (`hasResolved && parts.length === 0`), reading as a real two-state component — but `parts` is never empty: `ModalTemplatePart` always registers a synthetic default template part for block themes, and `EditorIntegration::get_modal_template_parts()` injects a default `modal` entry for hybrid themes too. Only the small `+` create button (the non-empty branch) ever actually renders.
 
 ## Custom Hooks & Filters
 
@@ -163,6 +169,15 @@ pikari_gutenberg_modals_panel_widths           // Add/modify panel width options
 // Prefetch
 pikari_gutenberg_modals_enable_prefetch_hints  // Enable auto <link rel="prefetch"> (default: false)
 pikari_gutenberg_modals_prefetch_urls          // Modify prefetch URL list
+```
+
+CSS custom properties (on `:root`, see `modal-overlay/style.css`):
+
+```css
+--modal-max-width, --modal-max-width-small, --modal-max-width-large
+--modal-panel-width, --modal-panel-width-narrow, --modal-panel-width-wide
+--modal-video-max-height   /* Height budget for an aspect-ratio modal (75vh) */
+--modal-focus-color
 ```
 
 ## Documentation Rule

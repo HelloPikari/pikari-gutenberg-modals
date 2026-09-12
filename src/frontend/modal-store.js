@@ -17,7 +17,7 @@ import {
 	focusFirstElement,
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
-import { isVideoEmbedUrl } from './video-providers';
+import { normalizeEmbedUrl, resolveVideoRatio } from './video-providers';
 import { resolveGeometry } from './modal-geometry';
 import { shouldDeferToElement } from './trigger-click';
 
@@ -111,6 +111,7 @@ const { state, actions } = store( 'pikari-modal', {
 				inlineAnchor,
 				templatePart,
 				label,
+				aspectRatio,
 			} = context;
 
 			// Validate required context based on content source
@@ -148,6 +149,10 @@ const { state, actions } = store( 'pikari-modal', {
 					activeContainer.classList.remove( 'is-closing' );
 					activeContainer.removeAttribute( 'data-size' );
 					activeContainer.removeAttribute( 'data-placement' );
+					activeContainer.removeAttribute( 'data-fit' );
+					activeContainer.style.removeProperty(
+						'--modal-video-ratio'
+					);
 					if ( previousAriaLabel !== null ) {
 						activeContainer.setAttribute(
 							'aria-label',
@@ -218,6 +223,22 @@ const { state, actions } = store( 'pikari-modal', {
 				modal.removeAttribute( 'data-placement' );
 			}
 
+			// Media is sized by its own aspect ratio rather than filling the
+			// dialog. Only a centered modal fits: a left or right panel is
+			// already an explicit geometry choice, and the two would fight.
+			const videoRatio =
+				contentSource === 'url' && ! geometry.placement
+					? resolveVideoRatio( aspectRatio || '', postId )
+					: null;
+
+			if ( videoRatio ) {
+				modal.setAttribute( 'data-fit', 'video' );
+				modal.style.setProperty( '--modal-video-ratio', videoRatio );
+			} else {
+				modal.removeAttribute( 'data-fit' );
+				modal.style.removeProperty( '--modal-video-ratio' );
+			}
+
 			// Carry the trigger's own name across to the dialog. Inline content
 			// has a second chance below: its own title stands in when the
 			// trigger supplies nothing.
@@ -284,7 +305,9 @@ const { state, actions } = store( 'pikari-modal', {
 			// External URL: render iframe instead of REST API fetch
 			const isExternalUrl = contentSource === 'url';
 			if ( isExternalUrl ) {
-				const iframeSrc = postId;
+				// The trigger's own href keeps the human-facing page for the
+				// no-JavaScript fallback; only the frame source is converted.
+				const iframeSrc = normalizeEmbedUrl( postId );
 
 				// Extract hostname for accessible iframe title
 				let iframeTitle = '';
@@ -294,14 +317,11 @@ const { state, actions } = store( 'pikari-modal', {
 					iframeTitle = iframeSrc;
 				}
 
-				// Known video hosts get a 16:9 box; anything else fills the
-				// dialog, which is what a page-in-modal wants.
-				const ratioClass = isVideoEmbedUrl( iframeSrc )
-					? ' modal-entry--iframe-16-9'
-					: '';
-
+				// Aspect-ratio handling lives on the container as data-fit,
+				// resolved above — a single mechanism that also covers hosts
+				// isVideoEmbedUrl() has never heard of.
 				const iframeHtml = `
-					<article class="modal-entry modal-entry--iframe${ ratioClass }">
+					<article class="modal-entry modal-entry--iframe">
 						<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( iframeTitle ) }</h2>
 						<iframe
 							src="${ escapeAttribute( iframeSrc ) }"
@@ -436,6 +456,8 @@ const { state, actions } = store( 'pikari-modal', {
 					modal.classList.remove( 'is-closing' );
 					modal.removeAttribute( 'data-size' );
 					modal.removeAttribute( 'data-placement' );
+					modal.removeAttribute( 'data-fit' );
+					modal.style.removeProperty( '--modal-video-ratio' );
 					if ( previousAriaLabel !== null ) {
 						modal.setAttribute( 'aria-label', previousAriaLabel );
 						previousAriaLabel = null;

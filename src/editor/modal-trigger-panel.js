@@ -35,6 +35,17 @@ const MODAL_SIZE_OPTIONS = window.pikariGutenbergModals?.modalSizes || [
 	{ label: __( 'Fullscreen', 'pikari-gutenberg-modals' ), value: 'fullscreen' },
 ];
 
+// Aspect ratios a URL modal can be held to. The slugs are mirrored in
+// TriggerContext::build() (which drops anything not on this list) and in
+// src/frontend/video-providers.js (which maps them to CSS ratios).
+const ASPECT_RATIO_OPTIONS = [
+	{ label: __( 'Automatic', 'pikari-gutenberg-modals' ), value: '' },
+	{ label: __( '16:9 — landscape video', 'pikari-gutenberg-modals' ), value: '16-9' },
+	{ label: __( '9:16 — portrait video', 'pikari-gutenberg-modals' ), value: '9-16' },
+	{ label: __( '4:3', 'pikari-gutenberg-modals' ), value: '4-3' },
+	{ label: __( '1:1 — square', 'pikari-gutenberg-modals' ), value: '1-1' },
+];
+
 const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 	return ( props ) => {
 		const { name, attributes, setAttributes, isSelected, clientId } = props;
@@ -53,6 +64,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 			pikariModalSize,
 			pikariModalTemplatePart,
 			pikariModalAccessibleLabel,
+			pikariModalAspectRatio,
 		} = attributes;
 
 		const modalContentBlocks = useModalContentBlocks();
@@ -346,6 +358,28 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 											setAttributes( { pikariModalSize: value } )
 										}
 									/>
+
+									{ ! isInlineSource && (
+										<SelectControl
+											__next40pxDefaultSize
+											__nextHasNoMarginBottom
+											label={ __(
+												'Aspect ratio',
+												'pikari-gutenberg-modals'
+											) }
+											value={ pikariModalAspectRatio }
+											options={ ASPECT_RATIO_OPTIONS }
+											onChange={ ( value ) =>
+												setAttributes( {
+													pikariModalAspectRatio: value,
+												} )
+											}
+											help={ __(
+												'For modals that open an external URL. Automatic uses 16:9 for known video hosts — choose a ratio for portrait video, which cannot be detected from the URL.',
+												'pikari-gutenberg-modals'
+											) }
+										/>
+									) }
 
 									<ModalTemplatePanel
 										value={ pikariModalTemplatePart }
