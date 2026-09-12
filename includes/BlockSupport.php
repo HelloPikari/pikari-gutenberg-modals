@@ -24,6 +24,19 @@ class BlockSupport
     private static bool $has_modal_triggers = false;
 
     /**
+     * Whether container rendering is suspended for the rest of this request.
+     *
+     * The modal-content REST endpoint fires wp_footer to collect styles that
+     * only exist inside a frontend request. Two BlockSupport instances are
+     * hooked to that action by then — the endpoint's own and the one
+     * bootstrapped on init — so remove_action() on one instance cannot stop
+     * the container from rendering into a response that only wants styles.
+     *
+     * @var bool
+     */
+    private static bool $suspend_container_render = false;
+
+    /**
      * Template part slugs used by triggers on this page.
      *
      * @var string[]
@@ -125,6 +138,16 @@ class BlockSupport
      *
      * @param string $slug Template part slug used by this trigger (default: 'modal').
      */
+    /**
+     * Suspend (or resume) modal container rendering for this request.
+     *
+     * @param bool $suspend True to suspend.
+     */
+    public static function suspend_container_render( bool $suspend ): void
+    {
+        self::$suspend_container_render = $suspend;
+    }
+
     public static function set_has_modal_triggers( string $slug = 'modal' ): void
     {
         // Track unique template part slugs for multi-container rendering
@@ -997,6 +1020,10 @@ class BlockSupport
     {
         // Only render if modal triggers were found on this page
         if ( ! self::$has_modal_triggers ) {
+            return;
+        }
+
+        if ( self::$suspend_container_render ) {
             return;
         }
 

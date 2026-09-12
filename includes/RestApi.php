@@ -147,17 +147,33 @@ class RestApi
             return $cached_response;
         }
 
-        // Snapshot the styles queue before rendering so we can detect theme
-        // per-block styles enqueued during do_blocks() via render_block filters
-        // (e.g., styles registered with wp_enqueue_block_style()).
+        // Instantiating BlockSupport here registers render_block filters that
+        // affect only the do_blocks() call below.
+        $block_support = new BlockSupport();
+
+        $simulate = self::should_simulate_frontend();
+
+        // A REST request runs neither wp_enqueue_scripts nor wp_footer, and
+        // whole classes of stylesheet exist only inside those actions:
+        // WordPress registers the block-style-variation-styles handle during
+        // the former, and plugins such as WPForms enqueue during the latter.
+        // Without firing them the handles are not merely unqueued — they are
+        // never registered, so the collector below has nothing to find.
+        if ( $simulate ) {
+            $this->simulate_enqueue_scripts( $post );
+        }
+
+        // Snapshot AFTER the simulated header. Taking it before would count
+        // every handle the theme and WordPress itself enqueue on any page —
+        // global-styles among them — as newly added by this render, and
+        // duplicate their inline CSS into the response.
         $before_queue = wp_styles()->queue;
 
-        // Instantiating BlockSupport here is safe: its constructor registers render_block
-        // filters and a wp_footer action, but these are request-scoped — the render_block
-        // filters only affect the do_blocks() call below, and wp_footer never fires in
-        // REST context. No persistent side effects.
-        $block_support = new BlockSupport();
-        $content_data  = $block_support->get_post_content_with_styles( $post );
+        $content_data = $block_support->get_post_content_with_styles( $post );
+
+        if ( $simulate ) {
+            $this->simulate_footer();
+        }
 
         // Extract raw CSS from the <style> tag returned by get_post_content_with_styles().
         // preg_match is safe here because the input is always a single <style> tag generated
@@ -208,6 +224,94 @@ class RestApi
         $this->add_cache_headers($response, $etag, $last_modified);
 
         return $response;
+    }
+
+    /**
+     * Whether to run the frontend enqueue lifecycle for this request.
+     *
+     * Firing wp_footer on a public endpoint runs every plugin's footer hook,
+     * which is a real cost and a real risk: the output is discarded, but the
+     * side effects are not. Sites that hit a misbehaving plugin can turn the
+     * simulation off and accept that plugin stylesheets go missing from
+     * modal content.
+     *
+     * @return bool True when the lifecycle should be simulated.
+     */
+    public static function should_simulate_frontend(): bool
+    {
+        /**
+         * Filter whether the modal-content endpoint simulates the frontend
+         * enqueue lifecycle to collect stylesheets.
+         *
+         * @param bool $simulate Default true.
+         */
+        return (bool) apply_filters( 'pikari_gutenberg_modals_simulate_frontend', true );
+    }
+
+    /**
+     * Run wp_enqueue_scripts as a frontend request would.
+     *
+     * The global post is set first so callbacks that inspect the current post
+     * to decide what to enqueue see the post the modal is about to show,
+     * rather than nothing at all.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post $post The post being rendered.
+     */
+    public function simulate_enqueue_scripts( \WP_Post $post ): void
+    {
+        if ( did_action( 'wp_enqueue_scripts' ) ) {
+            return;
+        }
+
+        $original_post   = $GLOBALS['post'] ?? null;
+        $GLOBALS['post'] = $post;
+
+        // Callbacks print as well as enqueue; only the queue is wanted here.
+        ob_start();
+        do_action( 'wp_enqueue_scripts' );
+        ob_end_clean();
+
+        $GLOBALS['post'] = $original_post;
+    }
+
+    /**
+     * Run wp_footer as a frontend request would.
+     *
+     * Plugins that render their own markup — WPForms among them — enqueue
+     * their stylesheets here rather than in the header, because they only
+     * know which assets are needed once the content has rendered.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     */
+    public function simulate_footer(): void
+    {
+        if ( did_action( 'wp_footer' ) ) {
+            return;
+        }
+
+        // Our own container renderer is hooked to wp_footer twice over by
+        // now — once from the instance above and once from the one
+        // bootstrapped on init — and would render every modal template part
+        // into a response that only wants the styles.
+        BlockSupport::suspend_container_render( true );
+
+        // wp_maybe_inline_styles() inlines small stylesheets into the page
+        // and sets src to false on every handle it takes, because a printed
+        // page no longer needs the URL. This response does: the collector
+        // reads exactly that src. Measured on WordPress 7.1 — firing
+        // wp_footer without this dropped wp-block-paragraph, -heading and
+        // -group from the response entirely.
+        remove_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+
+        ob_start();
+        do_action( 'wp_footer' );
+        ob_end_clean();
+
+        add_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+
+        BlockSupport::suspend_container_render( false );
     }
 
     /**

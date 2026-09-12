@@ -273,4 +273,29 @@ class BlockSupportTest extends TestCase {
 
         $this->assertSame( $input, $result );
     }
+
+    /**
+     * The modal-content endpoint fires wp_footer to collect third-party
+     * styles (WPForms enqueues there). Two BlockSupport instances are hooked
+     * to that action by then — the endpoint's own and the one bootstrapped on
+     * init — so remove_action() on a single instance cannot suppress the
+     * container render. A static flag can.
+     */
+    public function test_container_render_can_be_suspended(): void
+    {
+        Functions\when( 'apply_filters' )->returnArg( 2 );
+
+        $support = new BlockSupport();
+
+        BlockSupport::set_has_modal_triggers();
+        BlockSupport::suspend_container_render( true );
+
+        ob_start();
+        $support->render_single_modal_container();
+        $output = ob_get_clean();
+
+        BlockSupport::suspend_container_render( false );
+
+        $this->assertSame( '', $output );
+    }
 }

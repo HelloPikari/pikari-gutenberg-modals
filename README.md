@@ -246,6 +246,21 @@ add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $sl
 }, 10, 2 );
 ```
 
+### `pikari_gutenberg_modals_simulate_frontend`
+
+Modal content is rendered inside a REST request, which runs neither `wp_enqueue_scripts` nor `wp_footer`. Two classes of stylesheet exist only inside those actions, and are not merely unqueued without them but never registered at all:
+
+- **Theme block style variations.** WordPress registers the `block-style-variation-styles` handle during `wp_enqueue_scripts`. Without it a paragraph carrying `is-style-eyebrow` loses its styling in the modal while keeping it on the page.
+- **Plugin assets.** Plugins that render their own markup only know which assets they need once the content has rendered, so they enqueue on `wp_footer` — WPForms among them. Without it a form in a modal loses its layout, and the hidden honeypot field it injects becomes visible.
+
+The endpoint therefore fires both actions, output-buffered and discarded. That runs every plugin's footer hook on a public endpoint, so it can be switched off:
+
+```php
+add_filter( 'pikari_gutenberg_modals_simulate_frontend', '__return_false' );
+```
+
+Turning it off means plugin and block-style-variation CSS will be missing from modal content.
+
 ## CSS Custom Properties
 
 The plugin exposes CSS custom properties on `:root` for theming:
