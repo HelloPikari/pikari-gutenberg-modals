@@ -40,7 +40,14 @@ const INNER_BLOCKS_TEMPLATE = [
 				},
 				shadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
 			},
-			layout: { type: 'flex', orientation: 'vertical' },
+			// Stretch, so the content area fills the dialog's width rather
+			// than shrinking to its content. Without it a modal's content
+			// sits at its natural width against the left edge of the chrome.
+			layout: {
+				type: 'flex',
+				orientation: 'vertical',
+				justifyContent: 'stretch',
+			},
 		},
 		[
 			[
