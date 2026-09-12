@@ -320,7 +320,7 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 
 ## Changelog
 
-### Unreleased
+### 2.1.0
 
 - Modals that frame a video size themselves to the video instead of collapsing around it. The dialog's flex chain contributes no intrinsic height — it exists so a page in an iframe can stretch to fill the dialog — which left a 1200px-wide modal 230px tall with the video clipped to a 169px band.
 

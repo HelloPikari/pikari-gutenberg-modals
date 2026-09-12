@@ -4,7 +4,7 @@ Tags: modal, popup, dialog, gutenberg, block, accessible
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 8.4
-Stable tag: 2.0.0
+Stable tag: 2.1.0
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -314,7 +314,7 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 
 == Changelog ==
 
-= Unreleased =
+= 2.1.0 =
 * Modals that frame a video size themselves to the video instead of collapsing around it. The dialog's flex chain contributes no intrinsic height — it exists so a page in an iframe can stretch to fill the dialog — which left a 1200px-wide modal 230px tall with the video clipped to a 169px band.
 * Aspect ratio control on triggers that open an external URL: 16:9, 9:16, 4:3 or 1:1, or Automatic (16:9 for known video hosts). An explicit ratio applies to any host. A portrait ratio has to be set by hand — a YouTube Shorts embed URL is byte-identical to a landscape one and YouTube's oEmbed reports 200x113 for both, so orientation cannot be detected.
 * --modal-video-max-height custom property (75vh) for the height budget an aspect-ratio modal is allowed inside the dialog's own 90vh cap.
