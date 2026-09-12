@@ -76,7 +76,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		placement,
 	} = attributes;
 
-	const blockProps = useBlockProps();
+	// The editor canvas has no overlay to position against, so a block that
+	// renders a full-height edge panel on the frontend would otherwise preview
+	// identically to a centered one — which is what made the three starter
+	// patterns indistinguishable in the inserter. Carrying placement onto the
+	// wrapper lets the editor show the shape the author actually chose.
+	const blockProps = useBlockProps( {
+		'data-placement': placement || undefined,
+	} );
 	const colorGradientSettings = useMultipleOriginColorsAndGradients();
 
 	return (
