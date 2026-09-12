@@ -107,4 +107,60 @@ class RestApiTest extends TestCase
 
         $this->assertSame( $level, ob_get_level() );
     }
+
+    /**
+     * Build a post double for ETag hashing.
+     *
+     * @param string $content Post content.
+     * @return object A stand-in for WP_Post.
+     */
+    private function post_double( string $content = 'Hello' ): object
+    {
+        $post                    = new \stdClass();
+        $post->ID                = 365;
+        $post->post_modified_gmt = '2026-09-01 10:00:00';
+        $post->post_content      = $content;
+
+        return $post;
+    }
+
+    /**
+     * The ETag validates a cached response, and what the endpoint returns for
+     * an unchanged post changed in 2.1.0 — the simulated frontend lifecycle
+     * adds plugin and block-style-variation CSS that was not there before.
+     * Without the plugin version in the hash, a browser or CDN holding the
+     * older body revalidates, is told 304, and keeps serving content with the
+     * missing styles until someone re-saves the post.
+     */
+    public function test_etag_changes_with_the_plugin_version(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertNotSame(
+            $api->generate_etag( $post, '2.0.0' ),
+            $api->generate_etag( $post, '2.1.0' )
+        );
+    }
+
+    public function test_etag_is_stable_for_the_same_post_and_version(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertSame(
+            $api->generate_etag( $post, '2.1.0' ),
+            $api->generate_etag( $post, '2.1.0' )
+        );
+    }
+
+    public function test_etag_still_changes_with_the_content(): void
+    {
+        $api = new RestApi();
+
+        $this->assertNotSame(
+            $api->generate_etag( $this->post_double( 'Hello' ), '2.1.0' ),
+            $api->generate_etag( $this->post_double( 'Goodbye' ), '2.1.0' )
+        );
+    }
 }

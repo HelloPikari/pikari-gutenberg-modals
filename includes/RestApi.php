@@ -137,8 +137,9 @@ class RestApi
             );
         }
 
-        // Generate ETag based on post content and modification time
-        $etag          = $this->generate_etag($post);
+        // Generate ETag based on post content, modification time and plugin
+        // version — see generate_etag() for why the version belongs in it.
+        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION);
         $last_modified = strtotime($post->post_modified_gmt);
 
         // Check for conditional request (If-None-Match or If-Modified-Since)
@@ -315,15 +316,27 @@ class RestApi
     }
 
     /**
-     * Generate an ETag for a post based on content and modification time.
+     * Generate an ETag for a post based on content, modification time and the
+     * plugin version.
      *
-     * @param \WP_Post $post The post object.
+     * The version is in the hash because this endpoint's output can change
+     * without the post changing: 2.1.0 began collecting plugin and
+     * block-style-variation CSS that earlier versions never returned. An ETag
+     * derived from the post alone would tell a browser or CDN holding the
+     * older body that nothing had changed, and it would keep serving modal
+     * content with the missing styles until someone re-saved the post.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post|object $post    The post object.
+     * @param string          $version The plugin version.
      * @return string The ETag value (quoted string).
      */
-    private function generate_etag( $post )
+    public function generate_etag( $post, string $version )
     {
-        // Create hash from post ID, modification time, and content hash
-        $hash_data = $post->ID . '-' . $post->post_modified_gmt . '-' . md5($post->post_content);
+        // Create hash from post ID, modification time, content hash and the
+        // version of the code that shapes the response.
+        $hash_data = $post->ID . '-' . $post->post_modified_gmt . '-' . md5($post->post_content) . '-' . $version;
         return '"' . md5($hash_data) . '"';
     }
 
