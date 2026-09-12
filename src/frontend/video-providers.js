@@ -210,7 +210,12 @@ export function normalizeEmbedUrl( url ) {
  * @return {string|null} A CSS ratio, or null when the iframe should fill the dialog.
  */
 export function resolveVideoRatio( slug, url ) {
-	if ( ASPECT_RATIOS[ slug ] ) {
+	// hasOwn, not a truthiness test: a bare property read reaches the
+	// prototype, so 'constructor' and 'toString' would both come back truthy
+	// and be written into --modal-video-ratio as stringified functions.
+	// TriggerContext::build() already gates the slug server-side; this keeps
+	// the module correct on its own terms.
+	if ( Object.hasOwn( ASPECT_RATIOS, slug ) ) {
 		return ASPECT_RATIOS[ slug ];
 	}
 

@@ -138,16 +138,6 @@ class BlockSupport
      *
      * @param string $slug Template part slug used by this trigger (default: 'modal').
      */
-    /**
-     * Suspend (or resume) modal container rendering for this request.
-     *
-     * @param bool $suspend True to suspend.
-     */
-    public static function suspend_container_render( bool $suspend ): void
-    {
-        self::$suspend_container_render = $suspend;
-    }
-
     public static function set_has_modal_triggers( string $slug = 'modal' ): void
     {
         // Track unique template part slugs for multi-container rendering
@@ -178,6 +168,19 @@ class BlockSupport
         wp_enqueue_style( 'pikari-gutenberg-modals-modal-overlay-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-close-button-style' );
         wp_enqueue_style( 'pikari-gutenberg-modals-content-area-style' );
+    }
+
+    /**
+     * Suspend (or resume) modal container rendering for this request.
+     *
+     * Static rather than per-instance because more than one BlockSupport is
+     * hooked to wp_footer in a REST request — see RestApi::simulate_footer().
+     *
+     * @param bool $suspend True to suspend.
+     */
+    public static function suspend_container_render( bool $suspend ): void
+    {
+        self::$suspend_container_render = $suspend;
     }
 
     /**

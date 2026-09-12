@@ -135,14 +135,11 @@
 	width: fit-content;
 	height: auto;
 }
-.modal-overlay[data-fit="video"] .modal-content .modal-chrome,
-.modal-overlay[data-fit="video"]
-	.modal-content
-	.wp-block-pikari-gutenberg-modals-content-area,
-.modal-overlay[data-fit="video"] .modal-content .modal-body,
-.modal-overlay[data-fit="video"] .modal-content .modal-entry--iframe {
+.modal-overlay[data-fit="video"] .modal-chrome,
+.modal-overlay[data-fit="video"] .wp-block-pikari-gutenberg-modals-content-area,
+.modal-overlay[data-fit="video"] .modal-body,
+.modal-overlay[data-fit="video"] .modal-entry--iframe {
 	flex: 0 0 auto;
-	min-height: 0;
 	overflow: visible;
 }
 
@@ -151,7 +148,7 @@
    and is clipped by the 90vh cap; deriving width from height is what makes a
    portrait video work at all. --modal-video-max-height leaves room inside
    that cap for the author's own chrome — close row, padding, border. */
-.modal-overlay[data-fit="video"] .modal-content .modal-entry--iframe iframe {
+.modal-overlay[data-fit="video"] .modal-entry--iframe iframe {
 	display: block;
 	flex: 0 0 auto;
 	width: min(

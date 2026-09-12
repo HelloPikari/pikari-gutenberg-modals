@@ -185,6 +185,21 @@ describe( 'resolveVideoRatio', () => {
 		);
 	} );
 
+	it( 'does not reach Object.prototype for a slug', () => {
+		// A bare ASPECT_RATIOS[slug] read returns a truthy function for these,
+		// which would be stringified into the --modal-video-ratio custom
+		// property as `function Object() { [native code] }`.
+		expect(
+			resolveVideoRatio( 'constructor', 'https://example.com/page' )
+		).toBe( null );
+		expect(
+			resolveVideoRatio( 'toString', 'https://example.com/page' )
+		).toBe( null );
+		expect(
+			resolveVideoRatio( 'constructor', 'https://vimeo.com/1' )
+		).toBe( '16 / 9' );
+	} );
+
 	it( 'treats an unrecognised slug as auto', () => {
 		expect( resolveVideoRatio( '21-9', 'https://example.com/page' ) ).toBe(
 			null

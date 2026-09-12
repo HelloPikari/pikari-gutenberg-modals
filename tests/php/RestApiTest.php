@@ -59,9 +59,11 @@ class RestApiTest extends TestCase
      * does — BlockStyleCollector reads exactly that src — so the simulated
      * footer must run without it and put it back afterwards.
      *
-     * Measured on WordPress 7.1: without this, firing wp_footer dropped
-     * wp-block-paragraph, wp-block-heading and wp-block-group from the
-     * response, and 1768 bytes of inline CSS with them.
+     * Measured on WordPress 7.1 against a real site: without this, firing
+     * wp_footer dropped wp-block-paragraph, wp-block-heading and
+     * wp-block-group from blockStyles.urls — 5 URLs became 2. The CSS itself
+     * still arrived, through the collector's path and after fallbacks, so the
+     * loss is the URLs rather than the bytes.
      */
     public function test_simulated_footer_runs_without_inlining_styles(): void
     {
@@ -140,6 +142,23 @@ class RestApiTest extends TestCase
         $this->assertNotSame(
             $api->generate_etag( $post, '2.0.0' ),
             $api->generate_etag( $post, '2.1.0' )
+        );
+    }
+
+    /**
+     * The simulate filter is a second input to the response shape — it decides
+     * whether plugin and block-style-variation CSS is collected at all — so a
+     * site that toggles it hits exactly the stale-304 the version in the hash
+     * was added to prevent.
+     */
+    public function test_etag_changes_with_the_simulate_flag(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertNotSame(
+            $api->generate_etag( $post, '2.1.0', true ),
+            $api->generate_etag( $post, '2.1.0', false )
         );
     }
 

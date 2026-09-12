@@ -156,11 +156,16 @@ class TriggerContext
         // branches use, because ModalTemplatePart::SLUG is private.
         $slug = '' !== $template_part ? $template_part : 'modal';
 
-        if ( array_key_exists( $slug, $titles ) ) {
-            return $titles[ $slug ];
+        // Keyed on the full template id rather than the slug: the stylesheet is
+        // half the lookup, so a switch_to_blog() or a mid-request theme change
+        // would otherwise be served another theme's title.
+        $template_id = get_stylesheet() . '//' . $slug;
+
+        if ( array_key_exists( $template_id, $titles ) ) {
+            return $titles[ $template_id ];
         }
 
-        $template = get_block_template( get_stylesheet() . '//' . $slug, 'wp_template_part' );
+        $template = get_block_template( $template_id, 'wp_template_part' );
         $title    = $template ? trim( wp_strip_all_tags( (string) ( $template->title ?? '' ) ) ) : '';
 
         // WordPress stands the slug in for a title the part does not have,
@@ -171,8 +176,8 @@ class TriggerContext
             $title = '';
         }
 
-        $titles[ $slug ] = $title;
+        $titles[ $template_id ] = $title;
 
-        return $titles[ $slug ];
+        return $titles[ $template_id ];
     }
 }

@@ -54,10 +54,6 @@
 	flex: 1;
 }
 
-/* Media that should size the dialog around itself is handled by fit mode —
-   see [data-fit="video"] in modal-overlay/style.css, which is driven by the
-   author's Aspect ratio choice rather than by the host alone. */
-
 /* Columns block vertical alignment (may not be loaded in modal context) */
 .modal-body .wp-block-columns.are-vertically-aligned-top {
 	align-items: flex-start;
@@ -97,16 +93,17 @@
 /* The spinner sits in flow while the body is empty — on the REST path there
    is nothing else to give the dialog its size. Once the body holds something
    (an iframe, which is inserted before it finishes loading) the spinner
-   becomes an overlay instead, so it stops pushing that content down the page. */
-.wp-block-pikari-gutenberg-modals-content-area:has(.modal-body:not(:empty)) {
+   becomes an overlay instead, so it stops pushing that content down the page.
+   The sibling combinator works because render.php emits .modal-loading before
+   .modal-body; the positioning context is unconditional because nothing else
+   in the content area is absolutely positioned (.sr-only uses clip). */
+.wp-block-pikari-gutenberg-modals-content-area {
 	position: relative;
 }
-.wp-block-pikari-gutenberg-modals-content-area:has(.modal-body:not(:empty))
-	.modal-loading {
+.modal-loading:has(~ .modal-body:not(:empty)) {
 	position: absolute;
 	inset: 0;
 	z-index: 1;
-	margin: 0;
 }
 .modal-loading .loading-spinner {
 	width: 40px;

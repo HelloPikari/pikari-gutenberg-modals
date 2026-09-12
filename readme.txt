@@ -241,7 +241,7 @@ Override the modal template markup for hybrid (non-block) themes. Return block m
 
 Modal content is rendered inside a REST request, which runs neither wp_enqueue_scripts nor wp_footer. Two classes of stylesheet exist only inside those actions, and are not merely unqueued without them but never registered at all:
 
-* Theme block style variations. WordPress registers the block-style-variation-styles handle during wp_enqueue_scripts. Without it a paragraph carrying is-style-eyebrow loses its styling in the modal while keeping it on the page.
+* Theme block style variations. The block-style-variation-styles handle is enqueued during wp_enqueue_scripts and only registered later, while blocks render, so it reaches the queue only when both have run. Without it a paragraph carrying is-style-eyebrow loses its styling in the modal while keeping it on the page.
 * Plugin assets. Plugins that render their own markup only know which assets they need once the content has rendered, so they enqueue on wp_footer — WPForms among them. Without it a form in a modal loses its layout, and the hidden honeypot field it injects becomes visible.
 
 The endpoint therefore fires both actions, output-buffered and discarded. That runs every plugin's footer hook on a public endpoint, so it can be switched off:
@@ -313,6 +313,17 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 5. Template part customization in the Site Editor
 
 == Changelog ==
+
+= Unreleased =
+* Modals that frame a video size themselves to the video instead of collapsing around it. The dialog's flex chain contributes no intrinsic height — it exists so a page in an iframe can stretch to fill the dialog — which left a 1200px-wide modal 230px tall with the video clipped to a 169px band.
+* Aspect ratio control on triggers that open an external URL: 16:9, 9:16, 4:3 or 1:1, or Automatic (16:9 for known video hosts). An explicit ratio applies to any host. A portrait ratio has to be set by hand — a YouTube Shorts embed URL is byte-identical to a landscape one and YouTube's oEmbed reports 200x113 for both, so orientation cannot be detected.
+* --modal-video-max-height custom property (75vh) for the height budget an aspect-ratio modal is allowed inside the dialog's own 90vh cap.
+* Pasted YouTube and Vimeo page URLs are converted to their embed form, carrying a t= start time across. Previously a watch link opened a blank modal, because those pages refuse to be framed. Only the iframe source is converted; the trigger's own href still points at the human-facing page.
+* The loading spinner no longer pushes modal content down the page. It overlays the content once there is content to overlay, and stays in flow while the body is empty.
+* Template only content source: the modal template part is the content, with nothing fetched and nothing cloned. A global modal no longer needs a page that exists only to be pulled into it. The dialog is named after the template part's title.
+* Theme block style variations and third-party plugin stylesheets now load in modal content. Modal content is rendered in a REST request, which runs neither wp_enqueue_scripts nor wp_footer, so the handles carrying them were never registered — a paragraph styled by a theme variation lost its styling in the modal, and a WPForms form lost its layout along with the CSS that hides the honeypot field it injects.
+* pikari_gutenberg_modals_simulate_frontend filter to switch that collection off, for sites where running every plugin's wp_footer hook on a public endpoint is not wanted.
+* The modal-content ETag now includes the plugin version, so a browser holding an older response is not told 304 against output whose shape has changed.
 
 = 2.0.0 =
 * Overlay opacity control on the Modal Dialog block, set independently of the overlay colour so a theme that disables custom colours can still produce a translucent backdrop

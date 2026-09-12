@@ -37,18 +37,19 @@ Always use these agents proactively:
 
 ### PHP Classes (`includes/`)
 
-| Class                      | Lines | Purpose                                                               |
-| -------------------------- | ----- | --------------------------------------------------------------------- | --- |
-| `BlockSupport`             | ~850  | Core rendering, trigger transformation, containers, block support CSS |     |
-| `GroupModalTriggerSupport` | ~350  | Group block cards, two-phase rendering for Query Loop                 |     |
-| `RestApi`                  | ~340  | Modal-content + search endpoints, theme per-block style collection    |     |
-| `ModalHandler`             | ~230  | Content processing, URL validation, domain allow/block lists          |     |
-| `BlockStyleCollector`      | ~250  | Block detection, stylesheet URLs, theme per-block styles              |     |
-| `SpeculativeLoading`       | ~155  | Hover prefetch (200ms delay), prefetch hints                          |     |
-| `EditorIntegration`        | ~130  | Editor assets, localized config, block context restrictions           |     |
-| `ModalTemplatePart`        | ~285  | Template part registration (block themes), file-based fallback        |     |
-| `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)        |     |
-| `ModalPatterns`            | ~110  | Starter patterns registered to the modal template part area           |     |
+| Class                      | Lines | Purpose                                                                                       |
+| -------------------------- | ----- | --------------------------------------------------------------------------------------------- | --- |
+| `BlockSupport`             | ~1115 | Core rendering, trigger transformation, containers, block support CSS                         |     |
+| `GroupModalTriggerSupport` | ~625  | Group block cards, two-phase rendering for Query Loop                                         |     |
+| `RestApi`                  | ~445  | Modal-content + search endpoints, theme per-block style collection                            |     |
+| `ModalHandler`             | ~240  | Content processing, URL validation, domain allow/block lists                                  |     |
+| `BlockStyleCollector`      | ~245  | Block detection, stylesheet URLs, theme per-block styles                                      |     |
+| `SpeculativeLoading`       | ~155  | Hover prefetch (200ms delay), prefetch hints                                                  |     |
+| `EditorIntegration`        | ~445  | Editor assets, localized config, block context restrictions                                   |     |
+| `ModalTemplatePart`        | ~310  | Template part registration (block themes), file-based fallback                                |     |
+| `TriggerContext`           | ~185  | Interactivity context shared by every open-mode trigger; derives the dialog's accessible name |
+| `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                                |     |
+| `ModalPatterns`            | ~110  | Starter patterns registered to the modal template part area                                   |     |
 
 ### JavaScript Files
 
@@ -70,16 +71,23 @@ Always use these agents proactively:
 | `use-create-modal-template.js`   | ~75   | Creates a new modal template part from a starter pattern                                                                     |
 | `modal-template-create-modal.js` | ~165  | Create-modal-template dialog: starter pattern picker, title field, error handling                                            |
 | `modal-template-preview.js`      | ~90   | Read-only preview of the selected modal template part's content                                                              |
+| `find-links-in-blocks.js`        | ~165  | Walks a Group's inner blocks for linkable candidates, feeding the Primary link picker                                        |
+| `use-is-modal-template-part.js`  | ~55   | Whether the block being edited sits inside a modal template part                                                             |
+| `use-modal-content-blocks.js`    | ~45   | Collects the Modal Content blocks on the page for the Inline content picker                                                  |
+| `modal-trigger-icon.js`          | ~15   | Shared inserter/toolbar icon                                                                                                 |
 
 **Frontend (`src/frontend/`):**
 
-| File                    | Lines | Purpose                                                                   |
-| ----------------------- | ----- | ------------------------------------------------------------------------- |
-| `modal-store.js`        | ~340  | Interactivity API store — reactive state, async content loading, prefetch |
-| `modal-a11y.js`         | ~95   | Focus trap, inert background, keyboard navigation utilities               |
-| `block-style-loader.js` | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)              |
-| `index.js`              | ~9    | Entry point                                                               |
-| `style.scss`            | ~77   | Trigger-only styles — inline triggers, group triggers, close triggers     |
+| File                    | Lines | Purpose                                                                                                                   |
+| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| `modal-store.js`        | ~390  | Interactivity API store — reactive state, async content loading, prefetch                                                 |
+| `modal-a11y.js`         | ~95   | Focus trap, inert background, keyboard navigation utilities                                                               |
+| `video-providers.js`    | ~220  | Pure, import-free: host detection, watch/shorts/vimeo → embed URL conversion, aspect-ratio slug → CSS ratio — unit tested |
+| `block-style-loader.js` | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)                                                              |
+| `modal-geometry.js`     | ~55   | Pure: resolves trigger placement against the dialog's own, drops a size slug from the wrong list — unit tested            |
+| `trigger-click.js`      | ~45   | Pure: whether a click inside a group trigger belongs to genuine interactive content — unit tested                         |
+| `index.js`              | ~9    | Entry point                                                                                                               |
+| `style.scss`            | ~77   | Trigger-only styles — inline triggers, group triggers, close triggers                                                     |
 
 ### Modal Container Pattern
 
@@ -113,7 +121,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 12. **Style architecture split** — `modal-overlay/style.css` owns ALL modal visual styles (overlay, `.modal-content`, `.modal-chrome`, animations, keyframes, size variants, mobile, print, reduced motion, CSS custom properties). `frontend/style.scss` contains only trigger-specific styles (inline triggers, group triggers, close triggers). This separation means the modal chrome appearance is governed by WordPress block styles on the `modal-chrome` Group, not by custom CSS properties on `:root`.
 13. **Fit mode is container geometry too** — a URL modal whose content should be sized by its own aspect ratio gets `data-fit="video"` and a `--modal-video-ratio` custom property on `.modal-overlay`, written by the store at open time alongside `data-size`/`data-placement`. Under that hook the chrome → content-area → body chain flips from `flex: 1` off a zero basis to content-driven, and the iframe takes a definite size: `width: min(90vw, calc(var(--modal-video-max-height, 75vh) * var(--modal-video-ratio)))`. Deriving width from height is the whole point — a 9:16 video at `width: 100%` of a 1200px dialog asks for 2133px of height and is clipped. Fit mode is skipped when the resolved placement is a side panel, which has geometry of its own. The ratio slug list is duplicated in three places by design: `src/frontend/video-providers.js` (slug → CSS ratio), `TriggerContext::build()` (drops unknown slugs), and `modal-trigger-panel.js` (the select options).
 
-14. **The modal-content endpoint simulates the frontend enqueue lifecycle** — `RestApi::simulate_enqueue_scripts()` before the snapshot, `simulate_footer()` after the render, both output-buffered and gated by `pikari_gutenberg_modals_simulate_frontend`. Without them two whole classes of stylesheet are not merely unqueued but never _registered_: WordPress registers `block-style-variation-styles` (which carries theme block style variations such as `is-style-eyebrow--1`) during `wp_enqueue_scripts`, and plugins that render their own markup — WPForms enqueues `wpforms-modern-base` — enqueue during `wp_footer`. Measured on WP 7.1 with WPForms: neither handle exists in a REST request otherwise.
+14. **The modal-content endpoint simulates the frontend enqueue lifecycle** — `RestApi::simulate_enqueue_scripts()` before the snapshot, `simulate_footer()` after the render, both output-buffered and gated by `pikari_gutenberg_modals_simulate_frontend`. Without them two whole classes of stylesheet never reach the queue. `block-style-variation-styles` (which carries theme variations such as `is-style-eyebrow--1`) needs **both** halves: core calls `wp_enqueue_style()` on it during `wp_enqueue_scripts` _before it is registered_, so `WP_Dependencies` parks it in `queued_before_register`; registration happens later, during `do_blocks()` via `render_block_data`, and promotes it into the queue. Skip the header and it is never parked, so it never lands — which is also why the `$before_queue` snapshot must be taken after the header and before the render. Plugins that render their own markup enqueue in `wp_footer` instead, once they know what the page rendered (WPForms: `wpforms-modern-base`). Measured on WP 7.1 with WPForms.
 
 15. **Placement is container geometry** — The Modal Overlay block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
 
@@ -143,7 +151,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 12. **A YouTube Shorts URL is indistinguishable from a landscape one.** The embed URL is byte-identical, and YouTube's oEmbed reports `200x113` for both (probed, not assumed). Portrait orientation therefore cannot be auto-detected by any route — the author's Aspect ratio choice is the only signal, which is why "auto" can only ever mean 16:9.
 
-13. **The simulated `wp_footer` must not run `wp_maybe_inline_styles()`.** It is hooked there at priority 1, inlines small stylesheets, and then sets `src` to `false` on every handle it took — correct for a page being printed, fatal for a response whose whole job is to hand back those URLs. Measured: leaving it in dropped `wp-block-paragraph`, `-heading` and `-group` from the response along with 1768 bytes of CSS. `simulate_footer()` removes it and puts it back.
+13. **The simulated `wp_footer` must not run `wp_maybe_inline_styles()`.** It is hooked there at priority 1, inlines small stylesheets, and then sets `src` to `false` on every handle it took — correct for a page being printed, wrong for a response whose job is to hand back those URLs. Measured: leaving it in took `blockStyles.urls` from 5 entries to 2, dropping `wp-block-paragraph`, `-heading` and `-group`. The CSS itself still arrived (core leaves `extra['path']` intact and unshifts the inlined text into `extra['after']`, and `BlockStyleCollector` reads both) — so the loss is URLs, not bytes, and the collector's own src/path/after fallbacks mean it arrived twice. `simulate_footer()` removes the callback and puts it back in a `finally`.
 
 14. **WordPress stands a template part's slug in for a missing title.** Measured on a real install: a DB part saved without a title (`source=custom`) and a theme file part absent from `theme.json` (`source=theme`) both come back with `title === slug`. `TriggerContext::template_part_title()` discards such a title rather than announce "video-player" as a dialog name. The lookup is statically cached per slug — tests that assert on it must use distinct slugs.
 
@@ -302,4 +310,4 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 
 ---
 
-Last updated: 2026-09-10 (v1.3.0..HEAD)
+Last updated: 2026-09-12 (v2.0.0..HEAD)

@@ -66,6 +66,40 @@ function applyDialogLabel( modal, label ) {
 	modal.setAttribute( 'aria-label', label );
 }
 
+/**
+ * Return a container to its closed state.
+ *
+ * Both close paths — the exit-animation timeout and the cancel-pending-close
+ * branch in openModal() — have to undo exactly the same things, and every
+ * geometry attribute added since has had to be added to both. One function
+ * removes that class of omission.
+ *
+ * @param {HTMLElement} modal - The modal container element.
+ */
+function resetContainer( modal ) {
+	if ( ! modal ) {
+		return;
+	}
+
+	modal.style.display = 'none';
+	modal.classList.remove( 'is-closing' );
+	modal.removeAttribute( 'data-size' );
+	modal.removeAttribute( 'data-placement' );
+	modal.removeAttribute( 'data-fit' );
+	modal.style.removeProperty( '--modal-video-ratio' );
+
+	if ( previousAriaLabel !== null ) {
+		modal.setAttribute( 'aria-label', previousAriaLabel );
+		previousAriaLabel = null;
+	}
+
+	const modalBody = modal.querySelector( '.modal-body' );
+	if ( modalBody ) {
+		modalBody.removeAttribute( 'id' );
+		modalBody.innerHTML = '';
+	}
+}
+
 const { state, actions } = store( 'pikari-modal', {
 	state: {
 		isOpen: false,
@@ -149,28 +183,7 @@ const { state, actions } = store( 'pikari-modal', {
 				}
 
 				// Immediately finish closing the previous container
-				if ( activeContainer ) {
-					activeContainer.style.display = 'none';
-					activeContainer.classList.remove( 'is-closing' );
-					activeContainer.removeAttribute( 'data-size' );
-					activeContainer.removeAttribute( 'data-placement' );
-					activeContainer.removeAttribute( 'data-fit' );
-					activeContainer.style.removeProperty(
-						'--modal-video-ratio'
-					);
-					if ( previousAriaLabel !== null ) {
-						activeContainer.setAttribute(
-							'aria-label',
-							previousAriaLabel
-						);
-						previousAriaLabel = null;
-					}
-					const prevBody = activeContainer.querySelector( '.modal-body' );
-					if ( prevBody ) {
-						prevBody.removeAttribute( 'id' );
-						prevBody.innerHTML = '';
-					}
-				}
+				resetContainer( activeContainer );
 			}
 
 			// Resolve the container for this trigger's template part.
@@ -231,9 +244,10 @@ const { state, actions } = store( 'pikari-modal', {
 			// Media is sized by its own aspect ratio rather than filling the
 			// dialog. Only a centered modal fits: a left or right panel is
 			// already an explicit geometry choice, and the two would fight.
+			const isExternalUrl = contentSource === 'url';
 			const videoRatio =
-				contentSource === 'url' && ! geometry.placement
-					? resolveVideoRatio( aspectRatio || '', postId )
+				isExternalUrl && ! geometry.placement
+					? resolveVideoRatio( aspectRatio, postId )
 					: null;
 
 			if ( videoRatio ) {
@@ -325,7 +339,6 @@ const { state, actions } = store( 'pikari-modal', {
 			}
 
 			// External URL: render iframe instead of REST API fetch
-			const isExternalUrl = contentSource === 'url';
 			if ( isExternalUrl ) {
 				// The trigger's own href keeps the human-facing page for the
 				// no-JavaScript fallback; only the frame source is converted.
@@ -473,27 +486,8 @@ const { state, actions } = store( 'pikari-modal', {
 			// Delay hiding and content clearing to allow exit animation
 			closeTimeoutId = setTimeout( () => {
 				closeTimeoutId = null;
-				if ( modal ) {
-					modal.style.display = 'none';
-					modal.classList.remove( 'is-closing' );
-					modal.removeAttribute( 'data-size' );
-					modal.removeAttribute( 'data-placement' );
-					modal.removeAttribute( 'data-fit' );
-					modal.style.removeProperty( '--modal-video-ratio' );
-					if ( previousAriaLabel !== null ) {
-						modal.setAttribute( 'aria-label', previousAriaLabel );
-						previousAriaLabel = null;
-					}
-				}
+				resetContainer( modal );
 				state.content = '';
-				// Clear innerHTML directly since data-wp-html doesn't exist
-				if ( modal ) {
-					const modalBody = modal.querySelector( '.modal-body' );
-					if ( modalBody ) {
-						modalBody.removeAttribute( 'id' );
-						modalBody.innerHTML = '';
-					}
-				}
 				state.loading = false;
 				state.hasError = false;
 				state.errorMessage = '';

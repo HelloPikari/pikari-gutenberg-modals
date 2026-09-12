@@ -139,7 +139,8 @@ class RestApi
 
         // Generate ETag based on post content, modification time and plugin
         // version — see generate_etag() for why the version belongs in it.
-        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION);
+        $simulate      = self::should_simulate_frontend();
+        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION, $simulate);
         $last_modified = strtotime($post->post_modified_gmt);
 
         // Check for conditional request (If-None-Match or If-Modified-Since)
@@ -152,14 +153,16 @@ class RestApi
         // affect only the do_blocks() call below.
         $block_support = new BlockSupport();
 
-        $simulate = self::should_simulate_frontend();
-
         // A REST request runs neither wp_enqueue_scripts nor wp_footer, and
-        // whole classes of stylesheet exist only inside those actions:
-        // WordPress registers the block-style-variation-styles handle during
-        // the former, and plugins such as WPForms enqueue during the latter.
-        // Without firing them the handles are not merely unqueued — they are
-        // never registered, so the collector below has nothing to find.
+        // whole classes of stylesheet only reach the queue inside them.
+        //
+        // block-style-variation-styles takes both halves: core calls
+        // wp_enqueue_style() on it during wp_enqueue_scripts, before it is
+        // registered, so WP_Dependencies parks it in queued_before_register;
+        // registration then happens during do_blocks() via render_block_data
+        // and promotes it into the queue. Skip the header and it is never
+        // parked, so it never lands. Plugins such as WPForms enqueue in
+        // wp_footer instead, once they know what the page rendered.
         if ( $simulate ) {
             $this->simulate_enqueue_scripts( $post );
         }
@@ -270,11 +273,13 @@ class RestApi
         $GLOBALS['post'] = $post;
 
         // Callbacks print as well as enqueue; only the queue is wanted here.
-        ob_start();
-        do_action( 'wp_enqueue_scripts' );
-        ob_end_clean();
-
-        $GLOBALS['post'] = $original_post;
+        try {
+            ob_start();
+            do_action( 'wp_enqueue_scripts' );
+        } finally {
+            ob_end_clean();
+            $GLOBALS['post'] = $original_post;
+        }
     }
 
     /**
@@ -298,21 +303,27 @@ class RestApi
         // into a response that only wants the styles.
         BlockSupport::suspend_container_render( true );
 
-        // wp_maybe_inline_styles() inlines small stylesheets into the page
-        // and sets src to false on every handle it takes, because a printed
-        // page no longer needs the URL. This response does: the collector
-        // reads exactly that src. Measured on WordPress 7.1 — firing
-        // wp_footer without this dropped wp-block-paragraph, -heading and
-        // -group from the response entirely.
+        // wp_maybe_inline_styles() inlines small stylesheets into the page and
+        // sets src to false on every handle it takes, because a printed page no
+        // longer needs the URL. This response does: BlockStyleCollector reads
+        // exactly that src to build blockStyles.urls. Measured on WordPress 7.1
+        // — firing wp_footer without this dropped wp-block-paragraph, -heading
+        // and -group from the URL list. (The CSS itself still arrived, via the
+        // collector's path and after fallbacks, duplicated between them.)
         remove_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
 
-        ob_start();
-        do_action( 'wp_footer' );
-        ob_end_clean();
-
-        add_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
-
-        BlockSupport::suspend_container_render( false );
+        // Every hook here belongs to another plugin. A fatal or an exception in
+        // one of them must not leave this request with an unbalanced output
+        // buffer, a core callback unhooked, or container rendering suspended —
+        // the response is still written after this returns.
+        try {
+            ob_start();
+            do_action( 'wp_footer' );
+        } finally {
+            ob_end_clean();
+            add_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+            BlockSupport::suspend_container_render( false );
+        }
     }
 
     /**
@@ -328,15 +339,28 @@ class RestApi
      *
      * @internal Public only so the behaviour can be tested directly.
      *
-     * @param \WP_Post|object $post    The post object.
-     * @param string          $version The plugin version.
+     * @param \WP_Post|object $post     The post object.
+     * @param string          $version  The plugin version.
+     * @param bool            $simulate Whether the frontend lifecycle is simulated.
      * @return string The ETag value (quoted string).
      */
-    public function generate_etag( $post, string $version )
+    public function generate_etag( $post, string $version, bool $simulate = true )
     {
-        // Create hash from post ID, modification time, content hash and the
-        // version of the code that shapes the response.
-        $hash_data = $post->ID . '-' . $post->post_modified_gmt . '-' . md5($post->post_content) . '-' . $version;
+        // Everything that shapes the response, not just everything that shapes
+        // the post: the simulate flag decides whether plugin and
+        // block-style-variation CSS is collected at all, so a site toggling the
+        // filter would otherwise be told 304 against the other shape.
+        $hash_data = implode(
+            '-',
+            [
+                $post->ID,
+                $post->post_modified_gmt,
+                md5($post->post_content),
+                $version,
+                $simulate ? 'sim' : 'nosim',
+            ]
+        );
+
         return '"' . md5($hash_data) . '"';
     }
 
