@@ -1,6 +1,6 @@
 # Roadmap — pikari-gutenberg-modals
 
-**Last updated:** 2026-09-11 (Session 3)
+**Last updated:** 2026-09-12 (Session 4)
 
 What we've done, at a glance. Narrative lives in the session logs.
 
@@ -81,12 +81,82 @@ needed: it re-resolved its own stale v1.4.0 draft to v2.0.0. ZIP and checksums v
 Installed on Kindler, whose two affected pages were rebuilt and confirmed working.
 Todos #460, #461.
 
+~~Video modals collapsed around their video~~ — ✅ DONE (Session 4). The iframe was always
+right (1200x675); its ancestors collapsed to **169px** and clipped it, because the flex chain
+built for page-iframes contributes no intrinsic height. A `data-fit="video"` mode flips it to
+content-driven and derives width from a height budget. Dialog now **1009x629** around a
+1009x568 iframe. Orientation is undetectable — YouTube's oEmbed reports 200x113 for a Short —
+so an Aspect ratio control carries it, and works on any host. In PR #122.
+
+~~Pasting a YouTube link opened a blank modal~~ — ✅ DONE (Session 4). No watch-to-embed
+conversion existed anywhere; those pages refuse framing. `normalizeEmbedUrl()` converts watch,
+youtu.be, shorts, live and vimeo.com, carrying `t=` across. Only the iframe src — the trigger's
+href stays the human-facing page. In PR #122.
+
+~~The loading spinner pushed modal content around~~ — ✅ DONE (Session 4). `.modal-body.hidden`
+had no display rule while `.modal-loading.hidden` did. The spinner now overlays once there is
+content to overlay and stays in flow while the body is empty. Side effect worth knowing: the
+error path now genuinely hides the body for the first time, on every modal. In PR #122.
+
+~~A global modal needed a stand-in page~~ — ✅ DONE (Session 4). "Template only" content source:
+the template part is the content. The dialog is named from the part's title — and WordPress
+stands the **slug** in for a missing title (measured for both `source=custom` and `source=theme`),
+so a title equal to its slug is discarded rather than announced. In PR #122.
+
+~~Theme and plugin CSS missing inside modals~~ — ✅ DONE (Session 4). Not unqueued — **never
+registered**. `block-style-variation-styles` needs both halves of the lifecycle (enqueued in
+`wp_enqueue_scripts` before registration, promoted by `do_blocks()`); WPForms enqueues on
+`wp_footer`. Both actions now fired, buffered, behind `pikari_gutenberg_modals_simulate_frontend`.
+Eyebrow computes uppercase/600/1.92px; injected `.wpforms-field-hp` computes `display:none`.
+In PR #122.
+
+~~The modal-content ETag hashed only the post~~ — ✅ DONE (Session 4). The endpoint's output
+changed shape without any post changing, so every browser holding a 2.0.0 response would have
+revalidated 304 forever and never seen the CSS fix. Version and simulate-flag now in the hash.
+**`bump-version.js` is therefore load-bearing beyond the build guard.** In PR #122.
+
+~~Modal chrome did not stretch its children~~ — ✅ DONE (Session 4). Layout declared orientation
+without justification, which generates `align-items: flex-start`. Content measured **645px inside
+a 1024px chrome**; now 927 of 973. Fixed in all four places the markup is authored. In PR #122.
+
+~~Three starter patterns previewed identically~~ — ✅ DONE (Session 4). They differ only in
+`placement`, which is frontend-only geometry. The editor now previews panels at panel width,
+hugging their edge. Cost two traps, both recorded as gotcha 16: the editor's centring rule is
+equally specific _and_ `!important` _and_ later in source order, and it uses logical properties.
+In PR #122.
+
 ## Open
 
+- **A WPForms form inside a modal probably cannot submit** (todo #484). No WPForms JS is
+  collected — the style fix collects stylesheets only, and there is no script-loading
+  counterpart to `block-style-loader.js`. Worse, the rendered form's `action` is the REST
+  route itself, because WPForms builds it from the current request URI. Untested end to end;
+  the styling fix makes the form _look_ right, which makes this easier to miss.
+- **WPForms blocks crash any `BlockPreview`** (todo #492, upstream). `updateCopyPasteContent`
+  reads `wp.data.select('core/block-editor').getBlockAttributes(clientId)` from the **default**
+  registry while `BlockPreview` renders in an isolated one, so it gets null and throws on the
+  first key. Not ours: WordPress's own Site Editor template-part list shows the identical crash.
+  Fallback if upstream stalls — render the Modal template preview from server HTML instead.
+- **`RestApi` instantiates a second `BlockSupport`.** `init` runs in REST, so the bootstrap
+  instance is already live and every `render_block` filter is registered twice — measured
+  **4 callbacks** on `render_block_core/button` after a modal-content request. Pre-existing;
+  `suspend_container_render()` now works around the wp_footer half of it. The real fix is that
+  `get_post_content_with_styles()` needs no constructor state.
+- **The shared trigger decoration is copied three times** in `GroupModalTriggerSupport` and
+  twice in `BlockSupport`. Two of four reviewers wanted it extracted; deferred because it
+  touches three shipped handlers. The a11y attribute set is what is duplicated, and this plugin
+  has already shipped a mouse-only trigger once — per-branch render tests are the mitigation.
+- **The modal-content endpoint is uncached server-side.** It now additionally runs every
+  `wp_enqueue_scripts` and `wp_footer` callback on the site, on a public unauthenticated route
+  that hover-prefetch can fire N times across a Query Loop. ~52ms measured on Kindler. The ETag
+  is already the right cache key; it just is not used as one. Deliberately not added this close
+  to a tag. (Unhooking `wp_enqueue_global_styles` was proposed as ~25ms of pure waste and
+  **measured at 52.6 vs 52.2ms with identical output** — rejected, not shipped.)
 - **CI masks every test failure.** `.github/workflows/ci.yml` sets `continue-on-error: true`
   on the whole `test` job, commented "remove once test suites have real tests". There are now
-  **91 PHP and 130 JS tests**. Every green tick on every PR this session was weaker than it
-  looked — each one was confirmed by reading the job log instead. Being handled by the CI agent.
+  **112 PHP and 171 JS tests**. Still live as of Session 4 — confirmed at `ci.yml:173` — so
+  PR #122's green Test tick was again verified by reading the job log, not the badge.
+  Being handled by the CI agent.
 - **The `WP_CORE_DIR` CI fix will be reverted by the next template sync.** `ci.yml` is a
   synced monorepo file and this plugin's `skip-sync` covers only `tests/php/bootstrap.php`.
   Right fix is the template, not `skip-sync` — every plugin has this.
