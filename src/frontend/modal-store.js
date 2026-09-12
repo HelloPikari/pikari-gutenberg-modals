@@ -117,13 +117,18 @@ const { state, actions } = store( 'pikari-modal', {
 			// Validate required context based on content source
 			const isInline = contentSource === 'inline';
 
+			// Template-only modals carry no content reference at all: the
+			// template part is the content. They need neither a postId nor
+			// an anchor, so they skip the checks below.
+			const isTemplateOnly = contentSource === 'none';
+
 			if ( isInline && ! inlineAnchor ) {
 				// eslint-disable-next-line no-console
 				console.error( 'Missing inlineAnchor in context for inline content' );
 				return;
 			}
 
-			if ( ! isInline && ( ! postId || ! modalId ) ) {
+			if ( ! isInline && ! isTemplateOnly && ( ! postId || ! modalId ) ) {
 				// eslint-disable-next-line no-console
 				console.error( 'Missing postId or modalId in context' );
 				return;
@@ -255,6 +260,23 @@ const { state, actions } = store( 'pikari-modal', {
 			const modalBody = modal.querySelector( '.modal-body' );
 			if ( modalBody ) {
 				modalBody.id = `modal-content--${ slug }`;
+			}
+
+			if ( isTemplateOnly ) {
+				// Nothing to load: whatever the template part renders is
+				// already in the container. The body stays empty rather
+				// than being cleared, so a template that has no Content
+				// Area block at all works exactly the same way.
+				state.loading = false;
+
+				// eslint-disable-next-line no-undef
+				requestAnimationFrame( () => {
+					if ( activeContainer ) {
+						focusFirstElement( activeContainer );
+					}
+				} );
+
+				return;
 			}
 
 			if ( isInline ) {

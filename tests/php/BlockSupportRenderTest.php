@@ -235,6 +235,72 @@ class BlockSupportRenderTest extends TestCase
     }
 
     /**
+     * "Template only" gives a Button no URL and no post to point at. An <a>
+     * with no href is neither focusable nor keyboard-operable, so it takes
+     * the ARIA button treatment the Group's no-link modes already use —
+     * otherwise the trigger is mouse-only, the bug this plugin has already
+     * shipped once.
+     */
+    public function test_filter_button_block_template_only_makes_a_hrefless_anchor_operable(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><a class="wp-block-button__link">Book a conversation</a></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'none',
+            ],
+        ];
+
+        $result = $instance->filter_button_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'DIV', $processor->get_tag() );
+
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'A', $processor->get_tag() );
+        $this->assertStringStartsWith( 'modal-trigger-', (string) $processor->get_attribute( 'id' ) );
+        $this->assertSame( 'pikari-modal', $processor->get_attribute( 'data-wp-interactive' ) );
+        $this->assertSame( 'button', $processor->get_attribute( 'role' ) );
+        $this->assertSame( '0', $processor->get_attribute( 'tabindex' ) );
+        $this->assertSame( 'actions.handleTriggerKeydown', $processor->get_attribute( 'data-wp-on--keydown' ) );
+
+        $context = json_decode( (string) $processor->get_attribute( 'data-wp-context' ), true );
+        $this->assertSame( 'none', $context['contentSource'] );
+        $this->assertArrayNotHasKey( 'postId', $context );
+    }
+
+    /**
+     * A native <button> is already focusable and keyboard-operable, so it
+     * must not be given a redundant role or tabindex.
+     */
+    public function test_filter_button_block_template_only_leaves_a_native_button_alone(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><button type="button" class="wp-block-button__link">Book</button></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'none',
+            ],
+        ];
+
+        $result = $instance->filter_button_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertTrue( $processor->next_tag() );
+        $this->assertSame( 'BUTTON', $processor->get_tag() );
+        $this->assertSame( 'actions.handleTriggerClick', $processor->get_attribute( 'data-wp-on--click' ) );
+        $this->assertNull( $processor->get_attribute( 'role' ) );
+        $this->assertNull( $processor->get_attribute( 'tabindex' ) );
+        $this->assertNull( $processor->get_attribute( 'href' ) );
+    }
+
+    /**
      * The inline RichText format builds its own trigger markup rather than
      * decorating a block, so it was the one open-mode surface that never
      * reached TriggerContext::build() — and so the one that still opened an

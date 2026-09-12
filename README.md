@@ -281,6 +281,16 @@ Dialog appearance — background, border radius, padding and shadow — is set w
 
 The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
 
+## Template-only modals
+
+A trigger's **Content** setting can be **Template only**. Nothing is fetched and nothing on the page is cloned — the modal template part is the content.
+
+This is the right shape for a global modal: a booking panel, a newsletter sign-up, a contact form that every page opens. Without it the content has to live on a page that exists only to be pulled into a modal, and that page has to be kept in step with the template around it.
+
+The dialog is named after the template part's own title, so give the part a real title in the Site Editor. A part with no title falls back to its slug, which the plugin discards rather than announce "book-a-conversation-sidebar" to a screen reader — set an **Accessible label** on the trigger in that case.
+
+A Group or Button in this mode has no URL to fall back to, so it renders as an ARIA button (`role="button"`, `tabindex="0"`) rather than a link. There is no no-JavaScript fallback for this mode, because there is no page to fall back to.
+
 ## Video and other framed media
 
 A trigger whose content source is an external URL frames that URL in an iframe. By default the iframe fills the dialog, which is what a page wants and what a video does not — so a URL on a known video host (YouTube, Vimeo) is held to 16:9 and the dialog sizes itself around the video instead.

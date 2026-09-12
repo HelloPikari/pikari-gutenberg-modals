@@ -82,6 +82,13 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 		const isLinkSource = name === 'core/group' && contentSource === 'link';
 		const isInlineSource = contentSource === 'inline';
 
+		// Only a source that can resolve to an external URL ends up in an
+		// iframe, and only an iframe has an aspect ratio to hold. A detected
+		// link counts: GroupModalTriggerSupport renders one pointing outside
+		// the site as contentSource 'url'.
+		const isFramedSource =
+			contentSource === 'url' || contentSource === 'link';
+
 		// A core/button rendered as a <button> (tagName: 'button') has no
 		// href of its own, so "Detected link" — the button's own URL —
 		// has nothing to detect. See includes/BlockSupport.php's
@@ -102,6 +109,10 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 			{
 				label: __( 'Inline content', 'pikari-gutenberg-modals' ),
 				value: 'inline',
+			},
+			{
+				label: __( 'Template only', 'pikari-gutenberg-modals' ),
+				value: 'none',
 			},
 		].filter( Boolean );
 
@@ -359,7 +370,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 										}
 									/>
 
-									{ ! isInlineSource && (
+									{ isFramedSource && (
 										<SelectControl
 											__next40pxDefaultSize
 											__nextHasNoMarginBottom
