@@ -100,9 +100,14 @@ class GroupModalTriggerSupport
         }
 
         // Check content source: 'inline' for page content, 'url' for a custom
-        // URL, 'link' (default) for a link detected inside the group.
+        // URL, 'none' for a modal whose template part is the content, 'link'
+        // (default) for a link detected inside the group.
         $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
         $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
+
+        if ( $content_source === 'none' ) {
+            return $this->handle_template_only( $block_content, $block, $template_part );
+        }
 
         if ( $content_source === 'inline' ) {
             return $this->handle_inline_content( $block_content, $block, $template_part );
@@ -401,6 +406,70 @@ class GroupModalTriggerSupport
             // support writes it to this same wrapper's id) rather than
             // overwriting it — it serves the same focus-restore purpose a
             // generated id would.
+            if ( ! $processor->get_attribute( 'id' ) ) {
+                $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+            }
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute(
+                'data-wp-context',
+                wp_json_encode( $context )
+            );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
+            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
+            $processor->set_attribute( 'aria-haspopup', 'dialog' );
+            $processor->set_attribute( 'aria-expanded', 'false' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            $processor->set_attribute( 'role', 'button' );
+            $processor->set_attribute( 'tabindex', '0' );
+            $processor->set_attribute( 'aria-label', $aria_label );
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Handle a group trigger whose content is the modal template part itself.
+     *
+     * There is nothing to fetch and nothing on the page to clone: the
+     * template part already holds the content, which is the point — a global
+     * modal (a booking panel, a newsletter sign-up) stops needing a
+     * stand-in page to be maintained alongside it.
+     *
+     * Structurally this is handle_inline_content() without the anchor. The
+     * whole group becomes the trigger, as an ARIA button, because there is
+     * no link inside it to hand the job to.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @param string $template_part Template part slug (empty for default 'modal').
+     * @return string Modified block content.
+     */
+    private function handle_template_only( string $block_content, array $block, string $template_part = '' ): string
+    {
+        $slug = ! empty( $template_part ) ? $template_part : 'modal';
+        BlockSupport::set_has_modal_triggers( $slug );
+
+        $block_content = self::cleanup_post_link_markers( $block_content );
+
+        $base = [
+            'contentSource' => 'none',
+            'modalId'       => 'template-' . $slug,
+        ];
+
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
+
+        // An author-supplied label wins over the generic default.
+        $aria_label   = __( 'Open modal dialog', 'pikari-gutenberg-modals' );
+        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+        if ( '' !== $custom_label ) {
+            $aria_label = $custom_label;
+        }
+
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+        if ( $processor->next_tag() ) {
+            $processor->add_class( 'has-pikari-modal-trigger' );
+
+            // Preserve an author-set HTML anchor — see handle_inline_content().
             if ( ! $processor->get_attribute( 'id' ) ) {
                 $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
             }

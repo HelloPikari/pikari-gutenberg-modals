@@ -69,6 +69,19 @@ function url_to_postid( $url ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunc
     return 0;
 }
 
+function get_stylesheet() {
+    return 'test-theme';
+}
+
+/**
+ * No template parts exist in these tests, so a template-only trigger names
+ * its dialog with nothing and falls back to the container's own label —
+ * which is the behaviour on a site whose part has been deleted.
+ */
+function get_block_template( $id, $template_type = 'wp_template' ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
+    return null;
+}
+
 function wp_enqueue_script_module( $handle ) { // phpcs:ignore Generic.CodeAnalysis.UnusedFunctionParameter
 }
 

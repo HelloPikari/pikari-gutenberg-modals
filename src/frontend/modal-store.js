@@ -17,7 +17,7 @@ import {
 	focusFirstElement,
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
-import { isVideoEmbedUrl } from './video-providers';
+import { normalizeEmbedUrl, resolveVideoRatio } from './video-providers';
 import { resolveGeometry } from './modal-geometry';
 import { shouldDeferToElement } from './trigger-click';
 
@@ -66,6 +66,40 @@ function applyDialogLabel( modal, label ) {
 	modal.setAttribute( 'aria-label', label );
 }
 
+/**
+ * Return a container to its closed state.
+ *
+ * Both close paths — the exit-animation timeout and the cancel-pending-close
+ * branch in openModal() — have to undo exactly the same things, and every
+ * geometry attribute added since has had to be added to both. One function
+ * removes that class of omission.
+ *
+ * @param {HTMLElement} modal - The modal container element.
+ */
+function resetContainer( modal ) {
+	if ( ! modal ) {
+		return;
+	}
+
+	modal.style.display = 'none';
+	modal.classList.remove( 'is-closing' );
+	modal.removeAttribute( 'data-size' );
+	modal.removeAttribute( 'data-placement' );
+	modal.removeAttribute( 'data-fit' );
+	modal.style.removeProperty( '--modal-video-ratio' );
+
+	if ( previousAriaLabel !== null ) {
+		modal.setAttribute( 'aria-label', previousAriaLabel );
+		previousAriaLabel = null;
+	}
+
+	const modalBody = modal.querySelector( '.modal-body' );
+	if ( modalBody ) {
+		modalBody.removeAttribute( 'id' );
+		modalBody.innerHTML = '';
+	}
+}
+
 const { state, actions } = store( 'pikari-modal', {
 	state: {
 		isOpen: false,
@@ -111,10 +145,16 @@ const { state, actions } = store( 'pikari-modal', {
 				inlineAnchor,
 				templatePart,
 				label,
+				aspectRatio,
 			} = context;
 
 			// Validate required context based on content source
 			const isInline = contentSource === 'inline';
+
+			// Template-only modals carry no content reference at all: the
+			// template part is the content. They need neither a postId nor
+			// an anchor, so they skip the checks below.
+			const isTemplateOnly = contentSource === 'none';
 
 			if ( isInline && ! inlineAnchor ) {
 				// eslint-disable-next-line no-console
@@ -122,7 +162,7 @@ const { state, actions } = store( 'pikari-modal', {
 				return;
 			}
 
-			if ( ! isInline && ( ! postId || ! modalId ) ) {
+			if ( ! isInline && ! isTemplateOnly && ( ! postId || ! modalId ) ) {
 				// eslint-disable-next-line no-console
 				console.error( 'Missing postId or modalId in context' );
 				return;
@@ -143,24 +183,7 @@ const { state, actions } = store( 'pikari-modal', {
 				}
 
 				// Immediately finish closing the previous container
-				if ( activeContainer ) {
-					activeContainer.style.display = 'none';
-					activeContainer.classList.remove( 'is-closing' );
-					activeContainer.removeAttribute( 'data-size' );
-					activeContainer.removeAttribute( 'data-placement' );
-					if ( previousAriaLabel !== null ) {
-						activeContainer.setAttribute(
-							'aria-label',
-							previousAriaLabel
-						);
-						previousAriaLabel = null;
-					}
-					const prevBody = activeContainer.querySelector( '.modal-body' );
-					if ( prevBody ) {
-						prevBody.removeAttribute( 'id' );
-						prevBody.innerHTML = '';
-					}
-				}
+				resetContainer( activeContainer );
 			}
 
 			// Resolve the container for this trigger's template part.
@@ -218,6 +241,23 @@ const { state, actions } = store( 'pikari-modal', {
 				modal.removeAttribute( 'data-placement' );
 			}
 
+			// Media is sized by its own aspect ratio rather than filling the
+			// dialog. Only a centered modal fits: a left or right panel is
+			// already an explicit geometry choice, and the two would fight.
+			const isExternalUrl = contentSource === 'url';
+			const videoRatio =
+				isExternalUrl && ! geometry.placement
+					? resolveVideoRatio( aspectRatio, postId )
+					: null;
+
+			if ( videoRatio ) {
+				modal.setAttribute( 'data-fit', 'video' );
+				modal.style.setProperty( '--modal-video-ratio', videoRatio );
+			} else {
+				modal.removeAttribute( 'data-fit' );
+				modal.style.removeProperty( '--modal-video-ratio' );
+			}
+
 			// Carry the trigger's own name across to the dialog. Inline content
 			// has a second chance below: its own title stands in when the
 			// trigger supplies nothing.
@@ -234,6 +274,23 @@ const { state, actions } = store( 'pikari-modal', {
 			const modalBody = modal.querySelector( '.modal-body' );
 			if ( modalBody ) {
 				modalBody.id = `modal-content--${ slug }`;
+			}
+
+			if ( isTemplateOnly ) {
+				// Nothing to load: whatever the template part renders is
+				// already in the container. The body stays empty rather
+				// than being cleared, so a template that has no Content
+				// Area block at all works exactly the same way.
+				state.loading = false;
+
+				// eslint-disable-next-line no-undef
+				requestAnimationFrame( () => {
+					if ( activeContainer ) {
+						focusFirstElement( activeContainer );
+					}
+				} );
+
+				return;
 			}
 
 			if ( isInline ) {
@@ -282,9 +339,10 @@ const { state, actions } = store( 'pikari-modal', {
 			}
 
 			// External URL: render iframe instead of REST API fetch
-			const isExternalUrl = contentSource === 'url';
 			if ( isExternalUrl ) {
-				const iframeSrc = postId;
+				// The trigger's own href keeps the human-facing page for the
+				// no-JavaScript fallback; only the frame source is converted.
+				const iframeSrc = normalizeEmbedUrl( postId );
 
 				// Extract hostname for accessible iframe title
 				let iframeTitle = '';
@@ -294,14 +352,11 @@ const { state, actions } = store( 'pikari-modal', {
 					iframeTitle = iframeSrc;
 				}
 
-				// Known video hosts get a 16:9 box; anything else fills the
-				// dialog, which is what a page-in-modal wants.
-				const ratioClass = isVideoEmbedUrl( iframeSrc )
-					? ' modal-entry--iframe-16-9'
-					: '';
-
+				// Aspect-ratio handling lives on the container as data-fit,
+				// resolved above — a single mechanism that also covers hosts
+				// isVideoEmbedUrl() has never heard of.
 				const iframeHtml = `
-					<article class="modal-entry modal-entry--iframe${ ratioClass }">
+					<article class="modal-entry modal-entry--iframe">
 						<h2 id="modal-title--${ escapeAttribute( slug ) }" class="sr-only">${ escapeHTML( iframeTitle ) }</h2>
 						<iframe
 							src="${ escapeAttribute( iframeSrc ) }"
@@ -431,25 +486,8 @@ const { state, actions } = store( 'pikari-modal', {
 			// Delay hiding and content clearing to allow exit animation
 			closeTimeoutId = setTimeout( () => {
 				closeTimeoutId = null;
-				if ( modal ) {
-					modal.style.display = 'none';
-					modal.classList.remove( 'is-closing' );
-					modal.removeAttribute( 'data-size' );
-					modal.removeAttribute( 'data-placement' );
-					if ( previousAriaLabel !== null ) {
-						modal.setAttribute( 'aria-label', previousAriaLabel );
-						previousAriaLabel = null;
-					}
-				}
+				resetContainer( modal );
 				state.content = '';
-				// Clear innerHTML directly since data-wp-html doesn't exist
-				if ( modal ) {
-					const modalBody = modal.querySelector( '.modal-body' );
-					if ( modalBody ) {
-						modalBody.removeAttribute( 'id' );
-						modalBody.innerHTML = '';
-					}
-				}
 				state.loading = false;
 				state.hasError = false;
 				state.errorMessage = '';

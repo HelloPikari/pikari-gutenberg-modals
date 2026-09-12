@@ -40,7 +40,14 @@ const INNER_BLOCKS_TEMPLATE = [
 				},
 				shadow: '0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06)',
 			},
-			layout: { type: 'flex', orientation: 'vertical' },
+			// Stretch, so the content area fills the dialog's width rather
+			// than shrinking to its content. Without it a modal's content
+			// sits at its natural width against the left edge of the chrome.
+			layout: {
+				type: 'flex',
+				orientation: 'vertical',
+				justifyContent: 'stretch',
+			},
 		},
 		[
 			[
@@ -69,7 +76,14 @@ export default function Edit( { attributes, setAttributes, clientId } ) {
 		placement,
 	} = attributes;
 
-	const blockProps = useBlockProps();
+	// The editor canvas has no overlay to position against, so a block that
+	// renders a full-height edge panel on the frontend would otherwise preview
+	// identically to a centered one — which is what made the three starter
+	// patterns indistinguishable in the inserter. Carrying placement onto the
+	// wrapper lets the editor show the shape the author actually chose.
+	const blockProps = useBlockProps( {
+		'data-placement': placement || undefined,
+	} );
 	const colorGradientSettings = useMultipleOriginColorsAndGradients();
 
 	return (

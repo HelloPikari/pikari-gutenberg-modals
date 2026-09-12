@@ -43,8 +43,13 @@ $wrapper_attrs = get_block_wrapper_attributes();
     </div>
 
     <!-- Content body -->
+    <!--
+        Hidden on error only. An iframe is inserted here before it has finished
+        loading, and hiding it would collapse the dialog and then jump it back
+        open; the spinner overlays it instead (see style.css).
+    -->
     <div
         class="modal-body"
-        data-wp-class--hidden="state.loading || state.hasError"
+        data-wp-class--hidden="state.hasError"
     ></div>
 </div>

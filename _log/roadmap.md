@@ -1,6 +1,6 @@
 # Roadmap — pikari-gutenberg-modals
 
-**Last updated:** 2026-09-09 (Session 2)
+**Last updated:** 2026-09-12 (Session 4)
 
 What we've done, at a glance. Narrative lives in the session logs.
 
@@ -54,11 +54,108 @@ Query Loop card keeps its own background and border instead of losing them to a 
 20 commits, 64 PHP tests (was 48) and 98 JS (was 58). Merged to local `main` only — not
 pushed. See `docs/superpowers/specs/2026-09-09-modal-trigger-as-block-property-design.md`.
 
+~~Modal Content vanished when the Site Editor edited a page~~ — ✅ DONE (Session 3).
+v1.3.0 regression reported on Kindler. The block was unregistered whenever
+`window.pagenow === 'site-editor'`, which reads the admin screen, not what is being
+edited — and since WP 6.3 the Site Editor edits pages too. Moved server-side into
+`allowed_block_types_all`, which knows the difference. Verified identical in WP 6.8,
+7.0 and 7.1, so it holds across the whole supported range. First-ever coverage of
+editor block registration: 10 tests. See PR #117, todo #439.
+
+~~Dialog `aria-label` was generic~~ — ✅ DONE (Session 3). A dialog announced itself as
+"Modal dialog" even when the trigger had a good name. Derivation moved into
+`TriggerContext::build()` so every open-mode surface names its dialog the same way:
+author label, else post title (entity-decoded), else external host. The inline RichText
+format nearly slipped through — it builds its own context and reaches no block, so it
+was the one surface never calling TriggerContext. See PR #118, todo #442.
+
+~~Modal overlay templates, and the `modal-dialog` → `modal-overlay` rename~~ — ✅ DONE
+(Session 3). Every trigger now has a Modal template panel that can select, create from a
+starter pattern, edit and preview a template part, entity-backed so a new part appears
+immediately. Three starter patterns registered to the `modal` area. 11 tasks, each with
+its own review, then a whole-branch review. 91 PHP tests (was 84) and 130 JS (was 102).
+The reviews caught five defects the plan would have shipped — see Session 3 log. PR #120.
+
+~~v2.0.0 released~~ — ✅ DONE (Session 3). The `breaking` label was all Release Drafter
+needed: it re-resolved its own stale v1.4.0 draft to v2.0.0. ZIP and checksums verified.
+Installed on Kindler, whose two affected pages were rebuilt and confirmed working.
+Todos #460, #461.
+
+~~Video modals collapsed around their video~~ — ✅ DONE (Session 4). The iframe was always
+right (1200x675); its ancestors collapsed to **169px** and clipped it, because the flex chain
+built for page-iframes contributes no intrinsic height. A `data-fit="video"` mode flips it to
+content-driven and derives width from a height budget. Dialog now **1009x629** around a
+1009x568 iframe. Orientation is undetectable — YouTube's oEmbed reports 200x113 for a Short —
+so an Aspect ratio control carries it, and works on any host. In PR #122.
+
+~~Pasting a YouTube link opened a blank modal~~ — ✅ DONE (Session 4). No watch-to-embed
+conversion existed anywhere; those pages refuse framing. `normalizeEmbedUrl()` converts watch,
+youtu.be, shorts, live and vimeo.com, carrying `t=` across. Only the iframe src — the trigger's
+href stays the human-facing page. In PR #122.
+
+~~The loading spinner pushed modal content around~~ — ✅ DONE (Session 4). `.modal-body.hidden`
+had no display rule while `.modal-loading.hidden` did. The spinner now overlays once there is
+content to overlay and stays in flow while the body is empty. Side effect worth knowing: the
+error path now genuinely hides the body for the first time, on every modal. In PR #122.
+
+~~A global modal needed a stand-in page~~ — ✅ DONE (Session 4). "Template only" content source:
+the template part is the content. The dialog is named from the part's title — and WordPress
+stands the **slug** in for a missing title (measured for both `source=custom` and `source=theme`),
+so a title equal to its slug is discarded rather than announced. In PR #122.
+
+~~Theme and plugin CSS missing inside modals~~ — ✅ DONE (Session 4). Not unqueued — **never
+registered**. `block-style-variation-styles` needs both halves of the lifecycle (enqueued in
+`wp_enqueue_scripts` before registration, promoted by `do_blocks()`); WPForms enqueues on
+`wp_footer`. Both actions now fired, buffered, behind `pikari_gutenberg_modals_simulate_frontend`.
+Eyebrow computes uppercase/600/1.92px; injected `.wpforms-field-hp` computes `display:none`.
+In PR #122.
+
+~~The modal-content ETag hashed only the post~~ — ✅ DONE (Session 4). The endpoint's output
+changed shape without any post changing, so every browser holding a 2.0.0 response would have
+revalidated 304 forever and never seen the CSS fix. Version and simulate-flag now in the hash.
+**`bump-version.js` is therefore load-bearing beyond the build guard.** In PR #122.
+
+~~Modal chrome did not stretch its children~~ — ✅ DONE (Session 4). Layout declared orientation
+without justification, which generates `align-items: flex-start`. Content measured **645px inside
+a 1024px chrome**; now 927 of 973. Fixed in all four places the markup is authored. In PR #122.
+
+~~Three starter patterns previewed identically~~ — ✅ DONE (Session 4). They differ only in
+`placement`, which is frontend-only geometry. The editor now previews panels at panel width,
+hugging their edge. Cost two traps, both recorded as gotcha 16: the editor's centring rule is
+equally specific _and_ `!important` _and_ later in source order, and it uses logical properties.
+In PR #122.
+
 ## Open
 
+- **A WPForms form inside a modal probably cannot submit** (todo #484). No WPForms JS is
+  collected — the style fix collects stylesheets only, and there is no script-loading
+  counterpart to `block-style-loader.js`. Worse, the rendered form's `action` is the REST
+  route itself, because WPForms builds it from the current request URI. Untested end to end;
+  the styling fix makes the form _look_ right, which makes this easier to miss.
+- **WPForms blocks crash any `BlockPreview`** (todo #492, upstream). `updateCopyPasteContent`
+  reads `wp.data.select('core/block-editor').getBlockAttributes(clientId)` from the **default**
+  registry while `BlockPreview` renders in an isolated one, so it gets null and throws on the
+  first key. Not ours: WordPress's own Site Editor template-part list shows the identical crash.
+  Fallback if upstream stalls — render the Modal template preview from server HTML instead.
+- **`RestApi` instantiates a second `BlockSupport`.** `init` runs in REST, so the bootstrap
+  instance is already live and every `render_block` filter is registered twice — measured
+  **4 callbacks** on `render_block_core/button` after a modal-content request. Pre-existing;
+  `suspend_container_render()` now works around the wp_footer half of it. The real fix is that
+  `get_post_content_with_styles()` needs no constructor state.
+- **The shared trigger decoration is copied three times** in `GroupModalTriggerSupport` and
+  twice in `BlockSupport`. Two of four reviewers wanted it extracted; deferred because it
+  touches three shipped handlers. The a11y attribute set is what is duplicated, and this plugin
+  has already shipped a mouse-only trigger once — per-branch render tests are the mitigation.
+- **The modal-content endpoint is uncached server-side.** It now additionally runs every
+  `wp_enqueue_scripts` and `wp_footer` callback on the site, on a public unauthenticated route
+  that hover-prefetch can fire N times across a Query Loop. ~52ms measured on Kindler. The ETag
+  is already the right cache key; it just is not used as one. Deliberately not added this close
+  to a tag. (Unhooking `wp_enqueue_global_styles` was proposed as ~25ms of pure waste and
+  **measured at 52.6 vs 52.2ms with identical output** — rejected, not shipped.)
 - **CI masks every test failure.** `.github/workflows/ci.yml` sets `continue-on-error: true`
   on the whole `test` job, commented "remove once test suites have real tests". There are now
-  64 PHP and 98 JS tests. Every green check on PRs #111-#113 was weaker than it looked.
+  **112 PHP and 171 JS tests**. Still live as of Session 4 — confirmed at `ci.yml:173` — so
+  PR #122's green Test tick was again verified by reading the job log, not the badge.
   Being handled by the CI agent.
 - **The `WP_CORE_DIR` CI fix will be reverted by the next template sync.** `ci.yml` is a
   synced monorepo file and this plugin's `skip-sync` covers only `tests/php/bootstrap.php`.
@@ -67,22 +164,30 @@ pushed. See `docs/superpowers/specs/2026-09-09-modal-trigger-as-block-property-d
   forces 2-space nested-list indent; markdownlint MD007 demands 4. No nested list in any
   `.md` can satisfy both — the cause of every MD007 violation in the repo. One-line fix
   either way: set MD007 to 2, or add `*.md` to `.prettierignore`.
-- **Modal overlay templates (#444) — next.** Design and 11-task plan written and amended for
-  the reduced trigger surface set. Includes the `modal-dialog` → `modal-overlay` rename.
-- **Overlay opacity control layout** — fixed in PR #112 but never seen in a browser; the
-  editor needs a login I cannot do.
+- **Four QA steps still need a human** — `_plans/444-modal-overlay-templates-qa.md`. Ten
+  of fourteen were driven in a real browser; the remainder are the Edit round-trip with
+  unsaved changes, stale carry-over, a hybrid theme (wp-env has no classic theme), and
+  the Site Editor inserter — the last being the one thing the rename could break silently.
+- **Cmd/Ctrl+M has never worked** (todo #472). `RichTextToolbarButton`'s
+  `shortcutType`/`shortcutCharacter` only draw the tooltip hint; binding needs
+  `RichTextShortcut`, which the plugin has never used. Dates to the initial commit, and
+  CLAUDE.md advertises it as a feature. Pre-existing, found during 2.0.0 QA.
+- **`core/cover` is not a trigger block.** Surfaced rebuilding Kindler: a Cover had to be
+  wrapped in a Group to carry the modal action. Fine, but worth deciding whether Cover
+  belongs in the default `pikari_gutenberg_modals_trigger_blocks` list.
 
-- **Testing traps write-up** — PR #105, merged.
-- **Release-tag provenance (design item, not started).** `update-dist.yml` runs
-  `git tag -f`, moving release tags onto the `dist` branch. Release Drafter's
-  `commitish: main` then has no valid base, re-counts all history, and mis-resolves
-  every version — this is how two dependency PRs produced a v1.4.0. The tag must stay
-  on `dist` for Composer, so it is not a rename. Likely `dist` in its own repository.
-  **Until fixed: set the tag by hand when publishing.**
-- **Dialog `aria-label` is generic.** "Modal dialog" even when the trigger has a good
-  accessible name. Measured on a live install.
-- **Fix CCLF's modal template part** after the chrome refactor ships (Pikari todo #436).
-  Only matters if it has a customised part.
+- ~~**Release-tag provenance**~~ — resolved by circumstance. `update-dist.yml` no longer
+  exists (dist retired in #114), so nothing force-moves the tag. The v2.0.0 release went
+  out clean and the "set the tag by hand" workaround is retired with it.
+- **Composer consumers cannot get 2.0.0** until the package index exists (todo #455,
+  needs Steve's admin on the HelloPikari account). CCLF is pinned `^1.0.0` and resolves
+  through `hellopikari.github.io/packages`, which is not live. The release ZIP is the
+  only distribution route today.
+- **Fix CCLF's modal template part** now the chrome refactor has shipped (todo #436).
+  Only matters if it has a customised part — Kindler turned out not to, so check before
+  assuming. Blocked behind the Composer index in any case.
+- **Guardian Capital is on v0.3.2** — a git checkout far enough behind that upgrading it
+  is its own piece of work, not a version bump.
 - **`@wordpress/primitives` 4.47 (#85)** — cannot merge. Peer-requires React 19 while
   `@wordpress/scripts` pins React 18. Blocked upstream, not on us.
 
@@ -90,5 +195,10 @@ pushed. See `docs/superpowers/specs/2026-09-09-modal-trigger-as-block-property-d
 
 - `main` only. `development` was retired; `main` requires a PR.
 - Version lives in three places: plugin header, `PIKARI_GUTENBERG_MODALS_VERSION`,
-  `package.json`. Not `composer.json` — `update-dist.yml` regenerates that.
+  `package.json`, plus `readme.txt`'s Stable tag. Not `composer.json`.
+- `main` is protected by a ruleset requiring a PR, with no bypass — local merges still
+  have to go up as a branch and a PR.
+- **Browser QA is possible**: wp-env logs in as `admin`/`password`, Kindler's ddev admin
+  is `pikari`, and an auth cookie can be minted with `wp eval` when a password is unknown.
+  Earlier sessions wrongly recorded the editor as untestable and deferred real work.
 - Testing traps: `_plans/testing-notes.md`. Read it before writing a test page.

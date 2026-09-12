@@ -23,6 +23,9 @@
 	overflow-y: auto;
 	flex: 1;
 }
+.modal-body.hidden {
+	display: none;
+}
 .modal-body > *:first-child {
 	margin-top: 0;
 }
@@ -49,19 +52,6 @@
 }
 .modal-entry--iframe iframe {
 	flex: 1;
-}
-
-/* Known video hosts: hold 16:9 instead of stretching to the dialog height,
-   which otherwise letterboxes the video inside the iframe. */
-.modal-entry--iframe-16-9 {
-	flex: 0 1 auto;
-	justify-content: center;
-}
-.modal-entry--iframe-16-9 iframe {
-	flex: 0 0 auto;
-	aspect-ratio: 16 / 9;
-	height: auto;
-	min-height: 0;
 }
 
 /* Columns block vertical alignment (may not be loaded in modal context) */
@@ -98,6 +88,22 @@
 }
 .modal-loading.hidden {
 	display: none;
+}
+
+/* The spinner sits in flow while the body is empty — on the REST path there
+   is nothing else to give the dialog its size. Once the body holds something
+   (an iframe, which is inserted before it finishes loading) the spinner
+   becomes an overlay instead, so it stops pushing that content down the page.
+   The sibling combinator works because render.php emits .modal-loading before
+   .modal-body; the positioning context is unconditional because nothing else
+   in the content area is absolutely positioned (.sr-only uses clip). */
+.wp-block-pikari-gutenberg-modals-content-area {
+	position: relative;
+}
+.modal-loading:has(~ .modal-body:not(:empty)) {
+	position: absolute;
+	inset: 0;
+	z-index: 1;
 }
 .modal-loading .loading-spinner {
 	width: 40px;

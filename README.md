@@ -246,6 +246,21 @@ add_filter( 'pikari_gutenberg_modals_fallback_template', function( $content, $sl
 }, 10, 2 );
 ```
 
+### `pikari_gutenberg_modals_simulate_frontend`
+
+Modal content is rendered inside a REST request, which runs neither `wp_enqueue_scripts` nor `wp_footer`. Two classes of stylesheet exist only inside those actions, and are not merely unqueued without them but never registered at all:
+
+- **Theme block style variations.** The `block-style-variation-styles` handle is enqueued during `wp_enqueue_scripts` and only registered later, while blocks render, so it reaches the queue only when both have run. Without it a paragraph carrying `is-style-eyebrow` loses its styling in the modal while keeping it on the page.
+- **Plugin assets.** Plugins that render their own markup only know which assets they need once the content has rendered, so they enqueue on `wp_footer` — WPForms among them. Without it a form in a modal loses its layout, and the hidden honeypot field it injects becomes visible.
+
+The endpoint therefore fires both actions, output-buffered and discarded. That runs every plugin's footer hook on a public endpoint, so it can be switched off:
+
+```php
+add_filter( 'pikari_gutenberg_modals_simulate_frontend', '__return_false' );
+```
+
+Turning it off means plugin and block-style-variation CSS will be missing from modal content.
+
 ## CSS Custom Properties
 
 The plugin exposes CSS custom properties on `:root` for theming:
@@ -260,6 +275,9 @@ The plugin exposes CSS custom properties on `:root` for theming:
 --modal-panel-width: 420px; /* Default */
 --modal-panel-width-narrow: 320px; /* Narrow */
 --modal-panel-width-wide: 600px; /* Wide */
+
+/* Media modals */
+--modal-video-max-height: 75vh; /* Height budget for an aspect-ratio modal */
 
 /* Interaction */
 --modal-focus-color: #3b82f6;
@@ -278,7 +296,49 @@ Dialog appearance — background, border radius, padding and shadow — is set w
 
 The breakpoint at which an edge panel gives up its width and fills the viewport is fixed in the stylesheet (panel width plus 48px), because a media query cannot read a custom property. Overriding a panel width moves the panel but not its breakpoint.
 
+## Template-only modals
+
+A trigger's **Content** setting can be **Template only**. Nothing is fetched and nothing on the page is cloned — the modal template part is the content.
+
+This is the right shape for a global modal: a booking panel, a newsletter sign-up, a contact form that every page opens. Without it the content has to live on a page that exists only to be pulled into a modal, and that page has to be kept in step with the template around it.
+
+The dialog is named after the template part's own title, so give the part a real title in the Site Editor. A part with no title falls back to its slug, which the plugin discards rather than announce "book-a-conversation-sidebar" to a screen reader — set an **Accessible label** on the trigger in that case.
+
+A Group or Button in this mode has no URL to fall back to, so it renders as an ARIA button (`role="button"`, `tabindex="0"`) rather than a link. There is no no-JavaScript fallback for this mode, because there is no page to fall back to.
+
+## Video and other framed media
+
+A trigger whose content source is an external URL frames that URL in an iframe. By default the iframe fills the dialog, which is what a page wants and what a video does not — so a URL on a known video host (YouTube, Vimeo) is held to 16:9 and the dialog sizes itself around the video instead.
+
+Set **Aspect ratio** in the trigger's Modal panel to override that: 16:9, 9:16, 4:3 or 1:1. An explicit ratio applies to any host, so a video platform the plugin has never heard of sizes correctly too.
+
+A portrait ratio has to be set by hand. A YouTube Shorts embed URL is byte-identical to a landscape one, and YouTube's own oEmbed reports 200x113 for both, so orientation cannot be detected from the URL.
+
+The dialog's height budget for a framed video is `--modal-video-max-height` (75vh by default), which leaves room inside the dialog's own 90vh cap for the chrome Group's close row and padding. Raise it if your chrome is minimal, lower it if it is generous.
+
+YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?v=...`, `youtu.be/...`, `youtube.com/shorts/...` or `vimeo.com/...` link is converted to its embed form before it reaches the iframe — including a `t=` start time. The trigger's own `href` is left alone, so the no-JavaScript fallback still goes to the human-facing page.
+
 ## Changelog
+
+### Unreleased
+
+- Modals that frame a video size themselves to the video instead of collapsing around it. The dialog's flex chain contributes no intrinsic height — it exists so a page in an iframe can stretch to fill the dialog — which left a 1200px-wide modal 230px tall with the video clipped to a 169px band.
+
+- **Aspect ratio** control on triggers that open an external URL: 16:9, 9:16, 4:3 or 1:1, or Automatic (16:9 for known video hosts). An explicit ratio applies to any host, so a video platform the plugin does not recognise sizes correctly too. A portrait ratio has to be set by hand — a YouTube Shorts embed URL is byte-identical to a landscape one and YouTube's oEmbed reports 200x113 for both, so orientation cannot be detected.
+
+- `--modal-video-max-height` custom property (75vh) for the height budget an aspect-ratio modal is allowed inside the dialog's own 90vh cap.
+
+- Pasted YouTube and Vimeo page URLs are converted to their embed form, carrying a `t=` start time across. Previously a `youtube.com/watch?v=...` link opened a blank modal, because those pages refuse to be framed. Only the iframe source is converted; the trigger's own `href` still points at the human-facing page for the no-JavaScript fallback.
+
+- The loading spinner no longer pushes modal content down the page. It overlays the content once there is content to overlay, and stays in flow while the body is empty, where it is the only thing giving the dialog its size.
+
+- **Template only** content source: the modal template part is the content, with nothing fetched and nothing cloned. A global modal — a booking panel, a newsletter sign-up — no longer needs a page that exists only to be pulled into it. The dialog is named after the template part's title.
+
+- Theme block style variations and third-party plugin stylesheets now load in modal content. Modal content is rendered in a REST request, which runs neither `wp_enqueue_scripts` nor `wp_footer`, so the handles carrying them were never registered — a paragraph styled by a theme variation lost its styling in the modal while keeping it on the page, and a WPForms form lost its layout along with the CSS that hides the honeypot field it injects.
+
+- `pikari_gutenberg_modals_simulate_frontend` filter to switch that collection off, for sites where running every plugin's `wp_footer` hook on a public endpoint is not wanted.
+
+- The modal-content ETag now includes the plugin version. The endpoint's output can change shape without any post changing, and without this a browser holding an older response revalidates, is told 304, and keeps serving content with the missing styles until someone re-saves the post.
 
 ### 2.0.0
 

@@ -1,0 +1,185 @@
+<?php
+/**
+ * Frontend-lifecycle simulation in the modal-content endpoint.
+ *
+ * The endpoint renders a post outside the frontend request it would normally
+ * be rendered in, and two whole classes of stylesheet only exist inside that
+ * request: per-block global styles (the `block-style-variation-styles` handle
+ * is registered during wp_enqueue_scripts) and third-party plugin assets
+ * (WPForms enqueues on wp_footer). Measured on a real install — neither
+ * handle is so much as registered in REST context without firing them.
+ *
+ * @package Pikari\Tests\GutenbergModals
+ */
+
+namespace Pikari\Tests\GutenbergModals;
+
+use Pikari\Tests\TestCase;
+use Pikari\GutenbergModals\RestApi;
+use Brain\Monkey\Filters;
+use Brain\Monkey\Functions;
+
+class RestApiTest extends TestCase
+{
+    public function test_simulation_is_on_by_default(): void
+    {
+        Functions\when( 'apply_filters' )->returnArg( 2 );
+
+        $this->assertTrue( RestApi::should_simulate_frontend() );
+    }
+
+    public function test_simulation_can_be_switched_off_by_filter(): void
+    {
+        Filters\expectApplied( 'pikari_gutenberg_modals_simulate_frontend' )
+            ->once()
+            ->with( true )
+            ->andReturn( false );
+
+        $this->assertFalse( RestApi::should_simulate_frontend() );
+    }
+
+    /**
+     * A truthy non-boolean from a filter must not leak out as itself — the
+     * caller branches on this and a string would silently behave as true
+     * while failing a strict comparison somewhere else.
+     */
+    public function test_simulation_flag_is_always_a_boolean(): void
+    {
+        Filters\expectApplied( 'pikari_gutenberg_modals_simulate_frontend' )
+            ->once()
+            ->andReturn( 'yes' );
+
+        $this->assertTrue( RestApi::should_simulate_frontend() );
+    }
+
+    /**
+     * wp_maybe_inline_styles() is hooked to wp_footer at priority 1. It
+     * inlines small stylesheets and then sets src to false on each handle it
+     * took, because a printed page no longer needs the URL. This response
+     * does — BlockStyleCollector reads exactly that src — so the simulated
+     * footer must run without it and put it back afterwards.
+     *
+     * Measured on WordPress 7.1 against a real site: without this, firing
+     * wp_footer dropped wp-block-paragraph, wp-block-heading and
+     * wp-block-group from blockStyles.urls — 5 URLs became 2. The CSS itself
+     * still arrived, through the collector's path and after fallbacks, so the
+     * loss is the URLs rather than the bytes.
+     */
+    public function test_simulated_footer_runs_without_inlining_styles(): void
+    {
+        // Constructed before the expectations below: the constructor calls
+        // add_action() itself, and would otherwise consume one of them.
+        $api = new RestApi();
+
+        Functions\when( 'did_action' )->justReturn( 0 );
+
+        Functions\expect( 'remove_action' )
+            ->once()
+            ->with( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+
+        Functions\expect( 'add_action' )
+            ->once()
+            ->with( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+
+        Functions\expect( 'do_action' )->once()->with( 'wp_footer' );
+
+        $level = ob_get_level();
+
+        $api->simulate_footer();
+
+        // The response is written after this runs, so an unbalanced output
+        // buffer here would swallow or corrupt it.
+        $this->assertSame( $level, ob_get_level() );
+    }
+
+    /**
+     * Firing wp_footer a second time inside a request that has already run it
+     * would re-run every footer hook on the site.
+     */
+    public function test_simulated_footer_does_nothing_once_wp_footer_has_run(): void
+    {
+        $api = new RestApi();
+
+        Functions\when( 'did_action' )->justReturn( 1 );
+        Functions\expect( 'do_action' )->never();
+
+        $level = ob_get_level();
+
+        $api->simulate_footer();
+
+        $this->assertSame( $level, ob_get_level() );
+    }
+
+    /**
+     * Build a post double for ETag hashing.
+     *
+     * @param string $content Post content.
+     * @return object A stand-in for WP_Post.
+     */
+    private function post_double( string $content = 'Hello' ): object
+    {
+        $post                    = new \stdClass();
+        $post->ID                = 365;
+        $post->post_modified_gmt = '2026-09-01 10:00:00';
+        $post->post_content      = $content;
+
+        return $post;
+    }
+
+    /**
+     * The ETag validates a cached response, and what the endpoint returns for
+     * an unchanged post changed in 2.1.0 — the simulated frontend lifecycle
+     * adds plugin and block-style-variation CSS that was not there before.
+     * Without the plugin version in the hash, a browser or CDN holding the
+     * older body revalidates, is told 304, and keeps serving content with the
+     * missing styles until someone re-saves the post.
+     */
+    public function test_etag_changes_with_the_plugin_version(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertNotSame(
+            $api->generate_etag( $post, '2.0.0' ),
+            $api->generate_etag( $post, '2.1.0' )
+        );
+    }
+
+    /**
+     * The simulate filter is a second input to the response shape — it decides
+     * whether plugin and block-style-variation CSS is collected at all — so a
+     * site that toggles it hits exactly the stale-304 the version in the hash
+     * was added to prevent.
+     */
+    public function test_etag_changes_with_the_simulate_flag(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertNotSame(
+            $api->generate_etag( $post, '2.1.0', true ),
+            $api->generate_etag( $post, '2.1.0', false )
+        );
+    }
+
+    public function test_etag_is_stable_for_the_same_post_and_version(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertSame(
+            $api->generate_etag( $post, '2.1.0' ),
+            $api->generate_etag( $post, '2.1.0' )
+        );
+    }
+
+    public function test_etag_still_changes_with_the_content(): void
+    {
+        $api = new RestApi();
+
+        $this->assertNotSame(
+            $api->generate_etag( $this->post_double( 'Hello' ), '2.1.0' ),
+            $api->generate_etag( $this->post_double( 'Goodbye' ), '2.1.0' )
+        );
+    }
+}

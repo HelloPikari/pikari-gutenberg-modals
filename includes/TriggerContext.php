@@ -34,7 +34,7 @@ class TriggerContext
 
         // No subject to name the dialog with: omitting the key leaves the
         // container's own generic name in place, which is the right fallback.
-        $label = self::dialog_label( $attributes, $base );
+        $label = self::dialog_label( $attributes, $base, $template_part );
         if ( '' !== $label ) {
             $context['label'] = $label;
         }
@@ -56,6 +56,14 @@ class TriggerContext
             $context['placement'] = $placement;
         }
 
+        // Same rule as placement: only slugs the store can act on travel.
+        // The list is duplicated in src/frontend/video-providers.js, which
+        // owns the slug-to-CSS-ratio mapping.
+        $aspect_ratio = $attributes['pikariModalAspectRatio'] ?? '';
+        if ( in_array( $aspect_ratio, [ '16-9', '9-16', '4-3', '1-1' ], true ) ) {
+            $context['aspectRatio'] = $aspect_ratio;
+        }
+
         return $context;
     }
 
@@ -71,11 +79,12 @@ class TriggerContext
      * names its dialog the same way, which is what the branches did not do
      * when they each built their own context.
      *
-     * @param array $attributes Block attributes.
-     * @param array $base       Branch-specific context keys.
+     * @param array  $attributes    Block attributes.
+     * @param array  $base          Branch-specific context keys.
+     * @param string $template_part Template part slug, or '' for the default.
      * @return string The dialog name, or '' when there is no subject to use.
      */
-    private static function dialog_label( array $attributes, array $base ): string
+    private static function dialog_label( array $attributes, array $base, string $template_part = '' ): string
     {
         // An author-supplied label describes the content, so it names the
         // dialog whatever the content source is.
@@ -91,6 +100,15 @@ class TriggerContext
         // slug never travels — it is an authoring identifier, not a name.
         if ( 'inline' === $content_source ) {
             return '';
+        }
+
+        // Template-only modals have no content reference to name themselves
+        // after — the template part IS the content, so its title is the
+        // subject. Without this the dialog falls back to the container's
+        // generic name, which is the one thing every other open-mode surface
+        // already avoids.
+        if ( 'none' === $content_source ) {
+            return self::template_part_title( $template_part );
         }
 
         $target = (string) ( $base['postId'] ?? '' );
@@ -118,5 +136,48 @@ class TriggerContext
         $decoded = html_entity_decode( get_the_title( $post_id ), ENT_QUOTES | ENT_HTML5, 'UTF-8' );
 
         return trim( wp_strip_all_tags( $decoded ) );
+    }
+
+    /**
+     * The title of a modal template part, for naming the dialog it fills.
+     *
+     * Cached per slug for the request: a Query Loop can render the same
+     * template-only trigger dozens of times, and one lookup per card would
+     * be one lookup too many.
+     *
+     * @param string $template_part Template part slug, or '' for the default.
+     * @return string The title, or '' when the part cannot be found.
+     */
+    private static function template_part_title( string $template_part ): string
+    {
+        static $titles = [];
+
+        // 'modal' is the default part's slug — the same literal the trigger
+        // branches use, because ModalTemplatePart::SLUG is private.
+        $slug = '' !== $template_part ? $template_part : 'modal';
+
+        // Keyed on the full template id rather than the slug: the stylesheet is
+        // half the lookup, so a switch_to_blog() or a mid-request theme change
+        // would otherwise be served another theme's title.
+        $template_id = get_stylesheet() . '//' . $slug;
+
+        if ( array_key_exists( $template_id, $titles ) ) {
+            return $titles[ $template_id ];
+        }
+
+        $template = get_block_template( $template_id, 'wp_template_part' );
+        $title    = $template ? trim( wp_strip_all_tags( (string) ( $template->title ?? '' ) ) ) : '';
+
+        // WordPress stands the slug in for a title the part does not have,
+        // for both DB-saved and theme-file parts. "video-player" is a worse
+        // dialog name than the container's own generic one, so a title that
+        // is only the slug counts as no title.
+        if ( strtolower( $title ) === strtolower( $slug ) ) {
+            $title = '';
+        }
+
+        $titles[ $template_id ] = $title;
+
+        return $titles[ $template_id ];
     }
 }

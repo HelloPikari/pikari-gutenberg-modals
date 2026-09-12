@@ -15,3 +15,36 @@
 .modal-overlay-image-control {
 	margin-bottom: 16px;
 }
+
+/* Placement preview.
+
+   Frontend geometry lives on .modal-overlay and is written by the store at
+   open time, so none of it reaches the editor. These rules are the editor's
+   own approximation: enough to tell a left panel from a right one from a
+   centered dialog at a glance, and to edit a panel on a panel-shaped canvas
+   rather than a full-width one. The widths mirror the frontend custom
+   properties rather than reading them, because the frontend stylesheet is not
+   loaded in the editor.
+
+   The .block-editor-block-list__block prefix is load-bearing, not decoration.
+   The editor centres root-level blocks with
+
+     .block-editor-block-list__layout.is-root-container > :where(...)
+       { margin-left: auto !important }
+
+   which is also (0,2,0) and also !important, and is injected after this
+   stylesheet — so an equally specific rule here loses on source order.
+   Measured: without the prefix the max-width applied and the margins did not.
+   Logical margins because that is what the frontend does too, where a panel is
+   placed with flex-start/flex-end; both follow the writing direction, so an
+   RTL site gets a consistent answer from each. */
+.block-editor-block-list__block.wp-block-pikari-gutenberg-modals-modal-overlay[data-placement] {
+	max-width: var(--modal-panel-width, 420px) !important;
+	border-radius: 0;
+}
+.block-editor-block-list__block.wp-block-pikari-gutenberg-modals-modal-overlay[data-placement="left"] {
+	margin-inline: 0 auto !important;
+}
+.block-editor-block-list__block.wp-block-pikari-gutenberg-modals-modal-overlay[data-placement="right"] {
+	margin-inline: auto 0 !important;
+}

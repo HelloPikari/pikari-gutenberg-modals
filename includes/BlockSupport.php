@@ -24,6 +24,19 @@ class BlockSupport
     private static bool $has_modal_triggers = false;
 
     /**
+     * Whether container rendering is suspended for the rest of this request.
+     *
+     * The modal-content REST endpoint fires wp_footer to collect styles that
+     * only exist inside a frontend request. Two BlockSupport instances are
+     * hooked to that action by then — the endpoint's own and the one
+     * bootstrapped on init — so remove_action() on one instance cannot stop
+     * the container from rendering into a response that only wants styles.
+     *
+     * @var bool
+     */
+    private static bool $suspend_container_render = false;
+
+    /**
      * Template part slugs used by triggers on this page.
      *
      * @var string[]
@@ -158,6 +171,19 @@ class BlockSupport
     }
 
     /**
+     * Suspend (or resume) modal container rendering for this request.
+     *
+     * Static rather than per-instance because more than one BlockSupport is
+     * hooked to wp_footer in a REST request — see RestApi::simulate_footer().
+     *
+     * @param bool $suspend True to suspend.
+     */
+    public static function suspend_container_render( bool $suspend ): void
+    {
+        self::$suspend_container_render = $suspend;
+    }
+
+    /**
      * Register block filters
      */
     private function register_block_filters(): void
@@ -233,10 +259,15 @@ class BlockSupport
         }
 
         // Check content source: 'inline' for page content, 'url' for a custom
-        // URL, 'link' (default) for the button's own href.
+        // URL, 'none' for a modal whose template part is the content, 'link'
+        // (default) for the button's own href.
         $content_source = $block['attrs']['pikariModalContentSource'] ?? 'link';
         $inline_anchor  = $block['attrs']['pikariModalInlineAnchor'] ?? '';
         $template_part  = $block['attrs']['pikariModalTemplatePart'] ?? '';
+
+        if ( $content_source === 'none' ) {
+            return $this->filter_button_block_template_only( $block_content, $block, $template_part );
+        }
 
         if ( $content_source === 'inline' ) {
             return $this->filter_button_block_inline( $block_content, $block, $inline_anchor, $template_part );
@@ -340,6 +371,74 @@ class BlockSupport
 
             // The button's own visible text is already its accessible
             // name; only override it when the author explicitly typed one.
+            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
+            if ( '' !== $custom_label ) {
+                $processor->set_attribute( 'aria-label', $custom_label );
+            }
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Handle a button whose content is the modal template part itself.
+     *
+     * Nothing is fetched and nothing is cloned — the template part holds the
+     * content. See GroupModalTriggerSupport::handle_template_only() for why
+     * this mode exists.
+     *
+     * Unlike every other open mode there is no URL to fall back to, so an
+     * <a> gets no href. An href-less <a> is neither focusable nor
+     * keyboard-operable, so it takes the ARIA button treatment instead; a
+     * native <button> already has both and is left alone.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $block         The block data array.
+     * @param string $template_part Template part slug (empty for default 'modal').
+     * @return string Modified block content.
+     */
+    private function filter_button_block_template_only( string $block_content, array $block, string $template_part = '' ): string
+    {
+        $slug = ! empty( $template_part ) ? $template_part : 'modal';
+        self::set_has_modal_triggers( $slug );
+
+        $trigger_id = 'modal-trigger-' . wp_unique_id();
+
+        $base = [
+            'contentSource' => 'none',
+            'modalId'       => 'template-' . $slug,
+        ];
+
+        $context = TriggerContext::build( $block['attrs'], $base, $template_part );
+
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        // The block's root is a wrapper <div class="wp-block-button">; the
+        // second next_tag() reaches the inner <a> or <button>. Same two-call
+        // pattern as filter_button_block() and filter_close_trigger().
+        if ( $processor->next_tag() && $processor->next_tag() ) {
+            $processor->set_attribute( 'id', $trigger_id );
+            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
+            $processor->set_attribute(
+                'data-wp-context',
+                wp_json_encode( $context )
+            );
+            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
+            $processor->set_attribute( 'aria-haspopup', 'dialog' );
+            $processor->set_attribute( 'aria-expanded', 'false' );
+            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            $processor->add_class( 'has-pikari-modal' );
+
+            // No href to give an <a>, so make it an ARIA button instead —
+            // otherwise the trigger is mouse-only (WCAG 2.1.1).
+            if ( 'BUTTON' !== $processor->get_tag() ) {
+                $processor->set_attribute( 'role', 'button' );
+                $processor->set_attribute( 'tabindex', '0' );
+                $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
+            }
+
+            // The button's own visible text is already its accessible name;
+            // only override it when the author explicitly typed one.
             $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
             if ( '' !== $custom_label ) {
                 $processor->set_attribute( 'aria-label', $custom_label );
@@ -924,6 +1023,10 @@ class BlockSupport
     {
         // Only render if modal triggers were found on this page
         if ( ! self::$has_modal_triggers ) {
+            return;
+        }
+
+        if ( self::$suspend_container_render ) {
             return;
         }
 

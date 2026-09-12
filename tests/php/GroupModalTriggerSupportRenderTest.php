@@ -164,6 +164,42 @@ class GroupModalTriggerSupportRenderTest extends TestCase
     }
 
     /**
+     * "Template only" has no content of its own to point at: the modal
+     * template part supplies everything. The group still has to become a
+     * working trigger — focusable, keyboard-operable, and carrying a context
+     * the store can act on without a postId.
+     */
+    public function test_group_template_only_mode_is_a_working_trigger(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p>Book a conversation</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'none',
+                'pikariModalTemplatePart'  => 'booking',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $processor = new \WP_HTML_Tag_Processor( $result );
+        $this->assertTrue( $processor->next_tag() );
+
+        $this->assertStringStartsWith( 'modal-trigger-', (string) $processor->get_attribute( 'id' ) );
+        $this->assertSame( 'actions.handleGroupTriggerClick', $processor->get_attribute( 'data-wp-on--click' ) );
+        $this->assertSame( 'actions.handleTriggerKeydown', $processor->get_attribute( 'data-wp-on--keydown' ) );
+        $this->assertSame( 'button', $processor->get_attribute( 'role' ) );
+        $this->assertSame( '0', $processor->get_attribute( 'tabindex' ) );
+
+        $context = json_decode( (string) $processor->get_attribute( 'data-wp-context' ), true );
+        $this->assertSame( 'none', $context['contentSource'] );
+        $this->assertSame( 'booking', $context['templatePart'] );
+        $this->assertArrayNotHasKey( 'postId', $context );
+    }
+
+    /**
      * Pins the Important-1 whole-branch-review finding: the direct-URL open
      * mode's wrapper is the trigger itself (role="button" tabindex="0") but
      * had no id, so modal-store.js's focus-restore-on-close could never

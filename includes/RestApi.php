@@ -137,8 +137,10 @@ class RestApi
             );
         }
 
-        // Generate ETag based on post content and modification time
-        $etag          = $this->generate_etag($post);
+        // Generate ETag based on post content, modification time and plugin
+        // version — see generate_etag() for why the version belongs in it.
+        $simulate      = self::should_simulate_frontend();
+        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION, $simulate);
         $last_modified = strtotime($post->post_modified_gmt);
 
         // Check for conditional request (If-None-Match or If-Modified-Since)
@@ -147,17 +149,35 @@ class RestApi
             return $cached_response;
         }
 
-        // Snapshot the styles queue before rendering so we can detect theme
-        // per-block styles enqueued during do_blocks() via render_block filters
-        // (e.g., styles registered with wp_enqueue_block_style()).
+        // Instantiating BlockSupport here registers render_block filters that
+        // affect only the do_blocks() call below.
+        $block_support = new BlockSupport();
+
+        // A REST request runs neither wp_enqueue_scripts nor wp_footer, and
+        // whole classes of stylesheet only reach the queue inside them.
+        //
+        // block-style-variation-styles takes both halves: core calls
+        // wp_enqueue_style() on it during wp_enqueue_scripts, before it is
+        // registered, so WP_Dependencies parks it in queued_before_register;
+        // registration then happens during do_blocks() via render_block_data
+        // and promotes it into the queue. Skip the header and it is never
+        // parked, so it never lands. Plugins such as WPForms enqueue in
+        // wp_footer instead, once they know what the page rendered.
+        if ( $simulate ) {
+            $this->simulate_enqueue_scripts( $post );
+        }
+
+        // Snapshot AFTER the simulated header. Taking it before would count
+        // every handle the theme and WordPress itself enqueue on any page —
+        // global-styles among them — as newly added by this render, and
+        // duplicate their inline CSS into the response.
         $before_queue = wp_styles()->queue;
 
-        // Instantiating BlockSupport here is safe: its constructor registers render_block
-        // filters and a wp_footer action, but these are request-scoped — the render_block
-        // filters only affect the do_blocks() call below, and wp_footer never fires in
-        // REST context. No persistent side effects.
-        $block_support = new BlockSupport();
-        $content_data  = $block_support->get_post_content_with_styles( $post );
+        $content_data = $block_support->get_post_content_with_styles( $post );
+
+        if ( $simulate ) {
+            $this->simulate_footer();
+        }
 
         // Extract raw CSS from the <style> tag returned by get_post_content_with_styles().
         // preg_match is safe here because the input is always a single <style> tag generated
@@ -211,15 +231,136 @@ class RestApi
     }
 
     /**
-     * Generate an ETag for a post based on content and modification time.
+     * Whether to run the frontend enqueue lifecycle for this request.
      *
-     * @param \WP_Post $post The post object.
+     * Firing wp_footer on a public endpoint runs every plugin's footer hook,
+     * which is a real cost and a real risk: the output is discarded, but the
+     * side effects are not. Sites that hit a misbehaving plugin can turn the
+     * simulation off and accept that plugin stylesheets go missing from
+     * modal content.
+     *
+     * @return bool True when the lifecycle should be simulated.
+     */
+    public static function should_simulate_frontend(): bool
+    {
+        /**
+         * Filter whether the modal-content endpoint simulates the frontend
+         * enqueue lifecycle to collect stylesheets.
+         *
+         * @param bool $simulate Default true.
+         */
+        return (bool) apply_filters( 'pikari_gutenberg_modals_simulate_frontend', true );
+    }
+
+    /**
+     * Run wp_enqueue_scripts as a frontend request would.
+     *
+     * The global post is set first so callbacks that inspect the current post
+     * to decide what to enqueue see the post the modal is about to show,
+     * rather than nothing at all.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post $post The post being rendered.
+     */
+    public function simulate_enqueue_scripts( \WP_Post $post ): void
+    {
+        if ( did_action( 'wp_enqueue_scripts' ) ) {
+            return;
+        }
+
+        $original_post   = $GLOBALS['post'] ?? null;
+        $GLOBALS['post'] = $post;
+
+        // Callbacks print as well as enqueue; only the queue is wanted here.
+        try {
+            ob_start();
+            do_action( 'wp_enqueue_scripts' );
+        } finally {
+            ob_end_clean();
+            $GLOBALS['post'] = $original_post;
+        }
+    }
+
+    /**
+     * Run wp_footer as a frontend request would.
+     *
+     * Plugins that render their own markup — WPForms among them — enqueue
+     * their stylesheets here rather than in the header, because they only
+     * know which assets are needed once the content has rendered.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     */
+    public function simulate_footer(): void
+    {
+        if ( did_action( 'wp_footer' ) ) {
+            return;
+        }
+
+        // Our own container renderer is hooked to wp_footer twice over by
+        // now — once from the instance above and once from the one
+        // bootstrapped on init — and would render every modal template part
+        // into a response that only wants the styles.
+        BlockSupport::suspend_container_render( true );
+
+        // wp_maybe_inline_styles() inlines small stylesheets into the page and
+        // sets src to false on every handle it takes, because a printed page no
+        // longer needs the URL. This response does: BlockStyleCollector reads
+        // exactly that src to build blockStyles.urls. Measured on WordPress 7.1
+        // — firing wp_footer without this dropped wp-block-paragraph, -heading
+        // and -group from the URL list. (The CSS itself still arrived, via the
+        // collector's path and after fallbacks, duplicated between them.)
+        remove_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+
+        // Every hook here belongs to another plugin. A fatal or an exception in
+        // one of them must not leave this request with an unbalanced output
+        // buffer, a core callback unhooked, or container rendering suspended —
+        // the response is still written after this returns.
+        try {
+            ob_start();
+            do_action( 'wp_footer' );
+        } finally {
+            ob_end_clean();
+            add_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
+            BlockSupport::suspend_container_render( false );
+        }
+    }
+
+    /**
+     * Generate an ETag for a post based on content, modification time and the
+     * plugin version.
+     *
+     * The version is in the hash because this endpoint's output can change
+     * without the post changing: 2.1.0 began collecting plugin and
+     * block-style-variation CSS that earlier versions never returned. An ETag
+     * derived from the post alone would tell a browser or CDN holding the
+     * older body that nothing had changed, and it would keep serving modal
+     * content with the missing styles until someone re-saved the post.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post|object $post     The post object.
+     * @param string          $version  The plugin version.
+     * @param bool            $simulate Whether the frontend lifecycle is simulated.
      * @return string The ETag value (quoted string).
      */
-    private function generate_etag( $post )
+    public function generate_etag( $post, string $version, bool $simulate = true )
     {
-        // Create hash from post ID, modification time, and content hash
-        $hash_data = $post->ID . '-' . $post->post_modified_gmt . '-' . md5($post->post_content);
+        // Everything that shapes the response, not just everything that shapes
+        // the post: the simulate flag decides whether plugin and
+        // block-style-variation CSS is collected at all, so a site toggling the
+        // filter would otherwise be told 304 against the other shape.
+        $hash_data = implode(
+            '-',
+            [
+                $post->ID,
+                $post->post_modified_gmt,
+                md5($post->post_content),
+                $version,
+                $simulate ? 'sim' : 'nosim',
+            ]
+        );
+
         return '"' . md5($hash_data) . '"';
     }
 

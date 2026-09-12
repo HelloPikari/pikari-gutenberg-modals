@@ -36,6 +36,7 @@ export const MODAL_ATTRIBUTES = {
 	pikariModalPlacement: { type: 'string', default: '' },
 	pikariModalTemplatePart: { type: 'string', default: '' },
 	pikariModalAccessibleLabel: { type: 'string', default: '' },
+	pikariModalAspectRatio: { type: 'string', default: '' },
 };
 
 /**

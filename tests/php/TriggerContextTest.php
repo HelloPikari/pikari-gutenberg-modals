@@ -68,6 +68,127 @@ class TriggerContextTest extends TestCase
         $this->assertSame( 'promo', $context['templatePart'] );
     }
 
+    public function test_template_only_names_the_dialog_after_its_template_part(): void
+    {
+        $template        = new \stdClass();
+        $template->title = 'Book a conversation';
+
+        Functions\when( 'get_stylesheet' )->justReturn( 'twentytwentyfive' );
+        Functions\when( 'get_block_template' )->justReturn( $template );
+
+        $context = TriggerContext::build(
+            [],
+            [ 'contentSource' => 'none', 'modalId' => 'template-booking' ],
+            'booking'
+        );
+
+        $this->assertSame( 'Book a conversation', $context['label'] );
+    }
+
+    /**
+     * The default modal part is stored as an empty slug, so the lookup has to
+     * supply 'modal' itself. ModalTemplatePart::SLUG is private, so this
+     * pins the literal that stands in for it.
+     */
+    public function test_template_only_falls_back_to_the_default_part_slug(): void
+    {
+        $template = new \stdClass();
+        // Deliberately not 'Modal': a title equal to the slug is WordPress's
+        // placeholder for no title and is rejected — see the sibling test.
+        $template->title = 'Site Modal';
+
+        Functions\when( 'get_stylesheet' )->justReturn( 'twentytwentyfive' );
+        Functions\expect( 'get_block_template' )
+            ->once()
+            ->with( 'twentytwentyfive//modal', 'wp_template_part' )
+            ->andReturn( $template );
+
+        $context = TriggerContext::build(
+            [],
+            [ 'contentSource' => 'none' ],
+            ''
+        );
+
+        $this->assertSame( 'Site Modal', $context['label'] );
+    }
+
+    public function test_template_only_prefers_an_author_label(): void
+    {
+        $template        = new \stdClass();
+        $template->title = 'Book a conversation';
+
+        Functions\when( 'get_stylesheet' )->justReturn( 'twentytwentyfive' );
+        Functions\when( 'get_block_template' )->justReturn( $template );
+
+        $context = TriggerContext::build(
+            [ 'pikariModalAccessibleLabel' => 'Enquiry form' ],
+            [ 'contentSource' => 'none' ],
+            'booking'
+        );
+
+        $this->assertSame( 'Enquiry form', $context['label'] );
+    }
+
+    /**
+     * WordPress uses the slug as a template part's title when it has none —
+     * measured on a real install for both a DB part saved without a title
+     * (source=custom) and a theme file part absent from theme.json
+     * (source=theme). Announcing "video-player" as a dialog name is worse
+     * than the container's own generic label, so a title that is only the
+     * slug is treated as no title at all.
+     */
+    public function test_template_only_rejects_a_title_that_is_only_the_slug(): void
+    {
+        $template        = new \stdClass();
+        $template->title = 'video-player';
+
+        Functions\when( 'get_stylesheet' )->justReturn( 'twentytwentyfive' );
+        Functions\when( 'get_block_template' )->justReturn( $template );
+
+        $context = TriggerContext::build(
+            [],
+            [ 'contentSource' => 'none' ],
+            'video-player'
+        );
+
+        $this->assertArrayNotHasKey( 'label', $context );
+    }
+
+    public function test_template_only_omits_the_label_when_the_part_is_gone(): void
+    {
+        Functions\when( 'get_stylesheet' )->justReturn( 'twentytwentyfive' );
+        Functions\when( 'get_block_template' )->justReturn( null );
+
+        $context = TriggerContext::build(
+            [],
+            [ 'contentSource' => 'none' ],
+            'missing'
+        );
+
+        $this->assertArrayNotHasKey( 'label', $context );
+    }
+
+    public function test_adds_aspect_ratio_when_valid(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '9-16' ], [ 'postId' => 1 ] );
+
+        $this->assertSame( '9-16', $context['aspectRatio'] );
+    }
+
+    public function test_omits_empty_aspect_ratio(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'aspectRatio', $context );
+    }
+
+    public function test_omits_unknown_aspect_ratio(): void
+    {
+        $context = TriggerContext::build( [ 'pikariModalAspectRatio' => '21-9' ], [ 'postId' => 1 ] );
+
+        $this->assertArrayNotHasKey( 'aspectRatio', $context );
+    }
+
     public function test_adds_placement_when_valid(): void
     {
         $context = TriggerContext::build( [ 'pikariModalPlacement' => 'right' ], [ 'postId' => 1 ] );
