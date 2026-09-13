@@ -336,6 +336,20 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 
 ## Changelog
 
+### 2.2.0
+
+- Forms and other script-driven content now work in modals that load a post or page. Modal content is inserted with `innerHTML`, which never runs scripts, and plugins such as WPForms enqueue theirs on `wp_footer` — so a WPForms form in a modal looked right but could not submit. The endpoint now returns the scripts the content enqueued, dependencies first with their localized data and inline scripts, and the modal runs any the page does not already have.
+
+- Modal content renders with the request URI set to the post's own path, so a form that builds its action from the current URL posts to the page rather than the REST route.
+
+- `pikari-modal:content-loaded` event, dispatched on the modal container once content and its scripts have loaded, for binding a script that was already on the page. `event.detail` carries `slug`, `postId` and `loaded` (the handles this open added).
+
+- WPForms works out of the box: its settings travel with the content, and a form arriving on a page that already ran WPForms is bound with `wpforms.ready()`.
+
+- Turning off the `pikari_gutenberg_modals_simulate_frontend` filter now also leaves out plugin scripts that enqueue on `wp_footer`, such as WPForms'.
+
+- Known limitation: **Inline content** modals do not fire the event, so a WPForms form in inline content is still not bound.
+
 ### 2.1.0
 
 - Modals that frame a video size themselves to the video instead of collapsing around it. The dialog's flex chain contributes no intrinsic height — it exists so a page in an iframe can stretch to fill the dialog — which left a 1200px-wide modal 230px tall with the video clipped to a 169px band.
