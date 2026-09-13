@@ -52,12 +52,17 @@ const getElement = jest.fn( () => ( {
 	ref: document.createElement( 'div' ),
 } ) );
 
+const getConfig = jest.fn( () => ( {
+	restUrl: 'https://example.com/wp-json/pikari-gutenberg-modals/v1/',
+} ) );
+
 const withScope = jest.fn( ( callback ) => callback );
 
 const withSyncEvent = jest.fn( ( handler ) => handler );
 
 module.exports = {
 	store,
+	getConfig,
 	getContext,
 	getElement,
 	withScope,

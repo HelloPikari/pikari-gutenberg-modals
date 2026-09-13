@@ -182,4 +182,90 @@ class RestApiTest extends TestCase
             $api->generate_etag( $this->post_double( 'Goodbye' ), '2.1.0' )
         );
     }
+
+    /**
+     * WPForms — and anything else calling add_query_arg() or
+     * remove_query_arg() without a URL — builds links from REQUEST_URI. Inside
+     * this endpoint that is the REST route itself, so a form's action pointed
+     * at a GET-only endpoint. The render has to see the post's own address.
+     */
+    public function test_request_uri_is_the_post_address_while_the_callback_runs(): void
+    {
+        $api                    = new RestApi();
+        $_SERVER['REQUEST_URI'] = '/wp-json/pikari-gutenberg-modals/v1/modal-content/365';
+
+        $seen = $api->with_request_uri(
+            '/book-a-conversation/',
+            function () {
+                return $_SERVER['REQUEST_URI'];
+            }
+        );
+
+        $this->assertSame( '/book-a-conversation/', $seen );
+        $this->assertSame( '/wp-json/pikari-gutenberg-modals/v1/modal-content/365', $_SERVER['REQUEST_URI'] );
+    }
+
+    /**
+     * The render runs every plugin's block filters; one of them throwing must
+     * not leave the rest of the request believing it is on another page.
+     */
+    public function test_request_uri_is_restored_when_the_callback_throws(): void
+    {
+        $api                    = new RestApi();
+        $_SERVER['REQUEST_URI'] = '/wp-json/route';
+        $thrown                 = false;
+
+        try {
+            $api->with_request_uri(
+                '/page/',
+                function () {
+                    throw new \RuntimeException( 'A plugin failed mid-render.' );
+                }
+            );
+        } catch ( \RuntimeException $e ) {
+            $thrown = true;
+        }
+
+        $this->assertTrue( $thrown );
+        $this->assertSame( '/wp-json/route', $_SERVER['REQUEST_URI'] );
+    }
+
+    public function test_an_unset_request_uri_stays_unset(): void
+    {
+        $api = new RestApi();
+        unset( $_SERVER['REQUEST_URI'] );
+
+        $api->with_request_uri(
+            '/page/',
+            function () {
+            }
+        );
+
+        $this->assertArrayNotHasKey( 'REQUEST_URI', $_SERVER );
+    }
+
+    public function test_post_address_keeps_path_and_query(): void
+    {
+        Functions\when( 'get_permalink' )->justReturn( 'https://example.com/book-a-conversation/?lang=fr' );
+        Functions\when( 'wp_parse_url' )->alias( 'parse_url' );
+
+        $this->assertSame(
+            '/book-a-conversation/?lang=fr',
+            ( new RestApi() )->request_uri_for_post( $this->post_double() )
+        );
+    }
+
+    /**
+     * Plain permalinks have no path at all — only ?page_id=.
+     */
+    public function test_post_address_without_a_path_starts_at_the_root(): void
+    {
+        Functions\when( 'get_permalink' )->justReturn( 'https://example.com/?page_id=365' );
+        Functions\when( 'wp_parse_url' )->alias( 'parse_url' );
+
+        $this->assertSame(
+            '/?page_id=365',
+            ( new RestApi() )->request_uri_for_post( $this->post_double() )
+        );
+    }
 }

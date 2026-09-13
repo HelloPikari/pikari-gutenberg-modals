@@ -17,6 +17,7 @@ import {
 	focusFirstElement,
 } from './modal-a11y';
 import { loadBlockStyles } from './block-style-loader';
+import { loadBlockScripts } from './block-script-loader';
 import { normalizeEmbedUrl, resolveVideoRatio } from './video-providers';
 import { resolveGeometry } from './modal-geometry';
 import { shouldDeferToElement } from './trigger-click';
@@ -444,6 +445,18 @@ const { state, actions } = store( 'pikari-modal', {
 						modalBody.innerHTML = htmlContent;
 					}
 					state.content = htmlContent;
+
+					// Scripts in content set with innerHTML never run, and they
+					// have to run after it lands to find the markup they bind to.
+					const loaded = yield loadBlockScripts( data.scripts );
+
+					modal.dispatchEvent(
+						// eslint-disable-next-line no-undef
+						new CustomEvent( 'pikari-modal:content-loaded', {
+							bubbles: true,
+							detail: { slug, postId: data.id, loaded },
+						} )
+					);
 				} else {
 					throw new Error( 'Failed to load modal content' );
 				}

@@ -248,7 +248,21 @@ The endpoint therefore fires both actions, output-buffered and discarded. That r
 
 `add_filter( 'pikari_gutenberg_modals_simulate_frontend', '__return_false' );`
 
-Turning it off means plugin and block-style-variation CSS will be missing from modal content.
+Turning it off means plugin and block-style-variation CSS, and plugin scripts such as WPForms', will be missing from modal content.
+
+= pikari-modal:content-loaded =
+
+Content from the REST endpoint is inserted with innerHTML, which never runs scripts. The endpoint therefore also returns the classic scripts the content enqueued while rendering — URL, localized data and inline before/after, dependencies first — and the modal runs any the page does not already have, then dispatches a bubbling `pikari-modal:content-loaded` event on the modal container.
+
+A script that was already on the page has not seen the new markup, so this is where to bind it. `event.detail` carries `slug` (the template part), `postId`, and `loaded` — the handles this open appended — so a script that initialised itself from a fresh load can be told apart from one that was already there:
+
+`document.addEventListener( 'pikari-modal:content-loaded', function ( event ) {
+    if ( event.detail.loaded.indexOf( 'my-plugin' ) === -1 ) {
+        myPlugin.init( event.target );
+    }
+} );`
+
+WPForms works out of the box: its settings travel with the content, and a form arriving on a page that already ran WPForms is bound with `wpforms.ready()`. That call runs over every form on the page and adds another hidden honeypot field to each form that has one — as WPForms' own Elementor and OptinMonster popup integrations do.
 
 == CSS Custom Properties ==
 

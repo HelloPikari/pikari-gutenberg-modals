@@ -121,6 +121,7 @@ function pikari_gutenberg_modals_init() {
     new \Pikari\GutenbergModals\SpeculativeLoading();
     new \Pikari\GutenbergModals\ModalTemplatePart();
     new \Pikari\GutenbergModals\ModalPatterns();
+    new \Pikari\GutenbergModals\Compat\WPForms();
 }
 // add_action( 'plugins_loaded', 'pikari_gutenberg_modals_init' );
 add_action( 'init', 'pikari_gutenberg_modals_init' );

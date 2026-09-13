@@ -102,6 +102,22 @@ class RestApi
                         ),
                     ),
                 ),
+                'scripts'     => array(
+                    'type'        => 'array',
+                    'description' => __( 'Classic scripts the content needs, dependencies first.', 'pikari-gutenberg-modals' ),
+                    'context'     => array( 'view' ),
+                    'readonly'    => true,
+                    'items'       => array(
+                        'type'       => 'object',
+                        'properties' => array(
+                            'handle' => array( 'type' => 'string' ),
+                            'src'    => array( 'type' => array( 'string', 'null' ) ),
+                            'data'   => array( 'type' => 'string' ),
+                            'before' => array( 'type' => 'string' ),
+                            'after'  => array( 'type' => 'string' ),
+                        ),
+                    ),
+                ),
                 'type'        => array(
                     'type'        => 'string',
                     'description' => __( 'The post type slug.', 'pikari-gutenberg-modals' ),
@@ -171,9 +187,17 @@ class RestApi
         // every handle the theme and WordPress itself enqueue on any page —
         // global-styles among them — as newly added by this render, and
         // duplicate their inline CSS into the response.
-        $before_queue = wp_styles()->queue;
+        $before_queue   = wp_styles()->queue;
+        $before_scripts = wp_scripts()->queue;
 
-        $content_data = $block_support->get_post_content_with_styles( $post );
+        // Anything building a URL from REQUEST_URI during the render would
+        // otherwise point at this REST route — WPForms' form action among them.
+        $content_data = $this->with_request_uri(
+            $this->request_uri_for_post( $post ),
+            function () use ( $block_support, $post ) {
+                return $block_support->get_post_content_with_styles( $post );
+            }
+        );
 
         if ( $simulate ) {
             $this->simulate_footer();
@@ -196,6 +220,10 @@ class RestApi
         $block_styles          = $block_style_collector->get_block_styles_for_content( $post->post_content );
         $render_styles         = $block_style_collector->collect_render_enqueued_styles( $before_queue );
 
+        // Scripts the render enqueued, with what the client needs to run them.
+        $block_script_collector = new BlockScriptCollector();
+        $scripts                = $block_script_collector->collect_render_enqueued_scripts( $before_scripts );
+
         // Merge render-enqueued URLs with registry-based URLs (deduplicated).
         $merged_urls = array_merge( $block_styles['urls'], $render_styles['urls'] );
         $all_urls    = array_values( array_unique( $merged_urls ) );
@@ -212,6 +240,7 @@ class RestApi
             'content'     => $content_data['content'],
             'styles'      => $styles,
             'blockStyles' => array( 'urls' => $all_urls ),
+            'scripts'     => $scripts,
             'type'        => $post->post_type,
         );
 
@@ -324,6 +353,60 @@ class RestApi
             add_action( 'wp_footer', 'wp_maybe_inline_styles', 1 );
             BlockSupport::suspend_container_render( false );
         }
+    }
+
+    /**
+     * The request URI a frontend request for this post would carry.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post|object $post The post being rendered.
+     * @return string Path and query, e.g. "/book-a-conversation/".
+     */
+    public function request_uri_for_post( $post ): string
+    {
+        $parts = wp_parse_url( (string) get_permalink( $post ) );
+        $uri   = $parts['path'] ?? '/';
+
+        if ( ! empty( $parts['query'] ) ) {
+            $uri .= '?' . $parts['query'];
+        }
+
+        return $uri;
+    }
+
+    /**
+     * Run a callback with REQUEST_URI set to another address.
+     *
+     * Both add_query_arg() and remove_query_arg() fall back to REQUEST_URI
+     * when given no URL, which inside this endpoint is the REST route. The original
+     * is restored even when the callback throws — the rest of the request
+     * still runs after it.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param string   $uri      The request URI the callback should see.
+     * @param callable $callback The work to run.
+     * @return mixed The callback's return value.
+     */
+    public function with_request_uri( string $uri, callable $callback )
+    {
+        // phpcs:disable WordPress.Security.ValidatedSanitizedInput -- restored verbatim, never output.
+        $had_uri      = array_key_exists( 'REQUEST_URI', $_SERVER );
+        $original_uri = $_SERVER['REQUEST_URI'] ?? null;
+
+        $_SERVER['REQUEST_URI'] = $uri;
+
+        try {
+            return $callback();
+        } finally {
+            if ( $had_uri ) {
+                $_SERVER['REQUEST_URI'] = $original_uri;
+            } else {
+                unset( $_SERVER['REQUEST_URI'] );
+            }
+        }
+        // phpcs:enable
     }
 
     /**
