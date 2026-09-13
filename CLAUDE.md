@@ -44,6 +44,8 @@ Always use these agents proactively:
 | `RestApi`                  | ~445  | Modal-content + search endpoints, theme per-block style collection                            |     |
 | `ModalHandler`             | ~240  | Content processing, URL validation, domain allow/block lists                                  |     |
 | `BlockStyleCollector`      | ~245  | Block detection, stylesheet URLs, theme per-block styles                                      |     |
+| `BlockScriptCollector`     | ~150  | Scripts enqueued while modal content renders, dependencies first, for the client to run       |     |
+| `Compat\WPForms`           | ~105  | WPForms settings and form binding for REST-loaded modal content                               |     |
 | `SpeculativeLoading`       | ~155  | Hover prefetch (200ms delay), prefetch hints                                                  |     |
 | `EditorIntegration`        | ~445  | Editor assets, localized config, block context restrictions                                   |     |
 | `ModalTemplatePart`        | ~310  | Template part registration (block themes), file-based fallback                                |     |
@@ -78,16 +80,17 @@ Always use these agents proactively:
 
 **Frontend (`src/frontend/`):**
 
-| File                    | Lines | Purpose                                                                                                                   |
-| ----------------------- | ----- | ------------------------------------------------------------------------------------------------------------------------- |
-| `modal-store.js`        | ~390  | Interactivity API store — reactive state, async content loading, prefetch                                                 |
-| `modal-a11y.js`         | ~95   | Focus trap, inert background, keyboard navigation utilities                                                               |
-| `video-providers.js`    | ~220  | Pure, import-free: host detection, watch/shorts/vimeo → embed URL conversion, aspect-ratio slug → CSS ratio — unit tested |
-| `block-style-loader.js` | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)                                                              |
-| `modal-geometry.js`     | ~55   | Pure: resolves trigger placement against the dialog's own, drops a size slug from the wrong list — unit tested            |
-| `trigger-click.js`      | ~45   | Pure: whether a click inside a group trigger belongs to genuine interactive content — unit tested                         |
-| `index.js`              | ~9    | Entry point                                                                                                               |
-| `style.scss`            | ~77   | Trigger-only styles — inline triggers, group triggers, close triggers                                                     |
+| File                     | Lines | Purpose                                                                                                                   |
+| ------------------------ | ----- | ------------------------------------------------------------------------------------------------------------------------- |
+| `modal-store.js`         | ~390  | Interactivity API store — reactive state, async content loading, prefetch                                                 |
+| `modal-a11y.js`          | ~95   | Focus trap, inert background, keyboard navigation utilities                                                               |
+| `video-providers.js`     | ~220  | Pure, import-free: host detection, watch/shorts/vimeo → embed URL conversion, aspect-ratio slug → CSS ratio — unit tested |
+| `block-style-loader.js`  | ~75   | Dynamic stylesheet loading (prevents FOUC for modal content)                                                              |
+| `block-script-loader.js` | ~135  | Runs the scripts REST-loaded content needs, in order, skipping any the page already has; resolves with the handles added  |
+| `modal-geometry.js`      | ~55   | Pure: resolves trigger placement against the dialog's own, drops a size slug from the wrong list — unit tested            |
+| `trigger-click.js`       | ~45   | Pure: whether a click inside a group trigger belongs to genuine interactive content — unit tested                         |
+| `index.js`               | ~9    | Entry point                                                                                                               |
+| `style.scss`             | ~77   | Trigger-only styles — inline triggers, group triggers, close triggers                                                     |
 
 ### Modal Container Pattern
 
@@ -103,7 +106,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 - Params: `id` (required, integer path param), `modal_id` (optional, string query param for HTTP cache key)
 - HTTP cached: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support
 - Schema: discoverable via `OPTIONS` request
-- Returns: `{ id, title, content, styles, blockStyles: { urls: [...] }, type }`
+- Returns: `{ id, title, content, styles, blockStyles: { urls: [...] }, scripts: [ { handle, src, data, before, after } ], type }`
 
 ### Key Design Patterns
 
@@ -124,6 +127,8 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 14. **The modal-content endpoint simulates the frontend enqueue lifecycle** — `RestApi::simulate_enqueue_scripts()` before the snapshot, `simulate_footer()` after the render, both output-buffered and gated by `pikari_gutenberg_modals_simulate_frontend`. Without them two whole classes of stylesheet never reach the queue. `block-style-variation-styles` (which carries theme variations such as `is-style-eyebrow--1`) needs **both** halves: core calls `wp_enqueue_style()` on it during `wp_enqueue_scripts` _before it is registered_, so `WP_Dependencies` parks it in `queued_before_register`; registration happens later, during `do_blocks()` via `render_block_data`, and promotes it into the queue. Skip the header and it is never parked, so it never lands — which is also why the `$before_queue` snapshot must be taken after the header and before the render. Plugins that render their own markup enqueue in `wp_footer` instead, once they know what the page rendered (WPForms: `wpforms-modern-base`). Measured on WP 7.1 with WPForms.
 
 15. **Placement is container geometry** — The Modal Overlay block's `placement` attribute renders as `data-default-placement` on `.modal-content`; the store resolves it against a trigger override (`placement` in context) and writes the winner to `data-placement` on `.modal-overlay`. All geometry CSS keys off the overlay. Size is contextual: `small`/`large`/`fullscreen` when centered, `narrow`/`wide` on a panel, and a slug from the wrong list is dropped at open time. Panels square off `border-radius` with `!important`, following the fullscreen and mobile precedent; background, padding and shadow stay with the author's chrome Group.
+
+16. **REST-loaded content runs its own scripts** — content set with innerHTML never executes scripts, and a plugin that enqueues while rendering (WPForms, on `wp_footer`) never sends them to the browser. `BlockScriptCollector::collect_render_enqueued_scripts()` diffs `wp_scripts()->queue` from the same post-header snapshot as styles and returns each new handle with its dependencies first (a formless page has no jQuery), carrying `src`, localized `data` and inline `before`/`after`. `block-script-loader.js` runs them after the content lands — styles load before it, scripts after, or they find no markup — skipping any the page already printed (matched by WP_Scripts element id or file pathname), then the store dispatches `pikari-modal:content-loaded` with `loaded`, the handles it appended. The render also runs under `RestApi::with_request_uri()` set to the post's own path, because `add_query_arg()`/`remove_query_arg()` without a URL read REQUEST_URI — which was the REST route, and became WPForms' form action. `Compat\WPForms` covers the two things a generic transport cannot: `wpforms_settings` is echoed by WPForms itself, not localized, so it is added as the `wpforms` handle's `data` (skipped with the file when the page has WPForms); and WPForms binds forms once on document ready, so an inline initialiser calls `wpforms.ready()` when `wpforms` is not in `loaded`. **`wpforms.ready()` is not idempotent** — measured, each call adds another honeypot field to every page form with one. WPForms' own Elementor and OptinMonster integrations call it the same way; skipping it on a fresh load keeps it to once per open. When testing by script, a submit within about a second of opening is refused by WPForms' anti-spam timer ("Please wait a little longer before submitting") — that is WPForms, not the modal.
 
 ### Critical Implementation Gotchas
 
@@ -176,7 +181,10 @@ pikari_gutenberg_modals_content                // General content filter
 // REST API
 pikari_gutenberg_modals_content_response       // Modify modal-content REST response
 pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: HOUR_IN_SECONDS)
-pikari_gutenberg_modals_simulate_frontend      // Run wp_enqueue_scripts + wp_footer in the modal-content endpoint to collect stylesheets (default: true)
+pikari_gutenberg_modals_simulate_frontend      // Run wp_enqueue_scripts + wp_footer in the modal-content endpoint to collect stylesheets and scripts (default: true)
+
+// JavaScript
+pikari-modal:content-loaded                     // DOM event, bubbles from the modal container once REST-loaded content and its scripts have run. detail: { slug, postId, loaded }
 
 // Security
 pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs (default: empty = all allowed)
