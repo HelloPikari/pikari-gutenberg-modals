@@ -7,6 +7,8 @@
 
 namespace Pikari\GutenbergModals\Compat;
 
+use Pikari\GutenbergModals\BlockSupport;
+
 class WPForms
 {
     /**
@@ -36,6 +38,28 @@ JS;
     public function __construct()
     {
         add_filter( 'pikari_gutenberg_modals_content_response', [ $this, 'add_form_support' ] );
+
+        // After WPForms enqueues its footer assets (15), before they print (20).
+        add_action( 'wp_footer', [ $this, 'print_page_initialiser' ], 19 );
+    }
+
+    /**
+     * Print the initialiser on a page that has WPForms and a modal trigger.
+     *
+     * Inline modal content is cloned from the page, so no REST response ever
+     * carries the initialiser to it, and the cloned form is never bound. A REST
+     * response that carries it later is skipped by the script loader, which
+     * matches the `-js-after` element id WP_Scripts prints here.
+     */
+    public function print_page_initialiser(): void
+    {
+        if ( ! BlockSupport::has_modal_triggers() || ! wp_script_is( 'wpforms', 'enqueued' ) ) {
+            return;
+        }
+
+        wp_register_script( self::INIT_HANDLE, false, [ 'wpforms' ], PIKARI_GUTENBERG_MODALS_VERSION, true );
+        wp_add_inline_script( self::INIT_HANDLE, self::INITIALISER );
+        wp_enqueue_script( self::INIT_HANDLE );
     }
 
     /**

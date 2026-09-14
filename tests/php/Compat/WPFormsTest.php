@@ -15,6 +15,7 @@
 namespace Pikari\Tests\GutenbergModals\Compat;
 
 use Pikari\Tests\TestCase;
+use Pikari\GutenbergModals\BlockSupport;
 use Pikari\GutenbergModals\Compat\WPForms;
 use Brain\Monkey\Functions;
 
@@ -117,5 +118,78 @@ class WPFormsTest extends TestCase {
         $this->assertNull( $initialiser['src'] );
         $this->assertStringContainsString( 'pikari-modal:content-loaded', $initialiser['after'] );
         $this->assertStringContainsString( 'wpforms.ready()', $initialiser['after'] );
+    }
+
+    protected function tearDown(): void {
+        $this->set_page_has_modal_triggers( false );
+
+        // Brain Monkey expectations are verified by Mockery, which PHPUnit
+        // does not count — without this a test asserting only them is risky.
+        $this->addToAssertionCount( \Mockery::getContainer()->mockery_getExpectationCount() );
+
+        parent::tearDown();
+    }
+
+    /**
+     * Set whether block rendering found a modal trigger on this page.
+     *
+     * @param bool $found Whether a trigger was found.
+     */
+    private function set_page_has_modal_triggers( bool $found ): void {
+        ( new \ReflectionClass( BlockSupport::class ) )
+            ->getProperty( 'has_modal_triggers' )
+            ->setValue( null, $found );
+    }
+
+    /**
+     * After WPForms enqueues its footer assets (priority 15), before footer
+     * scripts print (priority 20).
+     */
+    public function test_constructor_hooks_the_page_initialiser_before_footer_scripts_print(): void {
+        $compat = new WPForms();
+
+        $this->assertSame( 19, has_action( 'wp_footer', [ $compat, 'print_page_initialiser' ] ) );
+    }
+
+    /**
+     * Inline modal content is cloned from the page, so no REST response ever
+     * carries the initialiser to it. The page has to print it.
+     */
+    public function test_a_page_with_wpforms_and_a_modal_trigger_prints_the_initialiser(): void {
+        if ( ! defined( 'PIKARI_GUTENBERG_MODALS_VERSION' ) ) {
+            define( 'PIKARI_GUTENBERG_MODALS_VERSION', '0.0.0-test' );
+        }
+
+        $this->set_page_has_modal_triggers( true );
+        Functions\when( 'wp_script_is' )->justReturn( true );
+
+        Functions\expect( 'wp_register_script' )
+            ->once()
+            ->with( WPForms::INIT_HANDLE, false, [ 'wpforms' ], PIKARI_GUTENBERG_MODALS_VERSION, true );
+        Functions\expect( 'wp_add_inline_script' )
+            ->once()
+            ->with(
+                WPForms::INIT_HANDLE,
+                \Mockery::on( fn( $code ) => str_contains( $code, 'pikari-modal:content-loaded' ) && str_contains( $code, 'wpforms.ready()' ) )
+            );
+        Functions\expect( 'wp_enqueue_script' )->once()->with( WPForms::INIT_HANDLE );
+
+        ( new WPForms() )->print_page_initialiser();
+    }
+
+    public function test_a_page_without_a_modal_trigger_prints_nothing(): void {
+        $this->set_page_has_modal_triggers( false );
+        Functions\when( 'wp_script_is' )->justReturn( true );
+        Functions\expect( 'wp_register_script' )->never();
+
+        ( new WPForms() )->print_page_initialiser();
+    }
+
+    public function test_a_page_without_wpforms_prints_nothing(): void {
+        $this->set_page_has_modal_triggers( true );
+        Functions\when( 'wp_script_is' )->justReturn( false );
+        Functions\expect( 'wp_register_script' )->never();
+
+        ( new WPForms() )->print_page_initialiser();
     }
 }

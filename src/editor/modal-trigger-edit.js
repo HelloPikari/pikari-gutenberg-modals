@@ -321,8 +321,6 @@ const ModalTriggerEdit = ( { isActive, value, onChange, contentRef } ) => {
 				onClick={ openFromToolbar }
 				isActive={ isActive }
 				className="modal-toolbar-button"
-				shortcutType="primary"
-				shortcutCharacter="m"
 			/>
 			{ showPopover && (
 				<Popover

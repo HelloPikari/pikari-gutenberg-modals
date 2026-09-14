@@ -17,7 +17,7 @@ Always use these agents proactively:
 
 1. **Inline Modal Triggers** — RichText format applied to text in supported blocks
 
-   - Format: `modal-toolbar-button/modal-trigger` (Cmd/Ctrl+M shortcut)
+   - Format: `modal-toolbar-button/modal-trigger`, applied from the block toolbar's More menu. It has no keyboard shortcut on purpose: Cmd+M is macOS's Minimize, taken by the browser before the page sees it, and the other M chords are claimed by core, Chrome's profile switcher, or VoiceOver
    - Editor: `src/editor/modal-format.js` + `src/editor/modal-trigger-edit.js`
    - Server: `BlockSupport::filter_block()` transforms `<span class="modal-trigger">` into interactive `<a>` tags (open mode) or `<button>` tags (close mode)
    - Supported blocks: paragraph, heading, list, list-item, quote, verse, preformatted, navigation-link
@@ -184,7 +184,7 @@ pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: H
 pikari_gutenberg_modals_simulate_frontend      // Run wp_enqueue_scripts + wp_footer in the modal-content endpoint to collect stylesheets and scripts (default: true)
 
 // JavaScript
-pikari-modal:content-loaded                     // DOM event, bubbles from the modal container once REST-loaded content and its scripts have run. detail: { slug, postId, loaded }
+pikari-modal:content-loaded                     // DOM event, bubbles from the modal container once REST-loaded content and its scripts have run, or once an inline-content copy is in the dialog (postId null, loaded []). detail: { slug, postId, loaded }
 
 // Security
 pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs (default: empty = all allowed)
