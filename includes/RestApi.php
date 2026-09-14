@@ -129,6 +129,25 @@ class RestApi
     }
 
     /**
+     * Whether this public endpoint may return a post's content.
+     *
+     * Only what a logged-out visitor could already see on the frontend: a
+     * public status on a viewable post type, and no password. Checking the
+     * status alone served password-protected posts in full, and published
+     * posts of non-public types — WPForms form definitions, navigation menus,
+     * global styles — to anyone who asked by ID.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param \WP_Post|object $post The post.
+     * @return bool True when the content may be returned.
+     */
+    public function is_content_viewable( $post ): bool
+    {
+        return is_post_publicly_viewable( $post ) && '' === (string) $post->post_password;
+    }
+
+    /**
      * Get modal content with styles via REST API.
      *
      * Returns both the rendered content and associated block support styles
@@ -145,7 +164,9 @@ class RestApi
         // Get the post
         $post = get_post($post_id);
 
-        if ( ! $post || $post->post_status !== 'publish' ) {
+        // The same 404 for a hidden post as for a missing one, so the
+        // endpoint never confirms that a post it will not show exists.
+        if ( ! $post || ! $this->is_content_viewable( $post ) ) {
             return new \WP_Error(
                 'post_not_found',
                 __('Post not found or not published.', 'pikari-gutenberg-modals'),

@@ -330,6 +330,9 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 
 == Changelog ==
 
+= 2.2.3 =
+* Security: the modal-content REST endpoint now returns only what a logged-out visitor could already see on the site. It checked only that a post was published, so password-protected posts and published posts of non-public types (such as WPForms form definitions, navigation menus and global styles) could be read by ID. Those requests now get the same "not found" response as a missing post.
+
 = 2.2.2 =
 * WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires pikari-modal:content-loaded as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.
 * WPForms forms now work in template-only modals on a page with no other form. Modal containers rendered at wp_footer priority 999, but WPForms decides its footer CSS, scripts and settings earlier, from the forms it has rendered so far — so a form that only existed inside the modal arrived unstyled, and WPForms rejected its submit with the error hidden inside the closed modal. Containers now render at priority 10.

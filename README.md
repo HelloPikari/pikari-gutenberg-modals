@@ -338,6 +338,10 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 
 ## Changelog
 
+### 2.2.3
+
+- Security: the modal-content REST endpoint now returns only what a logged-out visitor could already see on the site. It checked only that a post was published, so password-protected posts and published posts of non-public types (such as WPForms form definitions, navigation menus and global styles) could be read by ID. Those requests now get the same "not found" response as a missing post.
+
 ### 2.2.2
 
 - WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires `pikari-modal:content-loaded` as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.
