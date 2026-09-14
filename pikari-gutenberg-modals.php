@@ -118,7 +118,6 @@ function pikari_gutenberg_modals_init() {
     new \Pikari\GutenbergModals\BlockSupport();
     new \Pikari\GutenbergModals\GroupModalTriggerSupport();
     new \Pikari\GutenbergModals\RestApi();
-    new \Pikari\GutenbergModals\SpeculativeLoading();
     new \Pikari\GutenbergModals\ModalTemplatePart();
     new \Pikari\GutenbergModals\ModalPatterns();
     new \Pikari\GutenbergModals\Compat\WPForms();

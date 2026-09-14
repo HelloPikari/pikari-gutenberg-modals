@@ -189,9 +189,6 @@ class GroupModalTriggerSupport
                     if ( $post ) {
                         $content_type = $post->post_type;
                         $content_id   = (string) $post_id;
-
-                        // Register for speculative loading
-                        SpeculativeLoading::register_modal_post_id( $post_id );
                     }
                 }
 
@@ -310,10 +307,9 @@ class GroupModalTriggerSupport
             $processor->add_class( 'is-primary-link' );
             $processor->add_class( 'has-pikari-modal' );
 
-            // Enqueue assets and register for speculative loading
+            // Enqueue assets
             $slug = ! empty( $template_part ) ? $template_part : 'modal';
             BlockSupport::set_has_modal_triggers( $slug );
-            SpeculativeLoading::register_modal_post_id( (int) $post_id );
 
             break;
         }
@@ -534,9 +530,6 @@ class GroupModalTriggerSupport
             if ( $post ) {
                 $content_type = $post->post_type;
                 $content_id   = (string) $post_id;
-
-                // Register for speculative loading
-                SpeculativeLoading::register_modal_post_id( $post_id );
 
                 $post_title = get_the_title( $post );
                 if ( ! empty( $post_title ) ) {

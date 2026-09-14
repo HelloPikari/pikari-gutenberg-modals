@@ -46,7 +46,6 @@ Always use these agents proactively:
 | `BlockStyleCollector`      | ~245  | Block detection, stylesheet URLs, theme per-block styles                                      |     |
 | `BlockScriptCollector`     | ~150  | Scripts enqueued while modal content renders, dependencies first, for the client to run       |     |
 | `Compat\WPForms`           | ~105  | WPForms settings and form binding for REST-loaded modal content                               |     |
-| `SpeculativeLoading`       | ~155  | Hover prefetch (200ms delay), prefetch hints                                                  |     |
 | `EditorIntegration`        | ~445  | Editor assets, localized config, block context restrictions                                   |     |
 | `ModalTemplatePart`        | ~310  | Template part registration (block themes), file-based fallback                                |     |
 | `TriggerContext`           | ~185  | Interactivity context shared by every open-mode trigger; derives the dialog's accessible name |
@@ -196,10 +195,6 @@ pikari_gutenberg_modals_blocked_domains        // Domain blocklist for external 
 // Editor
 pikari_gutenberg_modals_modal_sizes            // Add/modify modal size options in the editor dropdown
 pikari_gutenberg_modals_panel_widths           // Add/modify panel width options for edge-placed modals
-
-// Prefetch
-pikari_gutenberg_modals_enable_prefetch_hints  // Enable auto <link rel="prefetch"> (default: false)
-pikari_gutenberg_modals_prefetch_urls          // Modify prefetch URL list
 ```
 
 CSS custom properties (on `:root`, see `modal-overlay/style.css`):
@@ -305,7 +300,6 @@ See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands,
 - `ModalHandler` — URL validation (`validate_url`), content processing, cache duration
 - `RestApi` — Modal-content endpoint, ETag generation, cache headers
 - `BlockStyleCollector` — Block detection in content, stylesheet URL collection
-- `SpeculativeLoading` — Prefetch URL generation, filter hooks
 
 **JavaScript modules to prioritize for testing:**
 

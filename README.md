@@ -127,26 +127,6 @@ add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
 
 Default: `HOUR_IN_SECONDS` (3600 seconds)
 
-#### `pikari_gutenberg_modals_enable_prefetch_hints`
-
-Enable automatic `<link rel="prefetch">` resource hints for modal content URLs detected on the page.
-
-```php
-add_filter( 'pikari_gutenberg_modals_enable_prefetch_hints', '__return_true' );
-```
-
-Default: `false` (hover-based prefetch still works regardless)
-
-#### `pikari_gutenberg_modals_prefetch_urls`
-
-Modify the REST API URLs included in prefetch resource hints.
-
-```php
-add_filter( 'pikari_gutenberg_modals_prefetch_urls', function( $urls, $post_ids ) {
-    return $urls;
-}, 10, 2 );
-```
-
 ### Editor
 
 #### `pikari_gutenberg_modals_modal_sizes`
@@ -337,6 +317,10 @@ The dialog's height budget for a framed video is `--modal-video-max-height` (75v
 YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?v=...`, `youtu.be/...`, `youtube.com/shorts/...` or `vimeo.com/...` link is converted to its embed form before it reaches the iframe — including a `t=` start time. The trigger's own `href` is left alone, so the no-JavaScript fallback still goes to the human-facing page.
 
 ## Changelog
+
+### 2.3.0
+
+- Removed the opt-in prefetch link hints, and with them the `pikari_gutenberg_modals_enable_prefetch_hints` and `pikari_gutenberg_modals_prefetch_urls` filters. They were off by default, and hover prefetch replaced them. When turned on they asked the server to render every modal linked on a page for every visitor, whether or not anyone opened one; they pointed at a different URL from the one the modal fetches, so they never warmed its cache; and a prefetch link cannot carry a logged-in viewer's REST nonce. Hover prefetch is unchanged, and a site that still adds either filter loses only the extra requests.
 
 ### 2.2.3
 
