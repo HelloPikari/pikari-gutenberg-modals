@@ -8,7 +8,11 @@ import {
 	__experimentalHeading as Heading,
 } from '@wordpress/components';
 /* eslint-enable @wordpress/no-unsafe-wp-apis */
-import { LinkControl, RichTextToolbarButton } from '@wordpress/block-editor';
+import {
+	LinkControl,
+	RichTextShortcut,
+	RichTextToolbarButton,
+} from '@wordpress/block-editor';
 import {
 	useState,
 	useEffect,
@@ -323,6 +327,12 @@ const ModalTriggerEdit = ( { isActive, value, onChange, contentRef } ) => {
 				className="modal-toolbar-button"
 				shortcutType="primary"
 				shortcutCharacter="m"
+			/>
+			{ /* The props above only draw the tooltip hint; this binds the key. */ }
+			<RichTextShortcut
+				type="primary"
+				character="m"
+				onUse={ openFromToolbar }
 			/>
 			{ showPopover && (
 				<Popover
