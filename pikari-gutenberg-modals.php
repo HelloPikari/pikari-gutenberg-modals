@@ -3,7 +3,7 @@
  * Plugin Name: Pikari Gutenberg Modals
  * Plugin URI:  https://pikari.io
  * Description: Modal windows for the WordPress Gutenberg block editor. Adds accessible modal dialogs
- * Version:     2.2.4
+ * Version:     2.3.0
  * Author:      Pikari Inc.
  * Author URI:  https://pikari.io
  * License:     GPL-2.0-or-later
@@ -25,7 +25,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 /**
  * Plugin version.
  */
-define( 'PIKARI_GUTENBERG_MODALS_VERSION', '2.2.4' );
+define( 'PIKARI_GUTENBERG_MODALS_VERSION', '2.3.0' );
 
 /**
  * Plugin directory path.
