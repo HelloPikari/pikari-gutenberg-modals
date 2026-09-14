@@ -170,12 +170,23 @@ class BlockSupport
 
         // Pass REST API base URL to the frontend store.
         // Uses rest_url() so it works with any permalink structure (including Plain).
-        wp_interactivity_config(
-            'pikari-modal',
-            [
-                'restUrl' => rest_url( 'pikari-gutenberg-modals/v1/' ),
-            ]
-        );
+        $config = [
+            'restUrl' => rest_url( 'pikari-gutenberg-modals/v1/' ),
+        ];
+
+        // A logged-in viewer's modal content is rendered as them only when the
+        // request carries WordPress's REST nonce; without it, a form that checks
+        // a logged-in user's nonce (WPForms) refuses their submit. Never for a
+        // logged-out visitor: page caches serve that HTML to everyone, and a
+        // nonce past its lifetime turns every modal request into a 403.
+        if ( is_user_logged_in() ) {
+            $config['nonce'] = wp_create_nonce( 'wp_rest' );
+
+            // Where the store asks core for a fresh nonce once this one is refused.
+            $config['ajaxUrl'] = admin_url( 'admin-ajax.php' );
+        }
+
+        wp_interactivity_config( 'pikari-modal', $config );
 
         // Enqueue block styles for blocks rendered inside the modal template part.
         // These render in wp_footer after WordPress's normal block style enqueuing.

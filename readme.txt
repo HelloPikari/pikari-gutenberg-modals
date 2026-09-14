@@ -132,7 +132,7 @@ Modify the REST API response for modal content.
 = Cache & Performance =
 
 **pikari_gutenberg_modals_cache_duration**
-Customize the browser cache duration for modal content REST API responses.
+Customize the browser cache duration for modal content REST API responses to logged-out visitors. A logged-in viewer's response is rendered for them and never cached.
 
 `add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
     return 2 * HOUR_IN_SECONDS; // Cache for 2 hours instead of 1
@@ -332,6 +332,7 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 
 = 2.2.3 =
 * Security: the modal-content REST endpoint now returns only what a logged-out visitor could already see on the site. It checked only that a post was published, so password-protected posts and published posts of non-public types (such as WPForms form definitions, navigation menus and global styles) could be read by ID. Those requests now get the same "not found" response as a missing post.
+* WPForms forms in modals that load a post or page now submit for logged-in users. The modal content was rendered as a logged-out request, and WPForms checks its security nonce only for logged-in users, so their submits were refused as a security issue. A logged-in viewer's modal content is now fetched with WordPress's REST nonce and rendered as them; those responses are private and never cached, and logged-out visitors are unaffected.
 
 = 2.2.2 =
 * WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires pikari-modal:content-loaded as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.

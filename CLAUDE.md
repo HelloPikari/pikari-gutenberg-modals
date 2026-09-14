@@ -106,7 +106,8 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 - Permission: public, so it serves only what a logged-out visitor could already see. `RestApi::is_content_viewable()` requires `is_post_publicly_viewable()` (a public status and a viewable post type) and no post password; everything else gets the same `post_not_found` 404, so the endpoint never confirms that a hidden post exists. Before 2.2.3 it checked `post_status` alone, and served password-protected posts in full and published posts of non-public types — WPForms form definitions, navigation menus, global styles, template parts — to anyone who asked by ID
 - Params: `id` (required, integer path param), `modal_id` (optional, string query param for HTTP cache key)
-- HTTP cached: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support
+- Renders as the viewer: for a logged-in viewer, `BlockSupport::set_has_modal_triggers()` adds a `wp_rest` nonce to the store config, and the store sends it as `X-WP-Nonce` (with `cache: 'no-cache'`), so core's cookie auth runs the render as that user. Without it the render is anonymous, and WPForms, which prints and checks `wpforms[nonce]` only for logged-in users, refused a logged-in user's submit. On a 403 (a nonce past its lifetime, or one issued before a log-in or log-out in another tab) the store asks core's `rest-nonce` admin-ajax action for a fresh nonce (`ajaxUrl` in the same config) and retries once with it, as `api-fetch` does, remembering it for later opens; if that fails too it falls back to the logged-out render. A logged-out visitor's page never carries a nonce: page caches serve that HTML to everyone, and a stale nonce would turn every modal request into a 403
+- HTTP cached for logged-out visitors: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support. A logged-in viewer's response is never stored — core's own no-cache headers are sent after the endpoint's and win, and `RestApi::cache_headers()`'s `private, no-store` is the backstop for a site that filters `rest_send_nocache_headers` off — and is never answered with a 304 (the `If-Modified-Since` check ignores the ETag). The ETag includes the user ID, hover prefetch is skipped, and every response, 304s included, has `X-WP-Nonce` in `Vary`, so a browser never answers the authenticated fetch with an anonymous body it cached from the same URL
 - Schema: discoverable via `OPTIONS` request
 - Returns: `{ id, title, content, styles, blockStyles: { urls: [...] }, scripts: [ { handle, src, data, before, after } ], type }`
 
@@ -182,7 +183,7 @@ pikari_gutenberg_modals_content                // General content filter
 
 // REST API
 pikari_gutenberg_modals_content_response       // Modify modal-content REST response
-pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: HOUR_IN_SECONDS)
+pikari_gutenberg_modals_cache_duration         // HTTP cache max-age for logged-out visitors (default: HOUR_IN_SECONDS); a logged-in viewer's response is never stored
 pikari_gutenberg_modals_simulate_frontend      // Run wp_enqueue_scripts + wp_footer in the modal-content endpoint to collect stylesheets and scripts (default: true)
 
 // JavaScript

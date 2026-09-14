@@ -314,4 +314,61 @@ class RestApiTest extends TestCase
 
         $this->assertFalse( ( new RestApi() )->is_content_viewable( $this->visibility_double() ) );
     }
+
+    /**
+     * A logged-in viewer's content is rendered as that viewer — WPForms adds
+     * a per-user nonce to it — so the ETag has to tell viewers apart, or a
+     * browser holding the anonymous body is told 304 and keeps a form that
+     * cannot be submitted.
+     */
+    public function test_etag_differs_between_viewers(): void
+    {
+        $api  = new RestApi();
+        $post = $this->post_double();
+
+        $this->assertNotSame(
+            $api->generate_etag( $post, '2.2.3', true, 0 ),
+            $api->generate_etag( $post, '2.2.3', true, 7 )
+        );
+    }
+
+    /**
+     * A logged-in viewer's render carries their own nonces, and a shared cache
+     * that stored it would hand it to the next visitor. Core's own no-cache
+     * headers normally win for a logged-in REST request; this is the backstop
+     * for a site that filters rest_send_nocache_headers off.
+     */
+    public function test_a_logged_in_viewers_response_is_never_stored(): void
+    {
+        $headers = ( new RestApi() )->cache_headers( '"etag"', 1757808000, true );
+
+        $this->assertSame( 'private, no-store', $headers['Cache-Control'] );
+    }
+
+    public function test_an_anonymous_response_stays_publicly_cacheable(): void
+    {
+        $headers = ( new RestApi() )->cache_headers( '"etag"', 1757808000, false );
+
+        $this->assertSame( 'public, max-age=3600, must-revalidate', $headers['Cache-Control'] );
+        $this->assertSame( '"etag"', $headers['ETag'] );
+    }
+
+    /**
+     * The same URL answers anonymous and authenticated requests. Without the
+     * nonce header in Vary, a browser that cached the anonymous body serves it
+     * to the authenticated fetch without asking the server.
+     */
+    public function test_every_response_varies_on_the_rest_nonce(): void
+    {
+        if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
+            define( 'HOUR_IN_SECONDS', 3600 );
+        }
+
+        $api = new RestApi();
+
+        foreach ( [ true, false ] as $personal ) {
+            $vary = array_map( 'trim', explode( ',', $api->cache_headers( '"etag"', 1757808000, $personal )['Vary'] ) );
+            $this->assertContains( 'X-WP-Nonce', $vary );
+        }
+    }
 }

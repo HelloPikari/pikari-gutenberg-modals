@@ -33,6 +33,7 @@ class BlockSupportTest extends TestCase {
         Functions\when( 'wp_enqueue_style' )->justReturn( null );
         Functions\when( 'wp_interactivity_config' )->justReturn( null );
         Functions\when( 'rest_url' )->justReturn( 'https://example.com/wp-json/' );
+        Functions\when( 'is_user_logged_in' )->justReturn( false );
 
         $this->instance = new BlockSupport();
 
@@ -308,5 +309,68 @@ class BlockSupportTest extends TestCase {
     public function test_containers_render_before_plugins_choose_footer_assets(): void
     {
         $this->assertSame( 10, has_action( 'wp_footer', [ $this->instance, 'render_single_modal_container' ] ) );
+    }
+
+    /**
+     * Capture what set_has_modal_triggers() hands the store as config.
+     *
+     * @return array|null The config array, or null when none was set.
+     */
+    private function capture_store_config(): ?array
+    {
+        $captured = null;
+
+        Functions\when( 'wp_interactivity_config' )->alias(
+            function ( $store_name, $config ) use ( &$captured ) {
+                if ( 'pikari-modal' === $store_name ) {
+                    $captured = $config;
+                }
+            }
+        );
+
+        BlockSupport::set_has_modal_triggers();
+
+        return $captured;
+    }
+
+    /**
+     * Without WordPress's REST nonce the modal-content endpoint renders as a
+     * logged-out request, and a form expecting a logged-in user's nonce
+     * (WPForms) refuses that user's submit.
+     */
+    public function test_a_logged_in_viewer_gets_a_rest_nonce_in_the_store_config(): void
+    {
+        Functions\when( 'is_user_logged_in' )->justReturn( true );
+        Functions\when( 'wp_create_nonce' )->alias(
+            function ( $action ) {
+                return 'nonce-for-' . $action;
+            }
+        );
+        Functions\when( 'admin_url' )->alias(
+            function ( $path ) {
+                return 'https://example.com/wp-admin/' . $path;
+            }
+        );
+
+        $config = $this->capture_store_config();
+
+        $this->assertSame( 'nonce-for-wp_rest', $config['nonce'] );
+        // Where the store asks core for a fresh nonce once this one is refused.
+        $this->assertSame( 'https://example.com/wp-admin/admin-ajax.php', $config['ajaxUrl'] );
+    }
+
+    /**
+     * A nonce in page HTML a cache serves to everyone would outlive its 24
+     * hours and turn every visitor's modal request into a 403.
+     */
+    public function test_a_logged_out_visitor_gets_no_nonce(): void
+    {
+        Functions\when( 'is_user_logged_in' )->justReturn( false );
+
+        $config = $this->capture_store_config();
+
+        $this->assertArrayHasKey( 'restUrl', $config );
+        $this->assertArrayNotHasKey( 'nonce', $config );
+        $this->assertArrayNotHasKey( 'ajaxUrl', $config );
     }
 }
