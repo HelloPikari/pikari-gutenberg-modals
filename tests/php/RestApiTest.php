@@ -333,9 +333,10 @@ class RestApiTest extends TestCase
     }
 
     /**
-     * Core sends no-cache headers for a logged-in REST request; this endpoint
-     * replaced them with a public max-age, which would let a shared cache hand
-     * one user's render, nonce included, to the next.
+     * A logged-in viewer's render carries their own nonces, and a shared cache
+     * that stored it would hand it to the next visitor. Core's own no-cache
+     * headers normally win for a logged-in REST request; this is the backstop
+     * for a site that filters rest_send_nocache_headers off.
      */
     public function test_a_logged_in_viewers_response_is_never_stored(): void
     {
@@ -346,10 +347,6 @@ class RestApiTest extends TestCase
 
     public function test_an_anonymous_response_stays_publicly_cacheable(): void
     {
-        if ( ! defined( 'HOUR_IN_SECONDS' ) ) {
-            define( 'HOUR_IN_SECONDS', 3600 );
-        }
-
         $headers = ( new RestApi() )->cache_headers( '"etag"', 1757808000, false );
 
         $this->assertSame( 'public, max-age=3600, must-revalidate', $headers['Cache-Control'] );

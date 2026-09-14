@@ -416,7 +416,8 @@ const { state, actions } = store( 'pikari-modal', {
 				// String concatenation is used instead of the URL constructor because
 				// plain permalinks put the route in ?rest_route= query param, and the
 				// URL constructor resolves relative paths against the pathname only.
-				const { restUrl, nonce } = getConfig();
+				const config = getConfig();
+				const { restUrl, nonce, ajaxUrl } = config;
 				const separator = restUrl.includes( '?' ) ? '&' : '?';
 				const fetchUrl = `${ restUrl }modal-content/${ postId }${ separator }modal_id=${ modalId }`;
 
@@ -434,10 +435,35 @@ const { state, actions } = store( 'pikari-modal', {
 					response = yield fetch( fetchUrl );
 				}
 
-				// A nonce past its lifetime fails the whole request. The
-				// anonymous render still beats no content.
+				// A nonce past its lifetime, or one issued before a log-in or
+				// log-out in another tab, fails the whole request. Ask core for
+				// a fresh one once, as api-fetch does, and keep it for later
+				// opens; failing that, the anonymous render beats no content.
 				if ( nonce && response.status === 403 ) {
-					response = yield fetch( fetchUrl );
+					let freshNonce = '';
+
+					if ( ajaxUrl ) {
+						const nonceResponse = yield fetch( `${ ajaxUrl }?action=rest-nonce`, {
+							cache: 'no-store',
+						} );
+
+						if ( nonceResponse.ok ) {
+							freshNonce = String( yield nonceResponse.text() ).trim();
+						}
+					}
+
+					// admin-ajax answers 0 to a viewer who is no longer logged in.
+					if ( freshNonce && freshNonce !== '0' ) {
+						config.nonce = freshNonce;
+						response = yield fetch( fetchUrl, {
+							headers: { 'X-WP-Nonce': freshNonce },
+							cache: 'no-cache',
+						} );
+					}
+
+					if ( response.status === 403 ) {
+						response = yield fetch( fetchUrl );
+					}
 				}
 
 				if ( ! response.ok ) {

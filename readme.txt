@@ -132,7 +132,7 @@ Modify the REST API response for modal content.
 = Cache & Performance =
 
 **pikari_gutenberg_modals_cache_duration**
-Customize the browser cache duration for modal content REST API responses.
+Customize the browser cache duration for modal content REST API responses to logged-out visitors. A logged-in viewer's response is rendered for them and never cached.
 
 `add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
     return 2 * HOUR_IN_SECONDS; // Cache for 2 hours instead of 1

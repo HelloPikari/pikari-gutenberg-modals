@@ -12,7 +12,8 @@
  * to the real global one.
  *
  * Only what the real WP_HTML_Tag_Processor and ModalHandler::validate_url()
- * call is stubbed here — see BlockSupportRenderTest::load_wp_html_api() for
+ * call is stubbed here, plus what BlockSupport::set_has_modal_triggers()
+ * calls while these tests render triggers (is_user_logged_in()) — see BlockSupportRenderTest::load_wp_html_api() for
  * how this is loaded, and why it is not Brain\Monkey.
  *
  * @package Pikari\Tests\GutenbergModals

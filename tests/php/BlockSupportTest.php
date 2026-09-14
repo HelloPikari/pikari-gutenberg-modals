@@ -346,10 +346,17 @@ class BlockSupportTest extends TestCase {
                 return 'nonce-for-' . $action;
             }
         );
+        Functions\when( 'admin_url' )->alias(
+            function ( $path ) {
+                return 'https://example.com/wp-admin/' . $path;
+            }
+        );
 
         $config = $this->capture_store_config();
 
         $this->assertSame( 'nonce-for-wp_rest', $config['nonce'] );
+        // Where the store asks core for a fresh nonce once this one is refused.
+        $this->assertSame( 'https://example.com/wp-admin/admin-ajax.php', $config['ajaxUrl'] );
     }
 
     /**
@@ -364,5 +371,6 @@ class BlockSupportTest extends TestCase {
 
         $this->assertArrayHasKey( 'restUrl', $config );
         $this->assertArrayNotHasKey( 'nonce', $config );
+        $this->assertArrayNotHasKey( 'ajaxUrl', $config );
     }
 }

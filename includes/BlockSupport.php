@@ -181,6 +181,9 @@ class BlockSupport
         // nonce past its lifetime turns every modal request into a 403.
         if ( is_user_logged_in() ) {
             $config['nonce'] = wp_create_nonce( 'wp_rest' );
+
+            // Where the store asks core for a fresh nonce once this one is refused.
+            $config['ajaxUrl'] = admin_url( 'admin-ajax.php' );
         }
 
         wp_interactivity_config( 'pikari-modal', $config );

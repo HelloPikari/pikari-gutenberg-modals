@@ -178,14 +178,20 @@ class RestApi
         // version — see generate_etag() for why the version belongs in it.
         // A request carrying the REST nonce runs as the logged-in viewer, and
         // their render (nonces included) must never validate as anyone else's.
+        $user_id       = get_current_user_id();
         $simulate      = self::should_simulate_frontend();
-        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION, $simulate, get_current_user_id());
+        $etag          = $this->generate_etag($post, PIKARI_GUTENBERG_MODALS_VERSION, $simulate, $user_id);
         $last_modified = strtotime($post->post_modified_gmt);
 
-        // Check for conditional request (If-None-Match or If-Modified-Since)
-        $cached_response = $this->check_conditional_request($request, $etag, $last_modified);
-        if ( $cached_response !== null ) {
-            return $cached_response;
+        // Check for conditional request (If-None-Match or If-Modified-Since).
+        // Never for a logged-in viewer: their response is never stored, so a
+        // 304 cannot be right for them, and the If-Modified-Since check ignores
+        // the ETag, so it would tell them to keep an anonymous body.
+        if ( 0 === $user_id ) {
+            $cached_response = $this->check_conditional_request($request, $etag, $last_modified);
+            if ( $cached_response !== null ) {
+                return $cached_response;
+            }
         }
 
         // Instantiating BlockSupport here registers render_block filters that
@@ -518,8 +524,13 @@ class RestApi
         // WP_REST_Response(null, 304) is correct for WP 6.8+: serve_request()
         // checks `null !== $result` and skips body output when data is null.
         $response = new \WP_REST_Response( null, 304 );
-        $response->header( 'ETag', $etag );
-        $response->header( 'Last-Modified', gmdate( 'D, d M Y H:i:s', $last_modified ) . ' GMT' );
+
+        // A 304 only ever answers a logged-out request, and carries the same
+        // validators, Cache-Control and Vary as the response it stands for.
+        foreach ( $this->cache_headers( $etag, (int) $last_modified, false ) as $name => $value ) {
+            $response->header( $name, $value );
+        }
+
         return $response;
     }
 
@@ -527,9 +538,11 @@ class RestApi
      * The cache headers for a modal-content response.
      *
      * A logged-in viewer's render is theirs alone — WPForms, for one, adds a
-     * per-user nonce — so it is never stored. Core already sends no-cache
-     * headers for a logged-in REST request; the public max-age used to replace
-     * them. Every response varies on the REST nonce header, because one URL
+     * per-user nonce — so it is never stored. Core sends its own no-cache
+     * headers for a logged-in REST request after these, and they win;
+     * private, no-store is the backstop for a site that filters
+     * rest_send_nocache_headers off. Every response varies on the REST nonce
+     * header, because one URL
      * answers both kinds of request and a browser holding the anonymous body
      * would otherwise serve it to the authenticated fetch.
      *
