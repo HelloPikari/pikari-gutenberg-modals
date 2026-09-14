@@ -298,4 +298,15 @@ class BlockSupportTest extends TestCase {
 
         $this->assertSame( '', $output );
     }
+
+    /**
+     * Plugins choose their footer assets from what the page rendered: WPForms
+     * does at wp_footer 15. A form that exists only in a template-only modal
+     * rendered at 999 counted for nothing, and the page got no WPForms CSS,
+     * JS or settings.
+     */
+    public function test_containers_render_before_plugins_choose_footer_assets(): void
+    {
+        $this->assertSame( 10, has_action( 'wp_footer', [ $this->instance, 'render_single_modal_container' ] ) );
+    }
 }
