@@ -265,6 +265,8 @@ Turning it off means plugin and block-style-variation CSS, and plugin scripts su
 
 Content from the REST endpoint is inserted with `innerHTML`, which never runs scripts. The endpoint therefore also returns the classic scripts the content enqueued while rendering — URL, localized data and inline before/after, dependencies first — and the modal runs any the page does not already have, then dispatches a bubbling `pikari-modal:content-loaded` event on the modal container.
 
+Inline content, from a Modal Content block on the same page, fires the same event once its copy is in the dialog, with `postId` null and `loaded` empty: nothing is fetched, and the page already has its scripts.
+
 A script that was already on the page has not seen the new markup, so this is where to bind it. `event.detail` carries `slug` (the template part), `postId`, and `loaded` — the handles this open appended — so a script that initialised itself from a fresh load can be told apart from one that was already there:
 
 ```js
@@ -335,6 +337,10 @@ The dialog's height budget for a framed video is `--modal-video-max-height` (75v
 YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?v=...`, `youtu.be/...`, `youtube.com/shorts/...` or `vimeo.com/...` link is converted to its embed form before it reaches the iframe — including a `t=` start time. The trigger's own `href` is left alone, so the no-JavaScript fallback still goes to the human-facing page.
 
 ## Changelog
+
+### 2.2.2
+
+- WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires `pikari-modal:content-loaded` as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.
 
 ### 2.2.1
 

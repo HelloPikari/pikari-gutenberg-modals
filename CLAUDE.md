@@ -184,7 +184,7 @@ pikari_gutenberg_modals_cache_duration         // HTTP cache max-age (default: H
 pikari_gutenberg_modals_simulate_frontend      // Run wp_enqueue_scripts + wp_footer in the modal-content endpoint to collect stylesheets and scripts (default: true)
 
 // JavaScript
-pikari-modal:content-loaded                     // DOM event, bubbles from the modal container once REST-loaded content and its scripts have run. detail: { slug, postId, loaded }
+pikari-modal:content-loaded                     // DOM event, bubbles from the modal container once REST-loaded content and its scripts have run, or once an inline-content copy is in the dialog (postId null, loaded []). detail: { slug, postId, loaded }
 
 // Security
 pikari_gutenberg_modals_allowed_domains        // Domain allowlist for external URLs (default: empty = all allowed)

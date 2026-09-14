@@ -320,6 +320,17 @@ const { state, actions } = store( 'pikari-modal', {
 						modalBody.innerHTML = htmlContent;
 					}
 					state.content = sourceElement.innerHTML;
+
+					// A clone set with innerHTML is invisible to scripts that
+					// bound on document ready, so announce it as the REST path
+					// does. The page already has its scripts: nothing loaded.
+					modal.dispatchEvent(
+						// eslint-disable-next-line no-undef
+						new CustomEvent( 'pikari-modal:content-loaded', {
+							bubbles: true,
+							detail: { slug, postId: null, loaded: [] },
+						} )
+					);
 				} else {
 					state.hasError = true;
 					state.errorMessage = 'Inline modal content not found on this page.';

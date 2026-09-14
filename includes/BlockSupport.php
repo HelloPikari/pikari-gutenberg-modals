@@ -129,6 +129,16 @@ class BlockSupport
     }
 
     /**
+     * Whether block rendering has found a modal trigger on this page.
+     *
+     * @return bool
+     */
+    public static function has_modal_triggers(): bool
+    {
+        return self::$has_modal_triggers;
+    }
+
+    /**
      * Mark that modal triggers exist on this page and enqueue all modal assets.
      *
      * Centralizes asset enqueuing so every trigger type (inline links, buttons,
