@@ -18,7 +18,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 Apply the modal action to a Group or Button, or highlight text and use the inline format.
 
-* **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+* **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more
 * **Modal Action on Group and Button** — Set the "Modal" panel's Action to open a clickable card (Group) or a button, with auto-detected link, custom URL, or inline content modes
 * **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger for fully customizable close buttons
 
@@ -85,7 +85,7 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 Apply the modal action to a Group or Button, or highlight text and use the inline format.
 
-1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
+1. **Inline Modal Triggers** — Select text, choose Modal Trigger from the block toolbar's More menu, and search for content to link
 2. **Modal action on Group and Button** — Set the "Modal" panel's Action to "Open a modal" on a Group or Button block. On a Group, the plugin detects the primary link (from a button, image, heading, etc.) inside it to make the whole card clickable; a Button's own link is the default. Both also support a custom URL or inline content.
 3. **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger. Use inside modal template parts to create custom close buttons with full design flexibility.
 
