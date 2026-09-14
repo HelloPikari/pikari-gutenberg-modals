@@ -341,6 +341,7 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 ### 2.2.3
 
 - Security: the modal-content REST endpoint now returns only what a logged-out visitor could already see on the site. It checked only that a post was published, so password-protected posts and published posts of non-public types (such as WPForms form definitions, navigation menus and global styles) could be read by ID. Those requests now get the same "not found" response as a missing post.
+- WPForms forms in modals that load a post or page now submit for logged-in users. The modal content was rendered as a logged-out request, and WPForms checks its security nonce only for logged-in users, so their submits were refused as a security issue. A logged-in viewer's modal content is now fetched with WordPress's REST nonce and rendered as them; those responses are private and never cached, and logged-out visitors are unaffected.
 
 ### 2.2.2
 

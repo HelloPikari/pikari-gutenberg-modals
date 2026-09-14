@@ -416,12 +416,29 @@ const { state, actions } = store( 'pikari-modal', {
 				// String concatenation is used instead of the URL constructor because
 				// plain permalinks put the route in ?rest_route= query param, and the
 				// URL constructor resolves relative paths against the pathname only.
-				const { restUrl } = getConfig();
+				const { restUrl, nonce } = getConfig();
 				const separator = restUrl.includes( '?' ) ? '&' : '?';
 				const fetchUrl = `${ restUrl }modal-content/${ postId }${ separator }modal_id=${ modalId }`;
 
-				// Yield the fetch promise - Interactivity API will handle awaiting
-				const response = yield fetch( fetchUrl );
+				// Yield the fetch promise - Interactivity API will handle awaiting.
+				// A logged-in viewer's content is rendered as them only when the
+				// request carries the REST nonce; no-cache keeps the browser from
+				// answering with an anonymous body it holds for the same URL.
+				let response;
+				if ( nonce ) {
+					response = yield fetch( fetchUrl, {
+						headers: { 'X-WP-Nonce': nonce },
+						cache: 'no-cache',
+					} );
+				} else {
+					response = yield fetch( fetchUrl );
+				}
+
+				// A nonce past its lifetime fails the whole request. The
+				// anonymous render still beats no content.
+				if ( nonce && response.status === 403 ) {
+					response = yield fetch( fetchUrl );
+				}
 
 				if ( ! response.ok ) {
 					throw new Error( `HTTP error! status: ${ response.status }` );
@@ -636,6 +653,13 @@ const { state, actions } = store( 'pikari-modal', {
 
 			// Skip if no postId or already prefetched/prefetching
 			if ( ! postId || state.prefetchedPosts[ postId ] ) {
+				return;
+			}
+
+			// A logged-in viewer's response is never stored, so there is
+			// nothing to warm; fetching without the nonce would store an
+			// anonymous body instead.
+			if ( getConfig().nonce ) {
 				return;
 			}
 

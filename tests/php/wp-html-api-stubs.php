@@ -95,6 +95,10 @@ function rest_url( $path = '' ) {
     return 'https://example.com/wp-json/' . ltrim( $path, '/' );
 }
 
+function is_user_logged_in() {
+    return false;
+}
+
 /**
  * Copied verbatim from wp-includes/kses.php::wp_kses_uri_attributes(),
  * minus its apply_filters() extension point (unused here), so
