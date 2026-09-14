@@ -4,7 +4,7 @@ Tags: modal, popup, dialog, gutenberg, block, accessible
 Requires at least: 6.8
 Tested up to: 7.1
 Requires PHP: 8.4
-Stable tag: 2.2.1
+Stable tag: 2.2.2
 License: GPL-2.0-or-later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -18,7 +18,7 @@ Pikari Gutenberg Modals adds accessible modal dialogs to the WordPress block edi
 
 Apply the modal action to a Group or Button, or highlight text and use the inline format.
 
-* **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+* **Inline Modal Triggers** — Apply the modal format to any text in paragraphs, headings, lists, quotes, and more
 * **Modal Action on Group and Button** — Set the "Modal" panel's Action to open a clickable card (Group) or a button, with auto-detected link, custom URL, or inline content modes
 * **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger for fully customizable close buttons
 
@@ -85,7 +85,7 @@ Yes. Block themes get full Site Editor template part support. Hybrid themes (cla
 
 Apply the modal action to a Group or Button, or highlight text and use the inline format.
 
-1. **Inline Modal Triggers** — Select text, press Cmd/Ctrl+M (or use the toolbar button), and search for content to link
+1. **Inline Modal Triggers** — Select text, choose Modal Trigger from the block toolbar's More menu, and search for content to link
 2. **Modal action on Group and Button** — Set the "Modal" panel's Action to "Open a modal" on a Group or Button block. On a Group, the plugin detects the primary link (from a button, image, heading, etc.) inside it to make the whole card clickable; a Button's own link is the default. Both also support a custom URL or inline content.
 3. **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger. Use inside modal template parts to create custom close buttons with full design flexibility.
 
@@ -254,6 +254,8 @@ Turning it off means plugin and block-style-variation CSS, and plugin scripts su
 
 Content from the REST endpoint is inserted with innerHTML, which never runs scripts. The endpoint therefore also returns the classic scripts the content enqueued while rendering — URL, localized data and inline before/after, dependencies first — and the modal runs any the page does not already have, then dispatches a bubbling `pikari-modal:content-loaded` event on the modal container.
 
+Inline content, from a Modal Content block on the same page, fires the same event once its copy is in the dialog, with `postId` null and `loaded` empty: nothing is fetched, and the page already has its scripts.
+
 A script that was already on the page has not seen the new markup, so this is where to bind it. `event.detail` carries `slug` (the template part), `postId`, and `loaded` — the handles this open appended — so a script that initialised itself from a fresh load can be told apart from one that was already there:
 
 `document.addEventListener( 'pikari-modal:content-loaded', function ( event ) {
@@ -327,6 +329,9 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 5. Template part customization in the Site Editor
 
 == Changelog ==
+
+= 2.2.2 =
+* WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires pikari-modal:content-loaded as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.
 
 = 2.2.1 =
 * Theme block style variations now style blocks inside modal template parts on the frontend. Core adds each variation's rule (for example is-style-eyebrow--N) to a stylesheet that a block theme prints in the page head, and a modal template part renders in wp_footer, after that stylesheet has printed — so an eyebrow paragraph in a modal lost its uppercase styling on the frontend while the editor showed it correctly. Inline CSS added to an already-printed stylesheet while modal containers render is now printed after them.
