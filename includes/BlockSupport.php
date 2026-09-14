@@ -340,9 +340,6 @@ class BlockSupport
             if ( $post ) {
                 $content_type = $post->post_type;
                 $content_id   = (string) $post_id;
-
-                // Register for speculative loading
-                SpeculativeLoading::register_modal_post_id( $post_id );
             }
         }
 
@@ -653,12 +650,6 @@ class BlockSupport
         if ( ! $modal_config ) {
             // Return unchanged if configuration is invalid
             return $full_tag;
-        }
-
-        // Register post ID for speculative loading (prefetch) — skip for inline content
-        $content_id = $modal_config['content_id'];
-        if ( $modal_config['content_type'] !== 'inline' && is_numeric( $content_id ) ) {
-            SpeculativeLoading::register_modal_post_id( (int) $content_id );
         }
 
         // Register template part slug for container rendering
