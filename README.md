@@ -341,6 +341,9 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 ### 2.2.2
 
 - WPForms forms now work in inline-content modals. Inline content is copied from a Modal Content block on the page, and WPForms sets up forms once, on page load — so the copy in the dialog arrived unbound, and submitting it reloaded the page instead of sending over AJAX. The copy now fires `pikari-modal:content-loaded` as REST-loaded content does, and a page with both WPForms and a modal trigger prints the listener that binds it.
+- WPForms forms now work in template-only modals on a page with no other form. Modal containers rendered at `wp_footer` priority 999, but WPForms decides its footer CSS, scripts and settings earlier, from the forms it has rendered so far — so a form that only existed inside the modal arrived unstyled, and WPForms rejected its submit with the error hidden inside the closed modal. Containers now render at priority 10.
+- Selecting text inside a modal template part no longer logs WordPress 6.8 deprecation warnings. The editor now reads the template part being edited from `core/editor` instead of the deprecated `core/edit-site` selectors.
+- The Modal Trigger toolbar button no longer advertises a Cmd/Ctrl+M shortcut. It never bound a key, and on macOS the browser takes Cmd+M for Minimize. Apply the format from the block toolbar's More menu.
 
 ### 2.2.1
 
