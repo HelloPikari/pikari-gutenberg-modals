@@ -11,10 +11,12 @@ export default function useIsModalTemplatePart( clientId ) {
 	return useSelect(
 		( select ) => {
 			// Check 1: Directly editing a modal template part in the Site Editor.
-			// The core/edit-site store only exists in the Site Editor, not the post editor.
-			const editSite = select( 'core/edit-site' );
-			if ( editSite?.getEditedPostType?.() === 'wp_template_part' ) {
-				const editedId = editSite?.getEditedPostId?.() || '';
+			// core/editor holds the edited entity in both editors; the
+			// core/edit-site equivalents are deprecated since WordPress 6.8.
+			// Not every block editor screen registers core/editor.
+			const editor = select( 'core/editor' );
+			if ( editor?.getCurrentPostType?.() === 'wp_template_part' ) {
+				const editedId = editor?.getCurrentPostId?.() || '';
 
 				// Look up the template part entity to check its area
 				const coreStore = select( 'core' );
