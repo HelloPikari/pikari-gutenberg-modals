@@ -268,4 +268,50 @@ class RestApiTest extends TestCase
             ( new RestApi() )->request_uri_for_post( $this->post_double() )
         );
     }
+
+    /**
+     * Build a post object carrying what visibility is decided from.
+     *
+     * @param string $password The post password.
+     * @return object Post double.
+     */
+    private function visibility_double( string $password = '' ): object
+    {
+        $post                = new \stdClass();
+        $post->ID            = 365;
+        $post->post_type     = 'page';
+        $post->post_status   = 'publish';
+        $post->post_password = $password;
+
+        return $post;
+    }
+
+    /**
+     * The endpoint is public, so it may only return what a logged-out visitor
+     * could already see on the frontend. It checked post_status alone, which
+     * served password-protected posts in full and published posts of
+     * non-public types — WPForms form definitions among them.
+     */
+    public function test_a_publicly_viewable_post_without_a_password_is_served(): void
+    {
+        $post = $this->visibility_double();
+
+        Functions\expect( 'is_post_publicly_viewable' )->once()->with( $post )->andReturn( true );
+
+        $this->assertTrue( ( new RestApi() )->is_content_viewable( $post ) );
+    }
+
+    public function test_a_password_protected_post_is_not_served(): void
+    {
+        Functions\when( 'is_post_publicly_viewable' )->justReturn( true );
+
+        $this->assertFalse( ( new RestApi() )->is_content_viewable( $this->visibility_double( 'qa-secret' ) ) );
+    }
+
+    public function test_a_post_that_is_not_publicly_viewable_is_not_served(): void
+    {
+        Functions\when( 'is_post_publicly_viewable' )->justReturn( false );
+
+        $this->assertFalse( ( new RestApi() )->is_content_viewable( $this->visibility_double() ) );
+    }
 }

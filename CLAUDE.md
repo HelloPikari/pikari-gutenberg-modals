@@ -104,7 +104,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 **Modal Content** — `GET /pikari-gutenberg-modals/v1/modal-content/{id}`
 
-- Permission: public
+- Permission: public, so it serves only what a logged-out visitor could already see. `RestApi::is_content_viewable()` requires `is_post_publicly_viewable()` (a public status and a viewable post type) and no post password; everything else gets the same `post_not_found` 404, so the endpoint never confirms that a hidden post exists. Before 2.2.3 it checked `post_status` alone, and served password-protected posts in full and published posts of non-public types — WPForms form definitions, navigation menus, global styles, template parts — to anyone who asked by ID
 - Params: `id` (required, integer path param), `modal_id` (optional, string query param for HTTP cache key)
 - HTTP cached: ETag, Last-Modified, Cache-Control (1 hour), 304 Not Modified support
 - Schema: discoverable via `OPTIONS` request
