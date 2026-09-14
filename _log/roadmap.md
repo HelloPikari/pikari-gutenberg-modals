@@ -1,6 +1,6 @@
 # Roadmap — pikari-gutenberg-modals
 
-**Last updated:** 2026-09-12 (Session 4)
+**Last updated:** 2026-09-14 (Session 5)
 
 What we've done, at a glance. Narrative lives in the session logs.
 
@@ -125,13 +125,49 @@ hugging their edge. Cost two traps, both recorded as gotcha 16: the editor's cen
 equally specific _and_ `!important` _and_ later in source order, and it uses logical properties.
 In PR #122.
 
+~~Eyebrow styling lost in a footer-rendered template part~~ — ✅ DONE (Session 5, 2.2.1). Core
+appends each `is-style-*--N` rule to a handle a block theme already printed in `<head>`, and never
+prints a done handle again — measured **0 bytes** reprinted. Containers now print inline CSS added
+to done handles as `modal-late-inline-styles`. PR #130, todo #506.
+
+~~WPForms in inline-content modals was never bound~~ — ✅ DONE (Session 5, 2.2.2). Firing
+`content-loaded` alone changed nothing — measured: no listener existed on an inline page. A
+page-side initialiser now prints at `wp_footer` 19 when WPForms and a trigger are both present.
+PR #132, todo #505.
+
+~~A form only inside a template-only modal got no WPForms CSS or JS~~ — ✅ DONE (Session 5,
+2.2.2). WPForms picks footer assets at 15 from forms already rendered; containers rendered at 999.
+Moved to **10**; hid on Kindler because its footer form is on every page. PR #135, todo #509.
+
+~~Deprecated `core/edit-site` selectors in the editor~~ — ✅ DONE (Session 5, 2.2.2). Read from
+`core/editor`; 0 deprecations in both editors. PR #134.
+
+~~Cmd/Ctrl+M never worked~~ — ✅ DONE (Session 5, 2.2.2) by dropping it, not binding it: macOS
+takes Cmd+M for Minimize before the page does, and the nearby chords belong to Chrome, VoiceOver
+or core. #133 closed; PR #136, todo #472.
+
+~~SECURITY: the modal endpoint served hidden posts to anyone~~ — ✅ DONE (Session 5, 2.2.3). Checked
+`post_status` alone since the initial commit: password-protected posts in full, and WPForms form
+definitions, menus, global styles and template parts by ID. **Live Kindler returned form 593's
+settings; 404 after install.** Now `is_post_publicly_viewable()` and no password, same 404 as
+missing. PR #139, todo #512.
+
+~~Logged-in users' WPForms submits refused in REST-loaded modals~~ — ✅ DONE (Session 5, 2.2.3).
+The render ran anonymously; WPForms prints and checks its nonce only for logged-in users. Core
+REST cookie auth for logged-in viewers only, never stored or 304'd, user in the ETag, `Vary:
+X-WP-Nonce`, stale nonce refreshed via `rest-nonce`. PR #141, todo #510.
+
+~~Opt-in prefetch link hints~~ — ✅ DONE (Session 5, 2.3.0) — removed with both filters. Unused,
+rendered every linked modal per page view when on, and their URLs lacked `modal_id` so they
+never warmed the fetch they were for. PR #145, todo #514.
+
+~~A QA screenshot shipped in every release ZIP since 2.0.0~~ — ✅ DONE (Session 5, 2.3.0). PR #143.
+
 ## Open
 
-- **A WPForms form inside a modal probably cannot submit** (todo #484). No WPForms JS is
-  collected — the style fix collects stylesheets only, and there is no script-loading
-  counterpart to `block-style-loader.js`. Worse, the rendered form's `action` is the REST
-  route itself, because WPForms builds it from the current request URI. Untested end to end;
-  the styling fix makes the form _look_ right, which makes this easier to miss.
+- ~~**A WPForms form inside a modal probably cannot submit** (todo #484)~~ — ✅ DONE (Session 5).
+  It could not; 2.2.0 collects and runs the render's scripts under the post's own REQUEST_URI, and
+  2.2.2–2.2.3 closed the inline, template-only and logged-in variants (see Released).
 - **WPForms blocks crash any `BlockPreview`** (todo #492, upstream). `updateCopyPasteContent`
   reads `wp.data.select('core/block-editor').getBlockAttributes(clientId)` from the **default**
   registry while `BlockPreview` renders in an isolated one, so it gets null and throws on the
@@ -146,17 +182,15 @@ In PR #122.
   twice in `BlockSupport`. Two of four reviewers wanted it extracted; deferred because it
   touches three shipped handlers. The a11y attribute set is what is duplicated, and this plugin
   has already shipped a mouse-only trigger once — per-branch render tests are the mitigation.
-- **The modal-content endpoint is uncached server-side.** It now additionally runs every
-  `wp_enqueue_scripts` and `wp_footer` callback on the site, on a public unauthenticated route
-  that hover-prefetch can fire N times across a Query Loop. ~52ms measured on Kindler. The ETag
-  is already the right cache key; it just is not used as one. Deliberately not added this close
-  to a tag. (Unhooking `wp_enqueue_global_styles` was proposed as ~25ms of pure waste and
-  **measured at 52.6 vs 52.2ms with identical output** — rejected, not shipped.)
+- **The modal-content endpoint is uncached server-side.** It runs every `wp_enqueue_scripts` and
+  `wp_footer` callback on a public route that hover-prefetch can fire N times across a Query
+  Loop. ~52ms measured on Kindler. The ETag is already the right cache key for logged-out
+  responses; since 2.2.3 a logged-in render is per-user and must never share it. 2.3.0's removal
+  of prefetch hints took away the path that rendered every modal on every page view.
+  (Unhooking `wp_enqueue_global_styles` was **measured at 52.6 vs 52.2ms** — rejected.)
 - **CI masks every test failure.** `.github/workflows/ci.yml` sets `continue-on-error: true`
-  on the whole `test` job, commented "remove once test suites have real tests". There are now
-  **112 PHP and 171 JS tests**. Still live as of Session 4 — confirmed at `ci.yml:173` — so
-  PR #122's green Test tick was again verified by reading the job log, not the badge.
-  Being handled by the CI agent.
+  on the whole `test` job. There are now **151 PHP and 192 JS tests**. Every Session 5 merge was
+  verified by reading the Test job log, not the badge. Being handled by the CI agent.
 - **The `WP_CORE_DIR` CI fix will be reverted by the next template sync.** `ci.yml` is a
   synced monorepo file and this plugin's `skip-sync` covers only `tests/php/bootstrap.php`.
   Right fix is the template, not `skip-sync` — every plugin has this.
@@ -164,28 +198,27 @@ In PR #122.
   forces 2-space nested-list indent; markdownlint MD007 demands 4. No nested list in any
   `.md` can satisfy both — the cause of every MD007 violation in the repo. One-line fix
   either way: set MD007 to 2, or add `*.md` to `.prettierignore`.
-- **Four QA steps still need a human** — `_plans/444-modal-overlay-templates-qa.md`. Ten
-  of fourteen were driven in a real browser; the remainder are the Edit round-trip with
-  unsaved changes, stale carry-over, a hybrid theme (wp-env has no classic theme), and
-  the Site Editor inserter — the last being the one thing the rename could break silently.
-- **Cmd/Ctrl+M has never worked** (todo #472). `RichTextToolbarButton`'s
-  `shortcutType`/`shortcutCharacter` only draw the tooltip hint; binding needs
-  `RichTextShortcut`, which the plugin has never used. Dates to the initial commit, and
-  CLAUDE.md advertises it as a feature. Pre-existing, found during 2.0.0 QA.
+- **Hybrid-theme editor QA is the last 2.0.0 check** (todo #459). Session 5 drove the rest in
+  wp-env: the pencil keeps unsaved work, a second inline trigger inherits the first's template
+  (pre-existing, information only), the Site Editor inserter still offers Content Area, and the
+  opacity layout was approved. wp-env has no classic theme.
+- ~~**Cmd/Ctrl+M has never worked** (todo #472)~~ — ✅ DONE (Session 5) — dropped; see Released.
+- **Kindler `/about/` has a `link`-source trigger that renders nothing** — before and after 2.2.2
+  alike. Post 12 stores `pikariModalContentSource: "link"`, yet no trigger reaches the HTML.
+  Undecided whether it is content (no resolvable primary link) or a plugin failing silently.
+  Kindler's content thread is #485.
 - **`core/cover` is not a trigger block.** Surfaced rebuilding Kindler: a Cover had to be
   wrapped in a Group to carry the modal action. Fine, but worth deciding whether Cover
-  belongs in the default `pikari_gutenberg_modals_trigger_blocks` list.
+  belongs in the default `pikari_gutenberg_modals_trigger_blocks` list (todo #473).
 
 - ~~**Release-tag provenance**~~ — resolved by circumstance. `update-dist.yml` no longer
   exists (dist retired in #114), so nothing force-moves the tag. The v2.0.0 release went
   out clean and the "set the tag by hand" workaround is retired with it.
-- **Composer consumers cannot get 2.0.0** until the package index exists (todo #455,
-  needs Steve's admin on the HelloPikari account). CCLF is pinned `^1.0.0` and resolves
-  through `hellopikari.github.io/packages`, which is not live. The release ZIP is the
-  only distribution route today.
+- ~~**Composer consumers cannot get 2.0.0**~~ — resolved. The package index at
+  `hellopikari.github.io/packages` is live and lists every release through 2.3.0 (todo #455).
 - **Fix CCLF's modal template part** now the chrome refactor has shipped (todo #436).
   Only matters if it has a customised part — Kindler turned out not to, so check before
-  assuming. Blocked behind the Composer index in any case.
+  assuming. The index no longer blocks it; CCLF's own Composer branch does (todo #478).
 - **Guardian Capital is on v0.3.2** — a git checkout far enough behind that upgrading it
   is its own piece of work, not a version bump.
 - **`@wordpress/primitives` 4.47 (#85)** — cannot merge. Peer-requires React 19 while
@@ -198,7 +231,15 @@ In PR #122.
   `package.json`, plus `readme.txt`'s Stable tag. Not `composer.json`.
 - `main` is protected by a ruleset requiring a PR, with no bypass — local merges still
   have to go up as a branch and a PR.
-- **Browser QA is possible**: wp-env logs in as `admin`/`password`, Kindler's ddev admin
-  is `pikari`, and an auth cookie can be minted with `wp eval` when a password is unknown.
-  Earlier sessions wrongly recorded the editor as untestable and deferred real work.
+- **Release flow, as run five times in Session 5.** The branch prefix picks the version
+  (`feature/` minor, `fix/` patch, anything else patch). A PR must be up to date with `main`, so
+  every merge that lands puts the rest behind: `gh pr update-branch`, then `--auto` merge, one at a
+  time. Each merge that moves the draft opens "chore: Bump version to X", which merges itself.
+  Publish only once the draft title is plain, then run "Regenerate package index".
+- **Browser QA is possible**: wp-env logs in as `admin`/`password`. Kindler's local admin row is
+  live Kindler's (kindler.pikari.io) `pikari` account, so Session 5 did not log in there — editor QA ran in wp-env,
+  and frontend QA on Kindler needs no login. Earlier sessions wrongly recorded the editor as
+  untestable and deferred real work.
+- **QA both logged in and logged out.** #510 passed every logged-out check and failed only for
+  an admin; #509 passed on Kindler only because every Kindler page has another form.
 - Testing traps: `_plans/testing-notes.md`. Read it before writing a test page.
