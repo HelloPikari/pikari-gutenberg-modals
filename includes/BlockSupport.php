@@ -61,8 +61,12 @@ class BlockSupport
             add_filter( "render_block_{$block_name}", [ $this, 'filter_close_mode_block' ], 10, 2 );
         }
 
-        // Add single modal container to footer (only renders if triggers were found)
-        add_action('wp_footer', [$this, 'render_single_modal_container'], 999);
+        // Add modal containers to the footer (only renders if triggers were found).
+        // Priority 10 renders them before plugins choose footer assets from
+        // what the page rendered (WPForms at 15) and before footer scripts
+        // print (20). At 999 a form only inside a template-only modal got no
+        // WPForms CSS, JS or settings, and its submit was rejected.
+        add_action('wp_footer', [$this, 'render_single_modal_container'], 10);
     }
 
     /**
@@ -1048,10 +1052,10 @@ class BlockSupport
         }
 
         // Snapshot the styles queue and block support CSS before rendering.
-        // Modal containers render at wp_footer priority 999, after
-        // wp_print_footer_scripts (priority 20) has already run. Styles
-        // enqueued or generated during template part rendering would
-        // otherwise never be output.
+        // Stylesheets printed in <head> never print again, and stored block
+        // support CSS was collected at wp_footer 1, so CSS that template part
+        // rendering appends or generates is printed here rather than left to
+        // wp_print_footer_scripts (priority 20).
         $style_collector    = new BlockStyleCollector();
         $before_queue       = wp_styles()->queue;
         $before_inline      = $style_collector->snapshot_printed_inline_styles();
