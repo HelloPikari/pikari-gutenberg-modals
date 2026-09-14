@@ -14,7 +14,7 @@ Adds modal dialogs to the WordPress block editor. Content (posts, pages, custom 
 
 Apply the modal action to a Group or Button, or highlight text and use the inline format.
 
-- **Inline Modal Triggers** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more (Cmd/Ctrl+M shortcut)
+- **Inline Modal Triggers** — Apply the modal format to text in paragraphs, headings, lists, quotes, and more
 - **Modal Action on Group and Button** — Set the "Modal" panel's Action to open a clickable card (Group) or a button, with auto-detected link, custom URL, or inline content modes
 - **Close Triggers** — Set the Action to "Close the modal" on a Group, Button, or inline trigger for fully customizable close buttons
 
