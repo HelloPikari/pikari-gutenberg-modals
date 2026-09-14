@@ -194,6 +194,64 @@ class BlockStyleCollector
     }
 
     /**
+     * Snapshot how much inline CSS each already-printed stylesheet carries.
+     *
+     * Pair with collect_inline_styles_added_since() around a render that runs
+     * after the page's styles have printed.
+     *
+     * @return array<string,int> Handle => number of 'after' entries.
+     */
+    public function snapshot_printed_inline_styles(): array
+    {
+        $wp_styles = wp_styles();
+        $snapshot  = array();
+
+        foreach ( $wp_styles->done as $handle ) {
+            $after               = $wp_styles->registered[ $handle ]->extra['after'] ?? array();
+            $snapshot[ $handle ] = is_array( $after ) ? count( $after ) : 0;
+        }
+
+        return $snapshot;
+    }
+
+    /**
+     * Collect inline CSS added to already-printed stylesheets since a snapshot.
+     *
+     * Inline CSS added with wp_add_inline_style() to a handle that has printed
+     * is silently never output. Core does exactly that for block style variations: the
+     * render_block_data filter appends each instance's rule (e.g.
+     * is-style-eyebrow--N) to block-style-variation-styles, which a block
+     * theme prints in <head>, so a template part rendered in wp_footer loses it.
+     *
+     * Handles not printed at snapshot time are skipped — do_items() prints
+     * their inline CSS itself.
+     *
+     * @param array<string,int> $snapshot From snapshot_printed_inline_styles().
+     * @return string The added CSS, or an empty string.
+     */
+    public function collect_inline_styles_added_since( array $snapshot ): string
+    {
+        $wp_styles = wp_styles();
+        $css       = '';
+
+        foreach ( $snapshot as $handle => $count ) {
+            $after = $wp_styles->registered[ $handle ]->extra['after'] ?? array();
+
+            if ( ! is_array( $after ) ) {
+                continue;
+            }
+
+            foreach ( array_slice( $after, $count ) as $inline ) {
+                if ( ! empty( $inline ) ) {
+                    $css .= $inline;
+                }
+            }
+        }
+
+        return $css;
+    }
+
+    /**
      * Get the URL for a style handle from wp_styles().
      *
      * @param string $handle    The style handle to look up.

@@ -249,4 +249,109 @@ class BlockStyleCollectorTest extends TestCase {
 
         unlink( $temp_file );
     }
+
+    /**
+     * Inline CSS added to a stylesheet that already printed is returned.
+     *
+     * The case measured on a block theme: the page body renders before
+     * wp_head(), so block-style-variation-styles prints in <head>. A modal
+     * template part rendered at wp_footer then gets its variation rule
+     * (is-style-eyebrow--N) appended to that same handle, and it never prints.
+     */
+    public function test_collect_inline_styles_added_since_returns_css_appended_to_a_printed_handle(): void {
+        $page_rule  = ':root :where(p.is-style-eyebrow--9){text-transform: uppercase;}';
+        $modal_rule = ':root :where(p.is-style-eyebrow--2043){text-transform: uppercase;}';
+
+        $mock_styles = $this->create_mock_wp_styles(
+            [ 'block-style-variation-styles' ],
+            [
+                'block-style-variation-styles' => [
+                    'after' => [ $page_rule ],
+                ],
+            ]
+        );
+        $mock_styles->done = [ 'block-style-variation-styles' ];
+
+        Functions\when( 'wp_styles' )->justReturn( $mock_styles );
+
+        $snapshot = $this->collector->snapshot_printed_inline_styles();
+
+        $mock_styles->registered['block-style-variation-styles']->extra['after'][] = $modal_rule;
+
+        $css = $this->collector->collect_inline_styles_added_since( $snapshot );
+
+        $this->assertStringContainsString( 'is-style-eyebrow--2043', $css );
+        $this->assertStringNotContainsString( 'is-style-eyebrow--9', $css, 'CSS that already printed must not print twice.' );
+    }
+
+    /**
+     * A printed handle with no inline CSS yet still counts from zero.
+     */
+    public function test_collect_inline_styles_added_since_covers_a_printed_handle_that_had_no_inline_css(): void {
+        $mock_styles = $this->create_mock_wp_styles(
+            [ 'global-styles' ],
+            [
+                'global-styles' => [ 'src' => '' ],
+            ]
+        );
+        $mock_styles->done = [ 'global-styles' ];
+
+        Functions\when( 'wp_styles' )->justReturn( $mock_styles );
+
+        $snapshot = $this->collector->snapshot_printed_inline_styles();
+
+        $mock_styles->registered['global-styles']->extra['after'] = [ '.late { color: red; }' ];
+
+        $this->assertSame( '.late { color: red; }', $this->collector->collect_inline_styles_added_since( $snapshot ) );
+    }
+
+    /**
+     * A handle that was not printed at snapshot time is left alone.
+     *
+     * Newly enqueued handles are printed by wp_styles()->do_items(), which
+     * outputs their inline CSS itself — returning it here would duplicate it.
+     */
+    public function test_collect_inline_styles_added_since_ignores_handles_printed_after_the_snapshot(): void {
+        $mock_styles = $this->create_mock_wp_styles( [] );
+        $mock_styles->done = [];
+
+        Functions\when( 'wp_styles' )->justReturn( $mock_styles );
+
+        $snapshot = $this->collector->snapshot_printed_inline_styles();
+
+        $late = $this->create_mock_wp_styles(
+            [ 'wp-block-button-theme-style' ],
+            [
+                'wp-block-button-theme-style' => [
+                    'src'   => '/button.css',
+                    'after' => [ '.wp-block-button { border-radius: 0; }' ],
+                ],
+            ]
+        );
+        $mock_styles->registered = $late->registered;
+        $mock_styles->done       = [ 'wp-block-button-theme-style' ];
+
+        $this->assertSame( '', $this->collector->collect_inline_styles_added_since( $snapshot ) );
+    }
+
+    /**
+     * Nothing appended since the snapshot returns an empty string.
+     */
+    public function test_collect_inline_styles_added_since_returns_empty_when_nothing_was_appended(): void {
+        $mock_styles = $this->create_mock_wp_styles(
+            [ 'block-style-variation-styles' ],
+            [
+                'block-style-variation-styles' => [
+                    'after' => [ ':root :where(p.is-style-eyebrow--9){text-transform: uppercase;}' ],
+                ],
+            ]
+        );
+        $mock_styles->done = [ 'block-style-variation-styles' ];
+
+        Functions\when( 'wp_styles' )->justReturn( $mock_styles );
+
+        $snapshot = $this->collector->snapshot_printed_inline_styles();
+
+        $this->assertSame( '', $this->collector->collect_inline_styles_added_since( $snapshot ) );
+    }
 }
