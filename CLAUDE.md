@@ -96,6 +96,8 @@ Always use these agents proactively:
 
 One or more modal containers are rendered in `wp_footer` (only if triggers are detected on the page) — one per unique template part slug used by triggers. The default container ID is `pikari-modal`; custom template parts produce `pikari-modal--{slug}`. Content is loaded dynamically via REST API and inserted with proper escaping. The store name is `pikari-modal` with `data-wp-interactive="pikari-modal"`.
 
+The render runs at `wp_footer` priority **10**, and the number is load-bearing. Plugins choose footer assets from what the page has rendered (WPForms at 15, from the forms it has output), and footer scripts print at 20, so a template part's content has to exist by then. The render used to run at 999, and a WPForms form that only existed inside a template-only modal got no CSS, JS or `wpforms_settings`. The form showed unstyled, WPForms rejected its native submit as "Attempt to submit corrupted post data", and the error landed inside the modal, closed again by the reload. A page with any other form hid the bug. The cost of 10: a trigger printed by another plugin's `wp_footer` callback after 10 finds no container. Block themes render their footer template part before `wp_footer`, so that is a narrow case.
+
 Each container's `aria-labelledby` points at a title element that doesn't exist until modal content loads, so assistive tech falls through to `aria-label` at open time. The container ships a static `aria-label="Modal dialog"`; the store overwrites it with the trigger's own accessible name (the `label` key in Interactivity context, derived once for every trigger surface by `TriggerContext::build()`) when the modal opens, and restores the original on close.
 
 ### REST API Endpoints
