@@ -328,6 +328,9 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted watch, youtu.be, sh
 
 == Changelog ==
 
+= 2.2.1 =
+* Theme block style variations now style blocks inside modal template parts on the frontend. Core adds each variation's rule (for example is-style-eyebrow--N) to a stylesheet that a block theme prints in the page head, and a modal template part renders in wp_footer, after that stylesheet has printed — so an eyebrow paragraph in a modal lost its uppercase styling on the frontend while the editor showed it correctly. Inline CSS added to an already-printed stylesheet while modal containers render is now printed after them.
+
 = 2.2.0 =
 * Forms and other script-driven content now work in modals that load a post or page. Modal content is inserted with innerHTML, which never runs scripts, and plugins such as WPForms enqueue theirs on wp_footer — so a WPForms form in a modal looked right but could not submit. The endpoint now returns the scripts the content enqueued, dependencies first with their localized data and inline scripts, and the modal runs any the page does not already have.
 * Modal content renders with the request URI set to the post's own path, so a form that builds its action from the current URL posts to the page rather than the REST route.
