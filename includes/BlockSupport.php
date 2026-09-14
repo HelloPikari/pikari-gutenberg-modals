@@ -1042,7 +1042,9 @@ class BlockSupport
         // wp_print_footer_scripts (priority 20) has already run. Styles
         // enqueued or generated during template part rendering would
         // otherwise never be output.
+        $style_collector    = new BlockStyleCollector();
         $before_queue       = wp_styles()->queue;
+        $before_inline      = $style_collector->snapshot_printed_inline_styles();
         $before_support_css = wp_style_engine_get_stylesheet_from_context( 'block-supports', array( 'prettify' => false ) );
 
         foreach ( self::$modal_template_slugs as $slug ) {
@@ -1054,6 +1056,17 @@ class BlockSupport
         $new_handles = array_diff( wp_styles()->queue, $before_queue );
         if ( ! empty( $new_handles ) ) {
             wp_styles()->do_items( $new_handles );
+        }
+
+        // Print inline CSS appended to stylesheets that already printed —
+        // block style variation rules (is-style-eyebrow--N) among them.
+        $late_inline_css = $style_collector->collect_inline_styles_added_since( $before_inline );
+        if ( '' !== $late_inline_css ) {
+            printf(
+                '<style id="modal-late-inline-styles">%s</style>',
+                // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- CSS from wp_add_inline_style(), which core prints unescaped.
+                $late_inline_css
+            );
         }
 
         // Print block support CSS (layout, spacing) generated during rendering.
