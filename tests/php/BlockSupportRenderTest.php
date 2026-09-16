@@ -326,4 +326,159 @@ class BlockSupportRenderTest extends TestCase
 
         $this->assertSame( 'example.com', $context['label'] ?? null );
     }
+
+    /**
+     * A button's own link: the inner <a> takes the trigger, with prefetch.
+     *
+     * Pins every attribute, not a sample, so extracting the decoration
+     * shared by the button modes cannot quietly drop one.
+     */
+    public function test_button_link_mode_attributes(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="https://example.com/page">Go</a></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'          => 'open',
+                'pikariModalAccessibleLabel' => 'Watch the talk',
+            ],
+        ];
+
+        $result = $instance->filter_button_block( $input, $block );
+
+        $this->assertSame( [ 'class' => 'wp-block-button' ], $this->attributes_of( $result, 0 ) );
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'aria-label'                  => 'Watch the talk',
+                'class'                       => 'has-pikari-modal wp-block-button__link wp-element-button',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'postId'        => 'https://example.com/page',
+                    'modalId'       => 'url-https://example.com/page',
+                    'contentSource' => 'url',
+                    'label'         => 'Watch the talk',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleTriggerClick',
+                'data-wp-on--mouseenter'      => 'actions.handlePrefetchHover',
+                'data-wp-on--mouseleave'      => 'actions.handlePrefetchLeave',
+                'href'                        => 'https://example.com/page',
+                'id'                          => 'modal-trigger-test',
+            ],
+            $this->attributes_of( $result, 1 )
+        );
+    }
+
+    /**
+     * Inline content on an <a>: the href points at the in-page anchor, and
+     * there is no prefetch or author label.
+     */
+    public function test_button_inline_mode_attributes(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><a class="wp-block-button__link">Details</a></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'inline',
+                'pikariModalInlineAnchor'  => 'promo',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal wp-block-button__link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'inline',
+                    'inlineAnchor'  => 'promo',
+                    'modalId'       => 'inline-promo',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleTriggerClick',
+                'href'                        => '#promo',
+                'id'                          => 'modal-trigger-test',
+            ],
+            $this->attributes_of( $instance->filter_button_block( $input, $block ), 1 )
+        );
+    }
+
+    /**
+     * Template only on an href-less <a>: an ARIA button, keyboard-operable.
+     */
+    public function test_button_template_only_mode_attributes(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><a class="wp-block-button__link">Book</a></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'none',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal wp-block-button__link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'none',
+                    'modalId'       => 'template-modal',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleTriggerClick',
+                'data-wp-on--keydown'         => 'actions.handleTriggerKeydown',
+                'id'                          => 'modal-trigger-test',
+                'role'                        => 'button',
+                'tabindex'                    => '0',
+            ],
+            $this->attributes_of( $instance->filter_button_block( $input, $block ), 1 )
+        );
+    }
+
+    /**
+     * Every attribute on one tag, in a form two renders can be compared by.
+     *
+     * Attribute order and class order carry no meaning, so both are sorted,
+     * and the Interactivity context is decoded so a difference reads as data.
+     *
+     * @param string $html  Rendered markup.
+     * @param int    $index Zero-based position of the tag in the markup.
+     * @return array<string, mixed> Attribute name to value.
+     */
+    private function attributes_of( string $html, int $index ): array
+    {
+        $processor = new \WP_HTML_Tag_Processor( $html );
+        for ( $i = 0; $i <= $index; $i++ ) {
+            $this->assertTrue( $processor->next_tag() );
+        }
+
+        $attributes = [];
+        foreach ( $processor->get_attribute_names_with_prefix( '' ) as $name ) {
+            $attributes[ $name ] = $processor->get_attribute( $name );
+        }
+
+        if ( isset( $attributes['class'] ) ) {
+            $classes = preg_split( '/\s+/', trim( (string) $attributes['class'] ) );
+            sort( $classes );
+            $attributes['class'] = implode( ' ', $classes );
+        }
+
+        if ( isset( $attributes['data-wp-context'] ) ) {
+            $attributes['data-wp-context'] = json_decode( (string) $attributes['data-wp-context'], true );
+        }
+
+        ksort( $attributes );
+
+        return $attributes;
+    }
 }

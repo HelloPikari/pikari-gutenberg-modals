@@ -312,4 +312,266 @@ class GroupModalTriggerSupportRenderTest extends TestCase
         $context = json_decode( (string) $processor->get_attribute( 'data-wp-context' ), true );
         $this->assertSame( 'example.com', $context['label'] ?? null );
     }
+
+    /**
+     * A card whose link is found by URL: the wrapper delegates clicks and is
+     * named by the link, which carries the dialog popup.
+     *
+     * Pins every attribute, not a sample, so extracting the decoration
+     * shared by the five group modes cannot quietly drop one.
+     */
+    public function test_group_url_link_mode_attributes(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p><a href="https://example.com/page">Read</a></p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalPrimaryLinkId' => '{"linkType":"url","linkUrl":"https://example.com/page"}',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $this->assertSame(
+            [
+                'aria-labelledby'        => 'modal-trigger-link-test',
+                'class'                  => 'has-pikari-modal-trigger wp-block-group',
+                'data-wp-context'        => [
+                    'postId'        => 'https://example.com/page',
+                    'modalId'       => 'url-https://example.com/page',
+                    'contentSource' => 'url',
+                    'label'         => 'example.com',
+                ],
+                'data-wp-interactive'    => 'pikari-modal',
+                'data-wp-on--click'      => 'actions.handleGroupTriggerClick',
+                'data-wp-on--mouseenter' => 'actions.handlePrefetchHover',
+                'data-wp-on--mouseleave' => 'actions.handlePrefetchLeave',
+                'role'                   => 'group',
+            ],
+            $this->attributes_of( $result, 0 )
+        );
+
+        $this->assertSame(
+            [
+                'aria-haspopup' => 'dialog',
+                'class'         => 'has-pikari-modal is-primary-link',
+                'href'          => 'https://example.com/page',
+                'id'            => 'modal-trigger-link-test',
+            ],
+            $this->attributes_of( $result, 2 )
+        );
+    }
+
+    /**
+     * A Query Loop card whose link is a post-link block marked in phase 1.
+     * The markers must be gone and the same attributes as the URL mode set.
+     */
+    public function test_group_post_link_mode_attributes(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><h3 class="wp-block-post-title">' .
+            '<a class="pikari-post-link-candidate" data-pikari-post-id="87" data-pikari-block-name="core/post-title" href="https://example.com/team/nick/">Nick</a>' .
+            '</h3></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'link',
+                'pikariModalPrimaryLinkId' => '{"blockPath":"2","blockName":"core/post-title","linkType":"post-link","linkUrl":null}',
+            ],
+        ];
+
+        $result = $instance->filter_group_block( $input, $block );
+
+        $this->assertSame(
+            [
+                'aria-labelledby'        => 'modal-trigger-link-test',
+                'class'                  => 'has-pikari-modal-trigger wp-block-group',
+                'data-wp-context'        => [
+                    'postId'  => '87',
+                    'modalId' => 'post-87',
+                    'label'   => 'Post 87',
+                ],
+                'data-wp-interactive'    => 'pikari-modal',
+                'data-wp-on--click'      => 'actions.handleGroupTriggerClick',
+                'data-wp-on--mouseenter' => 'actions.handlePrefetchHover',
+                'data-wp-on--mouseleave' => 'actions.handlePrefetchLeave',
+                'role'                   => 'group',
+            ],
+            $this->attributes_of( $result, 0 )
+        );
+
+        $this->assertSame(
+            [
+                'aria-haspopup' => 'dialog',
+                'class'         => 'has-pikari-modal is-primary-link',
+                'href'          => 'https://example.com/team/nick/',
+                'id'            => 'modal-trigger-link-test',
+            ],
+            $this->attributes_of( $result, 2 )
+        );
+    }
+
+    /**
+     * Inline content: the whole card is an ARIA button, with no prefetch
+     * because there is nothing to fetch.
+     */
+    public function test_group_inline_mode_attributes(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p>Card content</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'inline',
+                'pikariModalInlineAnchor'  => 'promo',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'aria-label'                  => 'Open modal dialog',
+                'class'                       => 'has-pikari-modal-trigger wp-block-group',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'inline',
+                    'inlineAnchor'  => 'promo',
+                    'modalId'       => 'inline-promo',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleGroupTriggerClick',
+                'data-wp-on--keydown'         => 'actions.handleTriggerKeydown',
+                'id'                          => 'modal-trigger-test',
+                'role'                        => 'button',
+                'tabindex'                    => '0',
+            ],
+            $this->attributes_of( $instance->filter_group_block( $input, $block ), 0 )
+        );
+    }
+
+    /**
+     * Template only, with an author label: the label names both the button
+     * and the dialog.
+     */
+    public function test_group_template_only_mode_attributes(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p>Book a conversation</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'          => 'open',
+                'pikariModalContentSource'   => 'none',
+                'pikariModalTemplatePart'    => 'booking',
+                'pikariModalAccessibleLabel' => 'Book a call',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'aria-label'                  => 'Book a call',
+                'class'                       => 'has-pikari-modal-trigger wp-block-group',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'none',
+                    'modalId'       => 'template-booking',
+                    'label'         => 'Book a call',
+                    'templatePart'  => 'booking',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleGroupTriggerClick',
+                'data-wp-on--keydown'         => 'actions.handleTriggerKeydown',
+                'id'                          => 'modal-trigger-test',
+                'role'                        => 'button',
+                'tabindex'                    => '0',
+            ],
+            $this->attributes_of( $instance->filter_group_block( $input, $block ), 0 )
+        );
+    }
+
+    /**
+     * Custom URL: an ARIA button like inline content, plus hover prefetch.
+     */
+    public function test_group_direct_url_mode_attributes(): void
+    {
+        $instance = new GroupModalTriggerSupport();
+
+        $input = '<div class="wp-block-group"><p>Card content</p></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'url',
+                'pikariModalDirectUrl'     => 'https://example.com/page',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'aria-label'                  => 'Open modal dialog',
+                'class'                       => 'has-pikari-modal-trigger wp-block-group',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'postId'        => 'https://example.com/page',
+                    'modalId'       => 'url-https://example.com/page',
+                    'contentSource' => 'url',
+                    'label'         => 'example.com',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleGroupTriggerClick',
+                'data-wp-on--keydown'         => 'actions.handleTriggerKeydown',
+                'data-wp-on--mouseenter'      => 'actions.handlePrefetchHover',
+                'data-wp-on--mouseleave'      => 'actions.handlePrefetchLeave',
+                'id'                          => 'modal-trigger-test',
+                'role'                        => 'button',
+                'tabindex'                    => '0',
+            ],
+            $this->attributes_of( $instance->filter_group_block( $input, $block ), 0 )
+        );
+    }
+
+    /**
+     * Every attribute on one tag, in a form two renders can be compared by.
+     *
+     * Attribute order and class order carry no meaning, so both are sorted,
+     * and the Interactivity context is decoded so a difference reads as data.
+     *
+     * @param string $html  Rendered markup.
+     * @param int    $index Zero-based position of the tag in the markup.
+     * @return array<string, mixed> Attribute name to value.
+     */
+    private function attributes_of( string $html, int $index ): array
+    {
+        $processor = new \WP_HTML_Tag_Processor( $html );
+        for ( $i = 0; $i <= $index; $i++ ) {
+            $this->assertTrue( $processor->next_tag() );
+        }
+
+        $attributes = [];
+        foreach ( $processor->get_attribute_names_with_prefix( '' ) as $name ) {
+            $attributes[ $name ] = $processor->get_attribute( $name );
+        }
+
+        if ( isset( $attributes['class'] ) ) {
+            $classes = preg_split( '/\s+/', trim( (string) $attributes['class'] ) );
+            sort( $classes );
+            $attributes['class'] = implode( ' ', $classes );
+        }
+
+        if ( isset( $attributes['data-wp-context'] ) ) {
+            $attributes['data-wp-context'] = json_decode( (string) $attributes['data-wp-context'], true );
+        }
+
+        ksort( $attributes );
+
+        return $attributes;
+    }
 }

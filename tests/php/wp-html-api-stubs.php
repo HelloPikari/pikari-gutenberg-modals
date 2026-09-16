@@ -100,6 +100,14 @@ function is_user_logged_in() {
     return false;
 }
 
+function get_the_title( $post = 0 ) {
+    return 'Post ' . $post;
+}
+
+function wp_strip_all_tags( $text ) {
+    return strip_tags( (string) $text ); // phpcs:ignore WordPress.WP.AlternativeFunctions
+}
+
 /**
  * Copied verbatim from wp-includes/kses.php::wp_kses_uri_attributes(),
  * minus its apply_filters() extension point (unused here), so
