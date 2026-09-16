@@ -194,19 +194,19 @@ class RestApi
             }
         }
 
-        // A logged-out render is shared by every logged-out visitor, so one
-        // stored under this ETag answers without rendering again, and without
-        // running every wp_enqueue_scripts and wp_footer callback again. A
-        // logged-in viewer's render carries their own nonces and is never
-        // stored. The ETag hashes the post, not what the post pulls in, so a
-        // changed template part or Query Loop result shows once the stored
-        // render expires: the staleness a browser's copy already has.
-        $response_data = 0 === $user_id ? $this->get_cached_content( $etag ) : null;
+        // A render nothing visitor-specific shaped is stored under this ETag,
+        // and answers the next such request without rendering again or
+        // running every wp_enqueue_scripts and wp_footer callback again. The
+        // ETag hashes the post, not what the post pulls in, so a changed
+        // template part or Query Loop result shows once the stored render
+        // expires.
+        $share_render  = $this->should_share_render( $user_id );
+        $response_data = $share_render ? $this->get_cached_content( $etag ) : null;
 
         if ( null === $response_data ) {
             $response_data = $this->render_content( $post, $simulate );
 
-            if ( 0 === $user_id ) {
+            if ( $share_render ) {
                 $this->cache_content( $etag, $response_data );
             }
         }
@@ -311,6 +311,45 @@ class RestApi
         );
 
         return $response_data;
+    }
+
+    /**
+     * Whether this request's render may be stored for every logged-out
+     * visitor, and answered from one stored earlier.
+     *
+     * Only when nothing one visitor sent can have shaped it. A logged-in
+     * viewer's render carries their own nonces. Blocks read the query string
+     * while rendering (a Query Loop reads query-N-page), so a single request
+     * with a stray parameter would otherwise fix what everyone sees for the
+     * cache duration. Comment author cookies show a visitor their own held
+     * comments and prefill their name, and a post password cookie unlocks
+     * protected posts in a Query Loop. Page caches skip the same requests.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param int $user_id The current user; 0 when logged out.
+     * @return bool True when the render may be shared.
+     */
+    public function should_share_render( int $user_id ): bool
+    {
+        if ( 0 !== $user_id ) {
+            return false;
+        }
+
+        // The store sends modal_id; rest_route carries the route itself on a
+        // site without pretty permalinks. Only the keys are read.
+        // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+        if ( array_diff( array_keys( $_GET ), [ 'modal_id', 'rest_route' ] ) ) {
+            return false;
+        }
+
+        foreach ( array_keys( $_COOKIE ) as $name ) {
+            if ( str_starts_with( (string) $name, 'comment_author_' ) || str_starts_with( (string) $name, 'wp-postpass_' ) ) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**

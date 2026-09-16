@@ -447,4 +447,82 @@ class RestApiTest extends TestCase
         $this->assertNull( $api->get_cached_content( '"abc"' ) );
         $api->cache_content( '"abc"', [ 'id' => 87 ] );
     }
+
+    /**
+     * A render stored for everyone must not depend on anything one visitor
+     * sent. Each case sets only the request state it is about.
+     *
+     * @param array<string, string> $get    Query parameters.
+     * @param array<string, string> $cookie Cookies.
+     * @param int                   $user   Current user ID.
+     */
+    private function share_render_for( array $get, array $cookie, int $user ): bool
+    {
+        $original_get    = $_GET;
+        $original_cookie = $_COOKIE;
+        $_GET            = $get;
+        $_COOKIE         = $cookie;
+
+        try {
+            return ( new RestApi() )->should_share_render( $user );
+        } finally {
+            $_GET    = $original_get;
+            $_COOKIE = $original_cookie;
+        }
+    }
+
+    /**
+     * The request the frontend store sends, with pretty or plain permalinks.
+     */
+    public function test_a_plain_logged_out_request_shares_its_render(): void
+    {
+        $this->assertTrue( $this->share_render_for( [ 'modal_id' => 'page-72' ], [ '_ga' => 'x' ], 0 ) );
+        $this->assertTrue(
+            $this->share_render_for(
+                [
+                    'rest_route' => '/pikari-gutenberg-modals/v1/modal-content/72',
+                    'modal_id'   => 'page-72',
+                ],
+                [],
+                0
+            )
+        );
+    }
+
+    /**
+     * A logged-in viewer's render carries their own nonces.
+     */
+    public function test_a_logged_in_viewer_never_shares_a_render(): void
+    {
+        $this->assertFalse( $this->share_render_for( [ 'modal_id' => 'page-72' ], [], 7 ) );
+    }
+
+    /**
+     * Blocks read the query string while rendering (a Query Loop reads
+     * query-N-page), so one visitor's parameters would be served to everyone.
+     */
+    public function test_any_other_query_parameter_stops_sharing(): void
+    {
+        $this->assertFalse(
+            $this->share_render_for(
+                [
+                    'modal_id'     => 'page-72',
+                    'query-0-page' => '999',
+                ],
+                [],
+                0
+            )
+        );
+    }
+
+    /**
+     * Comment author cookies show a visitor their own held comments and
+     * prefill their name; a post password cookie unlocks protected posts in a
+     * Query Loop. Neither may reach another visitor.
+     */
+    public function test_a_commenter_or_post_password_cookie_stops_sharing(): void
+    {
+        $this->assertFalse( $this->share_render_for( [ 'modal_id' => 'page-72' ], [ 'comment_author_abc123' => 'Sam' ], 0 ) );
+        $this->assertFalse( $this->share_render_for( [ 'modal_id' => 'page-72' ], [ 'wp-postpass_abc123' => 'hash' ], 0 ) );
+    }
 }
