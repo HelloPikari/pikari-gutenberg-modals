@@ -343,9 +343,6 @@ class BlockSupport
             }
         }
 
-        // Generate unique trigger ID
-        $trigger_id = 'modal-trigger-' . wp_unique_id();
-
         // Use WP_HTML_Tag_Processor to modify the anchor tag
         $processor = new \WP_HTML_Tag_Processor( $block_content );
 
@@ -377,26 +374,7 @@ class BlockSupport
                 $processor->set_attribute( 'href', $url );
             }
 
-            $processor->set_attribute( 'id', $trigger_id );
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
-            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->add_class( 'has-pikari-modal' );
-
-            // The button's own visible text is already its accessible
-            // name; only override it when the author explicitly typed one.
-            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-            if ( '' !== $custom_label ) {
-                $processor->set_attribute( 'aria-label', $custom_label );
-            }
+            self::decorate_button_element( $processor, $block['attrs'], $context, true );
         }
 
         return $processor->get_updated_html();
@@ -424,8 +402,6 @@ class BlockSupport
         $slug = ! empty( $template_part ) ? $template_part : 'modal';
         self::set_has_modal_triggers( $slug );
 
-        $trigger_id = 'modal-trigger-' . wp_unique_id();
-
         $base = [
             'contentSource' => 'none',
             'modalId'       => 'template-' . $slug,
@@ -439,31 +415,12 @@ class BlockSupport
         // second next_tag() reaches the inner <a> or <button>. Same two-call
         // pattern as filter_button_block() and filter_close_trigger().
         if ( $processor->next_tag() && $processor->next_tag() ) {
-            $processor->set_attribute( 'id', $trigger_id );
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->add_class( 'has-pikari-modal' );
+            self::decorate_button_element( $processor, $block['attrs'], $context, false );
 
             // No href to give an <a>, so make it an ARIA button instead —
             // otherwise the trigger is mouse-only (WCAG 2.1.1).
             if ( 'BUTTON' !== $processor->get_tag() ) {
-                $processor->set_attribute( 'role', 'button' );
-                $processor->set_attribute( 'tabindex', '0' );
-                $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
-            }
-
-            // The button's own visible text is already its accessible name;
-            // only override it when the author explicitly typed one.
-            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-            if ( '' !== $custom_label ) {
-                $processor->set_attribute( 'aria-label', $custom_label );
+                TriggerMarkup::make_button( $processor );
             }
         }
 
@@ -492,8 +449,6 @@ class BlockSupport
         $slug = ! empty( $template_part ) ? $template_part : 'modal';
         self::set_has_modal_triggers( $slug );
 
-        $trigger_id = 'modal-trigger-' . wp_unique_id();
-
         // Build context data for inline content
         $base = [
             'contentSource' => 'inline',
@@ -512,16 +467,7 @@ class BlockSupport
         // 'button'), whichever the block actually rendered. Same two-call
         // pattern as filter_button_block() and filter_close_trigger().
         if ( $processor->next_tag() && $processor->next_tag() ) {
-            $processor->set_attribute( 'id', $trigger_id );
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleTriggerClick' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
+            self::decorate_button_element( $processor, $block['attrs'], $context, false );
 
             // A <button> has no href and is already natively focusable and
             // keyboard-operable without one — only an <a> needs it, to
@@ -530,18 +476,35 @@ class BlockSupport
             if ( 'A' === $processor->get_tag() ) {
                 $processor->set_attribute( 'href', '#' . $inline_anchor );
             }
-
-            $processor->add_class( 'has-pikari-modal' );
-
-            // The button's own visible text is already its accessible
-            // name; only override it when the author explicitly typed one.
-            $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-            if ( '' !== $custom_label ) {
-                $processor->set_attribute( 'aria-label', $custom_label );
-            }
         }
 
         return $processor->get_updated_html();
+    }
+
+    /**
+     * Decorate a Button block's inner <a> or <button> as an open-mode trigger.
+     *
+     * What every Button mode shares. Each mode adds its own href handling,
+     * and template-only adds the ARIA button role to an href-less <a>.
+     *
+     * @param \WP_HTML_Tag_Processor $processor  Positioned on the inner <a> or <button>.
+     * @param array                  $attributes Block attributes.
+     * @param array                  $context    Interactivity context.
+     * @param bool                   $prefetch   Whether hovering warms the content fetch.
+     */
+    private static function decorate_button_element( \WP_HTML_Tag_Processor $processor, array $attributes, array $context, bool $prefetch ): void
+    {
+        $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
+        TriggerMarkup::bind( $processor, $context, 'actions.handleTriggerClick', $prefetch );
+        TriggerMarkup::announce_dialog( $processor );
+        $processor->add_class( 'has-pikari-modal' );
+
+        // The button's own visible text is already its accessible name;
+        // only override it when the author explicitly typed one.
+        $custom_label = TriggerMarkup::accessible_label( $attributes );
+        if ( '' !== $custom_label ) {
+            $processor->set_attribute( 'aria-label', $custom_label );
+        }
     }
 
     /**
