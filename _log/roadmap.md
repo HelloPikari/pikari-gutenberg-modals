@@ -1,6 +1,6 @@
 # Roadmap — pikari-gutenberg-modals
 
-**Last updated:** 2026-09-14 (Session 5)
+**Last updated:** 2026-09-16 (Session 6)
 
 What we've done, at a glance. Narrative lives in the session logs.
 
@@ -163,26 +163,40 @@ never warmed the fetch they were for. PR #145, todo #514.
 
 ~~A QA screenshot shipped in every release ZIP since 2.0.0~~ — ✅ DONE (Session 5, 2.3.0). PR #143.
 
+~~Block filters registered twice per REST request~~ — ✅ DONE (Session 6, 2.3.1). The helpers
+were made static and both second instances dropped: `RestApi`'s and `EditorIntegration`'s.
+`render_block_core/button` went **2 → 4** callbacks after one request and now stays at **2**. PR #149.
+
+~~Trigger decoration copied across 8 handlers~~ — ✅ DONE (Session 6, 2.3.1). All 8 decoration
+sites were pinned by full-attribute tests first, then moved into `TriggerMarkup`. Old vs new
+was **byte-identical over 522 renders**. PR #150.
+
+~~v2.3.1 released~~ — ✅ DONE (Session 6). ZIP checksum verified, and the package index lists it.
+
 ## Open
 
 - ~~**A WPForms form inside a modal probably cannot submit** (todo #484)~~ — ✅ DONE (Session 5).
   It could not; 2.2.0 collects and runs the render's scripts under the post's own REQUEST_URI, and
   2.2.2–2.2.3 closed the inline, template-only and logged-in variants (see Released).
-- **WPForms blocks crash any `BlockPreview`** (todo #492, upstream). `updateCopyPasteContent`
+- ~~**WPForms blocks crash any `BlockPreview`** (todo #492, upstream)~~ — cancelled by Steve (Session 6). `updateCopyPasteContent`
   reads `wp.data.select('core/block-editor').getBlockAttributes(clientId)` from the **default**
   registry while `BlockPreview` renders in an isolated one, so it gets null and throws on the
   first key. Not ours: WordPress's own Site Editor template-part list shows the identical crash.
   Fallback if upstream stalls — render the Modal template preview from server HTML instead.
-- **`RestApi` instantiates a second `BlockSupport`.** `init` runs in REST, so the bootstrap
+- ~~**`RestApi` instantiates a second `BlockSupport`.**~~ — ✅ DONE (Session 6); see Released. `init` runs in REST, so the bootstrap
   instance is already live and every `render_block` filter is registered twice — measured
   **4 callbacks** on `render_block_core/button` after a modal-content request. Pre-existing;
   `suspend_container_render()` now works around the wp_footer half of it. The real fix is that
   `get_post_content_with_styles()` needs no constructor state.
-- **The shared trigger decoration is copied three times** in `GroupModalTriggerSupport` and
+- ~~**The shared trigger decoration is copied three times**~~ — ✅ DONE (Session 6); see Released. In `GroupModalTriggerSupport` and
   twice in `BlockSupport`. Two of four reviewers wanted it extracted; deferred because it
   touches three shipped handlers. The a11y attribute set is what is duplicated, and this plugin
   has already shipped a mouse-only trigger once — per-branch render tests are the mitigation.
-- **The modal-content endpoint is uncached server-side.** It runs every `wp_enqueue_scripts` and
+- **The modal-content endpoint is uncached server-side.** Session 6 built it and held it back:
+  draft PR #151. Two reviews each found request state leaking into the shared copy. Fixed:
+  `?query-N-page` poisoning, comment and post-password cookies. Still open: the `Host` header
+  and http/https scheme, and nonces from a logged-in cookie without a REST nonce. Live Kindler
+  is not edge-cached (`cf-cache-status: DYNAMIC`). Original note: it runs every `wp_enqueue_scripts` and
   `wp_footer` callback on a public route that hover-prefetch can fire N times across a Query
   Loop. ~52ms measured on Kindler. The ETag is already the right cache key for logged-out
   responses; since 2.2.3 a logged-in render is per-user and must never share it. 2.3.0's removal
@@ -190,24 +204,30 @@ never warmed the fetch they were for. PR #145, todo #514.
   (Unhooking `wp_enqueue_global_styles` was **measured at 52.6 vs 52.2ms** — rejected.)
 - **CI masks every test failure.** `.github/workflows/ci.yml` sets `continue-on-error: true`
   on the whole `test` job. There are now **151 PHP and 192 JS tests**. Every Session 5 merge was
-  verified by reading the Test job log, not the badge. Being handled by the CI agent.
+  verified by reading the Test job log, not the badge. Handed to the monorepo agent in Session 6.
+  The template is fixed locally, and the modals sync PR waits on that agent.
 - **The `WP_CORE_DIR` CI fix will be reverted by the next template sync.** `ci.yml` is a
   synced monorepo file and this plugin's `skip-sync` covers only `tests/php/bootstrap.php`.
-  Right fix is the template, not `skip-sync` — every plugin has this.
+  Right fix is the template, not `skip-sync` — every plugin has this. The monorepo agent folded
+  it into the template in Session 6 (#458); it lands with the same sync PR.
 - **Prettier and markdownlint conflict repo-wide.** Prettier (lint-staged, every commit)
   forces 2-space nested-list indent; markdownlint MD007 demands 4. No nested list in any
   `.md` can satisfy both — the cause of every MD007 violation in the repo. One-line fix
   either way: set MD007 to 2, or add `*.md` to `.prettierignore`.
-- **Hybrid-theme editor QA is the last 2.0.0 check** (todo #459). Session 5 drove the rest in
+- ~~**Hybrid-theme editor QA is the last 2.0.0 check** (todo #459)~~ — ✅ DONE (Session 6):
+  Twenty Twenty-One plus `block-template-parts`. The panel shows the select only, enabled, with
+  0 console errors. Twenty Twenty-Three and CCLF's cclf25 are not hybrid. Session 5 drove the rest in
   wp-env: the pencil keeps unsaved work, a second inline trigger inherits the first's template
   (pre-existing, information only), the Site Editor inserter still offers Content Area, and the
   opacity layout was approved. wp-env has no classic theme.
 - ~~**Cmd/Ctrl+M has never worked** (todo #472)~~ — ✅ DONE (Session 5) — dropped; see Released.
-- **Kindler `/about/` has a `link`-source trigger that renders nothing** — before and after 2.2.2
+- ~~**Kindler `/about/` has a `link`-source trigger that renders nothing**~~ — not a bug (Session 6).
+  All 7 team cards render and open, on local and live. The note on #485 was wrong. Before and after 2.2.2
   alike. Post 12 stores `pikariModalContentSource: "link"`, yet no trigger reaches the HTML.
   Undecided whether it is content (no resolvable primary link) or a plugin failing silently.
   Kindler's content thread is #485.
-- **`core/cover` is not a trigger block.** Surfaced rebuilding Kindler: a Cover had to be
+- ~~**`core/cover` is not a trigger block.**~~ — decided: pass (Session 6, #473 cancelled). A Group
+  wrapper works, and the filter is the opt-in. Surfaced rebuilding Kindler: a Cover had to be
   wrapped in a Group to carry the modal action. Fine, but worth deciding whether Cover
   belongs in the default `pikari_gutenberg_modals_trigger_blocks` list (todo #473).
 
@@ -216,11 +236,24 @@ never warmed the fetch they were for. PR #145, todo #514.
   out clean and the "set the tag by hand" workaround is retired with it.
 - ~~**Composer consumers cannot get 2.0.0**~~ — resolved. The package index at
   `hellopikari.github.io/packages` is live and lists every release through 2.3.0 (todo #455).
-- **Fix CCLF's modal template part** now the chrome refactor has shipped (todo #436).
+- **Fix CCLF's modal template part** now the chrome refactor has shipped (todo #436). Session 6:
+  the CCLF agent found no customised part and no legacy triggers, and proposed #436 done. Local
+  CCLF runs 2.3.1 on the unpushed branch `chore/modals-2x`.
   Only matters if it has a customised part — Kindler turned out not to, so check before
   assuming. The index no longer blocks it; CCLF's own Composer branch does (todo #478).
-- **Guardian Capital is on v0.3.2** — a git checkout far enough behind that upgrading it
-  is its own piece of work, not a version bump.
+- ~~**Guardian Capital is on v0.3.2**~~ — out of scope (Session 6). Steve has no control over the site.
+- **A wrap merge to `main` bumps the version.** #147 carried `skip-changelog`, so its 2.3.1 draft
+  read `* No changes` and the bump still ran. Sync PR #152 (monorepo template) skips the bump for an
+  empty draft. Steve decided a `docs` PR should still bump. So: merge #152 first, and label the
+  wrap PR `skip-changelog`.
+- **21 merged branches remain on the remote.** Auto mode blocked deleting them in Session 6.
+  `fix/inline-trigger-shortcut` (PR #133, closed unmerged) was left out of the list.
+- **A Button whose URL is `#` becomes a URL modal that opens nothing.** Should the plugin refuse
+  `#` or an empty href? Found on Kindler `/what-we-do/` (fixed there in content).
+- **A Button's inner `<a>` loses an author-set `id`.** Groups keep theirs. Pre-existing; the
+  Session 6 review flagged it as a nit.
+- **Hybrid select-only panel:** the "Select a template for this modal." help text sits flush
+  against the Accessible Label heading. Cosmetic.
 - **`@wordpress/primitives` 4.47 (#85)** — cannot merge. Peer-requires React 19 while
   `@wordpress/scripts` pins React 18. Blocked upstream, not on us.
 
@@ -243,3 +276,10 @@ never warmed the fetch they were for. PR #145, todo #514.
 - **QA both logged in and logged out.** #510 passed every logged-out check and failed only for
   an admin; #509 passed on Kindler only because every Kindler page has another form.
 - Testing traps: `_plans/testing-notes.md`. Read it before writing a test page.
+- **To stay a patch, use `refactor/` or `perf/`, never `feature/`.** A PR that touches `*.md` is
+  autolabelled `docs` and lands under Documentation; relabel it `chore` and rerun Release Drafter.
+- **Anything that shares a render across visitors needs its own threat model.** `public`
+  Cache-Control was safe because browsers key on the full URL, per browser. A server copy is not.
+- **In wp-env, write probe files with `docker cp`/`docker exec`, not `wp-env run cli sh -c`.**
+  Nested quoting there fails silently: a probe mu-plugin, and later a `wp post update`, never ran,
+  and both looked like results.
