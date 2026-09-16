@@ -223,6 +223,38 @@ class EditorIntegrationTest extends TestCase {
     }
 
     /**
+     * Reading the trigger block lists must not construct a second BlockSupport.
+     *
+     * The bootstrap instance already filters every supported block. A second
+     * one registers each render_block filter again, so blocks rendered later
+     * in the same request are decorated twice.
+     */
+    public function test_get_editor_config_registers_no_block_filters(): void {
+        Functions\when( 'wp_is_block_theme' )->justReturn( false );
+        Functions\when( 'rest_url' )->justReturn( 'http://example.com/wp-json/pikari-gutenberg-modals/v1/' );
+        Functions\when( 'wp_create_nonce' )->justReturn( 'test-nonce' );
+        Functions\when( '__' )->returnArg();
+        Functions\when( 'apply_filters' )->alias( function ( $hook, $default ) {
+            return $default;
+        } );
+        Functions\when( 'get_stylesheet_directory' )->justReturn( '/wp-content/themes/test' );
+        Functions\when( 'get_template_directory' )->justReturn( '/wp-content/themes/test' );
+        $hooked = [];
+        $record = function ( $hook ) use ( &$hooked ) {
+            $hooked[] = $hook;
+            return true;
+        };
+        Functions\when( 'add_filter' )->alias( $record );
+        Functions\when( 'add_action' )->alias( $record );
+
+        $config = $this->instance->get_editor_config();
+
+        $this->assertSame( [], $hooked );
+        $this->assertContains( 'core/paragraph', $config['supportedBlocks'] );
+        $this->assertSame( [ 'core/group', 'core/button' ], $config['triggerBlocks'] );
+    }
+
+    /**
      * Editor config contains exactly nine keys in the documented order.
      */
     public function test_get_editor_config_contains_exactly_nine_keys_in_correct_order(): void {

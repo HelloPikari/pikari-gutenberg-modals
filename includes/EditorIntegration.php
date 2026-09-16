@@ -16,13 +16,6 @@ namespace Pikari\GutenbergModals;
 class EditorIntegration
 {
     /**
-     * Block support instance
-     *
-     * @var BlockSupport
-     */
-    private BlockSupport $block_support;
-
-    /**
      * Constructor
      */
     public function __construct()
@@ -80,13 +73,9 @@ class EditorIntegration
      */
     public function get_editor_config(): array
     {
-        if ( ! isset( $this->block_support ) ) {
-            $this->block_support = new BlockSupport();
-        }
-
         return [
-            'supportedBlocks'    => $this->block_support->get_supported_blocks_for_js(),
-            'triggerBlocks'      => $this->block_support->get_trigger_blocks(),
+            'supportedBlocks'    => BlockSupport::get_supported_blocks_for_js(),
+            'triggerBlocks'      => BlockSupport::get_trigger_blocks(),
             'restUrl'            => rest_url( 'pikari-gutenberg-modals/v1/' ),
             'nonce'              => wp_create_nonce( 'wp_rest' ),
             'modalSizes'         => $this->get_modal_sizes(),

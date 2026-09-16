@@ -194,10 +194,6 @@ class RestApi
             }
         }
 
-        // Instantiating BlockSupport here registers render_block filters that
-        // affect only the do_blocks() call below.
-        $block_support = new BlockSupport();
-
         // A REST request runs neither wp_enqueue_scripts nor wp_footer, and
         // whole classes of stylesheet only reach the queue inside them.
         //
@@ -223,8 +219,8 @@ class RestApi
         // otherwise point at this REST route — WPForms' form action among them.
         $content_data = $this->with_request_uri(
             $this->request_uri_for_post( $post ),
-            function () use ( $block_support, $post ) {
-                return $block_support->get_post_content_with_styles( $post );
+            function () use ( $post ) {
+                return BlockSupport::get_post_content_with_styles( $post );
             }
         );
 
@@ -355,9 +351,8 @@ class RestApi
             return;
         }
 
-        // Our own container renderer is hooked to wp_footer twice over by
-        // now — once from the instance above and once from the one
-        // bootstrapped on init — and would render every modal template part
+        // Our own container renderer is hooked to wp_footer by the instance
+        // bootstrapped on init, and would render every modal template part
         // into a response that only wants the styles.
         BlockSupport::suspend_container_render( true );
 

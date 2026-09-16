@@ -27,10 +27,10 @@ class BlockSupport
      * Whether container rendering is suspended for the rest of this request.
      *
      * The modal-content REST endpoint fires wp_footer to collect styles that
-     * only exist inside a frontend request. Two BlockSupport instances are
-     * hooked to that action by then — the endpoint's own and the one
-     * bootstrapped on init — so remove_action() on one instance cannot stop
-     * the container from rendering into a response that only wants styles.
+     * only exist inside a frontend request. The instance bootstrapped on init
+     * is hooked to that action, and the endpoint holds no reference to it to
+     * remove_action() with, so this flag stops the container from rendering
+     * into a response that only wants styles.
      *
      * @var bool
      */
@@ -48,7 +48,7 @@ class BlockSupport
      */
     public function __construct()
     {
-        $this->supported_blocks = $this->get_supported_blocks();
+        $this->supported_blocks = self::get_supported_blocks();
         $this->register_block_filters();
 
         // Add filter for button blocks with modal attribute
@@ -57,7 +57,7 @@ class BlockSupport
         // Add close-mode handling for every block that can carry a modal action.
         // Open-mode handling stays block-specific (filter_button_block() here,
         // GroupModalTriggerSupport for core/group); close mode is generic.
-        foreach ( $this->get_trigger_blocks() as $block_name ) {
+        foreach ( self::get_trigger_blocks() as $block_name ) {
             add_filter( "render_block_{$block_name}", [ $this, 'filter_close_mode_block' ], 10, 2 );
         }
 
@@ -74,7 +74,7 @@ class BlockSupport
      *
      * @return array
      */
-    private function get_supported_blocks(): array
+    private static function get_supported_blocks(): array
     {
         $default_blocks = [
             'core/paragraph',
@@ -111,9 +111,9 @@ class BlockSupport
      *
      * @return array
      */
-    public function get_supported_blocks_for_js(): array
+    public static function get_supported_blocks_for_js(): array
     {
-        return $this->supported_blocks;
+        return self::get_supported_blocks();
     }
 
     /**
@@ -124,7 +124,7 @@ class BlockSupport
      *
      * @return string[] Block names.
      */
-    public function get_trigger_blocks(): array
+    public static function get_trigger_blocks(): array
     {
         return apply_filters(
             'pikari_gutenberg_modals_trigger_blocks',
@@ -818,7 +818,7 @@ class BlockSupport
      * @param array  $block The block data
      * @return array Array with 'content' and 'styles' keys
      */
-    private function render_layout_support_inline( string $block_content, array $block ): array
+    private static function render_layout_support_inline( string $block_content, array $block ): array
     {
         $block_type = \WP_Block_Type_Registry::get_instance()->get_registered($block['blockName']);
         $block_supports_layout = block_has_support($block_type, 'layout', false) || block_has_support($block_type, '__experimentalLayout', false);
@@ -958,7 +958,7 @@ class BlockSupport
      * @param WP_Post $post_object The post object
      * @return array Array with 'content' and 'styles' keys
      */
-    public function get_post_content_with_styles( \WP_Post $post_object ): array
+    public static function get_post_content_with_styles( \WP_Post $post_object ): array
     {
         // Store current global post
         global $post;
@@ -974,7 +974,7 @@ class BlockSupport
         // Hook into render_block to use our modified layout support function
         $style_capture_filter = function ( $block_content, $parsed_block ) use ( &$captured_styles ) {
             // Use our modified layout support function that returns styles inline
-            $result = $this->render_layout_support_inline($block_content, $parsed_block);
+            $result = self::render_layout_support_inline($block_content, $parsed_block);
 
             // Capture any generated styles
             if ( ! empty($result['styles']) ) {
