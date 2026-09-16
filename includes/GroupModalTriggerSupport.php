@@ -192,15 +192,8 @@ class GroupModalTriggerSupport
                     }
                 }
 
-                // Generate unique trigger ID and modal ID
-                $trigger_id = 'modal-trigger-link-' . wp_unique_id();
                 $modal_id   = $content_type . '-' . $content_id;
-
-                // Add attributes to the primary link (for accessibility and keyboard navigation)
-                $processor->set_attribute( 'id', $trigger_id );
-                $processor->set_attribute( 'aria-haspopup', 'dialog' );
-                $processor->add_class( 'is-primary-link' );
-                $processor->add_class( 'has-pikari-modal' );
+                $trigger_id = self::decorate_primary_link( $processor );
 
                 break; // Only modify the first matching link
             }
@@ -229,29 +222,7 @@ class GroupModalTriggerSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        // Now add the modal trigger class, click handler, and accessibility attributes to the group wrapper
-        $processor = new \WP_HTML_Tag_Processor( $block_content );
-
-        // The first tag in a group block is the wrapper div
-        if ( $processor->next_tag() ) {
-            $processor->add_class( 'has-pikari-modal-trigger' );
-
-            // Add Interactivity API attributes for click delegation
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
-            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
-
-            // Add role="group" and aria-labelledby for screen reader context
-            $processor->set_attribute( 'role', 'group' );
-            $processor->set_attribute( 'aria-labelledby', $trigger_id );
-        }
-
-        return $processor->get_updated_html();
+        return self::decorate_link_card( $block_content, $context, $trigger_id );
     }
 
     /**
@@ -293,19 +264,13 @@ class GroupModalTriggerSupport
             // Found our target post-link
             $found_primary_link = true;
             $post_id            = $processor->get_attribute( 'data-pikari-post-id' );
-            $trigger_id         = 'modal-trigger-link-' . wp_unique_id();
-            $modal_id           = 'post-' . $post_id;
 
             // Clean up temporary attributes
             $processor->remove_class( 'pikari-post-link-candidate' );
             $processor->remove_attribute( 'data-pikari-post-id' );
             $processor->remove_attribute( 'data-pikari-block-name' );
 
-            // Add modal attributes
-            $processor->set_attribute( 'id', $trigger_id );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->add_class( 'is-primary-link' );
-            $processor->add_class( 'has-pikari-modal' );
+            $trigger_id = self::decorate_primary_link( $processor );
 
             // Enqueue assets
             $slug = ! empty( $template_part ) ? $template_part : 'modal';
@@ -332,23 +297,7 @@ class GroupModalTriggerSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        // Add group wrapper attributes (same as URL-based)
-        $processor = new \WP_HTML_Tag_Processor( $block_content );
-        if ( $processor->next_tag() ) {
-            $processor->add_class( 'has-pikari-modal-trigger' );
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
-            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
-            $processor->set_attribute( 'role', 'group' );
-            $processor->set_attribute( 'aria-labelledby', $trigger_id );
-        }
-
-        return $processor->get_updated_html();
+        return self::decorate_link_card( $block_content, $context, $trigger_id );
     }
 
     /**
@@ -387,40 +336,12 @@ class GroupModalTriggerSupport
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // An author-supplied label wins over the generic default.
-        $aria_label   = __( 'Open modal dialog', 'pikari-gutenberg-modals' );
-        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-        if ( '' !== $custom_label ) {
-            $aria_label = $custom_label;
-        }
+        $aria_label = TriggerMarkup::accessible_label(
+            $block['attrs'],
+            __( 'Open modal dialog', 'pikari-gutenberg-modals' )
+        );
 
-        // Add group wrapper attributes
-        $processor = new \WP_HTML_Tag_Processor( $block_content );
-        if ( $processor->next_tag() ) {
-            $processor->add_class( 'has-pikari-modal-trigger' );
-
-            // Preserve an author-set HTML anchor (core's `anchor` block
-            // support writes it to this same wrapper's id) rather than
-            // overwriting it — it serves the same focus-restore purpose a
-            // generated id would.
-            if ( ! $processor->get_attribute( 'id' ) ) {
-                $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
-            }
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->set_attribute( 'role', 'button' );
-            $processor->set_attribute( 'tabindex', '0' );
-            $processor->set_attribute( 'aria-label', $aria_label );
-        }
-
-        return $processor->get_updated_html();
+        return self::decorate_button_card( $block_content, $context, $aria_label, false );
     }
 
     /**
@@ -455,36 +376,12 @@ class GroupModalTriggerSupport
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
         // An author-supplied label wins over the generic default.
-        $aria_label   = __( 'Open modal dialog', 'pikari-gutenberg-modals' );
-        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-        if ( '' !== $custom_label ) {
-            $aria_label = $custom_label;
-        }
+        $aria_label = TriggerMarkup::accessible_label(
+            $block['attrs'],
+            __( 'Open modal dialog', 'pikari-gutenberg-modals' )
+        );
 
-        $processor = new \WP_HTML_Tag_Processor( $block_content );
-        if ( $processor->next_tag() ) {
-            $processor->add_class( 'has-pikari-modal-trigger' );
-
-            // Preserve an author-set HTML anchor — see handle_inline_content().
-            if ( ! $processor->get_attribute( 'id' ) ) {
-                $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
-            }
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->set_attribute( 'role', 'button' );
-            $processor->set_attribute( 'tabindex', '0' );
-            $processor->set_attribute( 'aria-label', $aria_label );
-        }
-
-        return $processor->get_updated_html();
+        return self::decorate_button_card( $block_content, $context, $aria_label, false );
     }
 
     /**
@@ -541,10 +438,7 @@ class GroupModalTriggerSupport
 
         // An author-supplied label wins over both the generic string and
         // the title derived from an internal URL above.
-        $custom_label = trim( $block['attrs']['pikariModalAccessibleLabel'] ?? '' );
-        if ( '' !== $custom_label ) {
-            $aria_label = $custom_label;
-        }
+        $aria_label = TriggerMarkup::accessible_label( $block['attrs'], $aria_label );
 
         // Build context data
         $base = [
@@ -558,8 +452,69 @@ class GroupModalTriggerSupport
 
         $context = TriggerContext::build( $block['attrs'], $base, $template_part );
 
-        // Add group wrapper attributes
+        return self::decorate_button_card( $block_content, $context, $aria_label, true );
+    }
+
+    /**
+     * Mark the link a card delegates to as its primary link.
+     *
+     * The link keeps its own role and focusability; it names the card and
+     * announces the dialog, while the card wrapper handles the click.
+     *
+     * @param \WP_HTML_Tag_Processor $processor Positioned on the link.
+     * @return string The id given to the link, for the wrapper's aria-labelledby.
+     */
+    private static function decorate_primary_link( \WP_HTML_Tag_Processor $processor ): string
+    {
+        $trigger_id = 'modal-trigger-link-' . wp_unique_id();
+
+        $processor->set_attribute( 'id', $trigger_id );
+        $processor->set_attribute( 'aria-haspopup', 'dialog' );
+        $processor->add_class( 'is-primary-link' );
+        $processor->add_class( 'has-pikari-modal' );
+
+        return $trigger_id;
+    }
+
+    /**
+     * Decorate the wrapper of a card that opens its modal through a link.
+     *
+     * The wrapper is a labelled group rather than a button: the link inside
+     * is the keyboard trigger, and the wrapper only widens the click target.
+     *
+     * @param string $block_content The block content HTML, primary link already marked.
+     * @param array  $context       Interactivity context.
+     * @param string $trigger_id    The primary link's id.
+     * @return string Modified block content.
+     */
+    private static function decorate_link_card( string $block_content, array $context, string $trigger_id ): string
+    {
         $processor = new \WP_HTML_Tag_Processor( $block_content );
+
+        // The first tag in a group block is the wrapper div
+        if ( $processor->next_tag() ) {
+            $processor->add_class( 'has-pikari-modal-trigger' );
+            TriggerMarkup::bind( $processor, $context, 'actions.handleGroupTriggerClick', true );
+            $processor->set_attribute( 'role', 'group' );
+            $processor->set_attribute( 'aria-labelledby', $trigger_id );
+        }
+
+        return $processor->get_updated_html();
+    }
+
+    /**
+     * Decorate a card that is itself the trigger, with no link to hand off to.
+     *
+     * @param string $block_content The block content HTML.
+     * @param array  $context       Interactivity context.
+     * @param string $aria_label    The button's accessible name.
+     * @param bool   $prefetch      Whether hovering warms the content fetch.
+     * @return string Modified block content.
+     */
+    private static function decorate_button_card( string $block_content, array $context, string $aria_label, bool $prefetch ): string
+    {
+        $processor = new \WP_HTML_Tag_Processor( $block_content );
+
         if ( $processor->next_tag() ) {
             $processor->add_class( 'has-pikari-modal-trigger' );
 
@@ -570,20 +525,10 @@ class GroupModalTriggerSupport
             if ( ! $processor->get_attribute( 'id' ) ) {
                 $processor->set_attribute( 'id', 'modal-trigger-' . wp_unique_id() );
             }
-            $processor->set_attribute( 'data-wp-interactive', 'pikari-modal' );
-            $processor->set_attribute(
-                'data-wp-context',
-                wp_json_encode( $context )
-            );
-            $processor->set_attribute( 'data-wp-on--click', 'actions.handleGroupTriggerClick' );
-            $processor->set_attribute( 'data-wp-on--keydown', 'actions.handleTriggerKeydown' );
-            $processor->set_attribute( 'data-wp-on--mouseenter', 'actions.handlePrefetchHover' );
-            $processor->set_attribute( 'data-wp-on--mouseleave', 'actions.handlePrefetchLeave' );
-            $processor->set_attribute( 'aria-haspopup', 'dialog' );
-            $processor->set_attribute( 'aria-expanded', 'false' );
-            $processor->set_attribute( 'data-wp-bind--aria-expanded', 'state.isExpanded' );
-            $processor->set_attribute( 'role', 'button' );
-            $processor->set_attribute( 'tabindex', '0' );
+
+            TriggerMarkup::bind( $processor, $context, 'actions.handleGroupTriggerClick', $prefetch );
+            TriggerMarkup::announce_dialog( $processor );
+            TriggerMarkup::make_button( $processor );
             $processor->set_attribute( 'aria-label', $aria_label );
         }
 

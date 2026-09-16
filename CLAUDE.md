@@ -39,8 +39,8 @@ Always use these agents proactively:
 
 | Class                      | Lines | Purpose                                                                                       |
 | -------------------------- | ----- | --------------------------------------------------------------------------------------------- | --- |
-| `BlockSupport`             | ~1115 | Core rendering, trigger transformation, containers, block support CSS                         |     |
-| `GroupModalTriggerSupport` | ~625  | Group block cards, two-phase rendering for Query Loop                                         |     |
+| `BlockSupport`             | ~1105 | Core rendering, trigger transformation, containers, block support CSS                         |     |
+| `GroupModalTriggerSupport` | ~560  | Group block cards, two-phase rendering for Query Loop                                         |     |
 | `RestApi`                  | ~445  | Modal-content + search endpoints, theme per-block style collection                            |     |
 | `ModalHandler`             | ~240  | Content processing, URL validation, domain allow/block lists                                  |     |
 | `BlockStyleCollector`      | ~245  | Block detection, stylesheet URLs, theme per-block styles                                      |     |
@@ -49,6 +49,7 @@ Always use these agents proactively:
 | `EditorIntegration`        | ~445  | Editor assets, localized config, block context restrictions                                   |     |
 | `ModalTemplatePart`        | ~310  | Template part registration (block themes), file-based fallback                                |     |
 | `TriggerContext`           | ~185  | Interactivity context shared by every open-mode trigger; derives the dialog's accessible name |
+| `TriggerMarkup`            | ~80   | Attributes every open-mode trigger element carries: store binding, dialog state, ARIA button  |
 | `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                                |     |
 | `ModalPatterns`            | ~110  | Starter patterns registered to the modal template part area                                   |     |
 
