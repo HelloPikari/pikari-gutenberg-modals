@@ -446,6 +446,77 @@ class BlockSupportRenderTest extends TestCase
     }
 
     /**
+     * A native <button> in template-only mode is already operable, so it gets
+     * no ARIA button role, tabindex or keydown handler of its own.
+     */
+    public function test_native_button_template_only_mode_attributes(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><button type="button" class="wp-block-button__link">Book</button></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'none',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal wp-block-button__link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'none',
+                    'modalId'       => 'template-modal',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleTriggerClick',
+                'id'                          => 'modal-trigger-test',
+                'type'                        => 'button',
+            ],
+            $this->attributes_of( $instance->filter_button_block( $input, $block ), 1 )
+        );
+    }
+
+    /**
+     * A native <button> in inline mode takes no href and no prefetch.
+     */
+    public function test_native_button_inline_mode_attributes(): void
+    {
+        $instance = new BlockSupport();
+
+        $input = '<div class="wp-block-button"><button type="button" class="wp-block-button__link">Details</button></div>';
+        $block = [
+            'attrs' => [
+                'pikariModalAction'        => 'open',
+                'pikariModalContentSource' => 'inline',
+                'pikariModalInlineAnchor'  => 'promo',
+            ],
+        ];
+
+        $this->assertSame(
+            [
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal wp-block-button__link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'data-wp-context'             => [
+                    'contentSource' => 'inline',
+                    'inlineAnchor'  => 'promo',
+                    'modalId'       => 'inline-promo',
+                ],
+                'data-wp-interactive'         => 'pikari-modal',
+                'data-wp-on--click'           => 'actions.handleTriggerClick',
+                'id'                          => 'modal-trigger-test',
+                'type'                        => 'button',
+            ],
+            $this->attributes_of( $instance->filter_button_block( $input, $block ), 1 )
+        );
+    }
+
+    /**
      * Every attribute on one tag, in a form two renders can be compared by.
      *
      * Attribute order and class order carry no meaning, so both are sorted,
