@@ -318,6 +318,10 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 
 ## Changelog
 
+### 2.3.1
+
+- Loading modal content no longer registers the plugin's block filters a second time. The modal-content endpoint and the editor settings each built their own copy of the block renderer, and every copy hooks the same render filters, so blocks rendered later in that request ran through the plugin twice.
+
 ### 2.3.0
 
 - Removed the opt-in prefetch link hints, and with them the `pikari_gutenberg_modals_enable_prefetch_hints` and `pikari_gutenberg_modals_prefetch_urls` filters. They were off by default, and hover prefetch replaced them. When turned on they asked the server to render every modal linked on a page for every visitor, whether or not anyone opened one; they pointed at a different URL from the one the modal fetches, so they never warmed its cache; and a prefetch link cannot carry a logged-in viewer's REST nonce. Hover prefetch is unchanged, and a site that still adds either filter loses only the extra requests.
