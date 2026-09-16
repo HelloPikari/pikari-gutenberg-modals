@@ -194,6 +194,47 @@ class RestApi
             }
         }
 
+        // A logged-out render is shared by every logged-out visitor, so one
+        // stored under this ETag answers without rendering again, and without
+        // running every wp_enqueue_scripts and wp_footer callback again. A
+        // logged-in viewer's render carries their own nonces and is never
+        // stored. The ETag hashes the post, not what the post pulls in, so a
+        // changed template part or Query Loop result shows once the stored
+        // render expires: the staleness a browser's copy already has.
+        $response_data = 0 === $user_id ? $this->get_cached_content( $etag ) : null;
+
+        if ( null === $response_data ) {
+            $response_data = $this->render_content( $post, $simulate );
+
+            if ( 0 === $user_id ) {
+                $this->cache_content( $etag, $response_data );
+            }
+        }
+
+        /**
+         * Filter the modal content response.
+         *
+         * @param array $response_data The response data
+         * @param \WP_Post $post The post object
+         */
+        $response_data = apply_filters('pikari_gutenberg_modals_content_response', $response_data, $post);
+
+        // Prepare response with cache headers
+        $response = rest_ensure_response($response_data);
+        $this->add_cache_headers($response, $etag, $last_modified);
+
+        return $response;
+    }
+
+    /**
+     * Render a post into the modal-content response data.
+     *
+     * @param \WP_Post $post     The post to render.
+     * @param bool     $simulate Whether to run the frontend enqueue lifecycle.
+     * @return array Response data, before the content_response filter.
+     */
+    private function render_content( \WP_Post $post, bool $simulate ): array
+    {
         // A REST request runs neither wp_enqueue_scripts nor wp_footer, and
         // whole classes of stylesheet only reach the queue inside them.
         //
@@ -269,19 +310,78 @@ class RestApi
             'type'        => $post->post_type,
         );
 
+        return $response_data;
+    }
+
+    /**
+     * A logged-out render stored under this ETag, if there is one.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param string $etag The ETag the render was stored under.
+     * @return array|null The stored response data, or null.
+     */
+    public function get_cached_content( string $etag ): ?array
+    {
+        if ( $this->cache_duration() <= 0 ) {
+            return null;
+        }
+
+        $cached = get_transient( self::cache_key( $etag ) );
+
+        return is_array( $cached ) ? $cached : null;
+    }
+
+    /**
+     * Store a logged-out render under its ETag, for as long as a browser may
+     * keep the response.
+     *
+     * @internal Public only so the behaviour can be tested directly.
+     *
+     * @param string $etag          The ETag the render answers for.
+     * @param array  $response_data Response data, before the content_response filter.
+     */
+    public function cache_content( string $etag, array $response_data ): void
+    {
+        $duration = $this->cache_duration();
+
+        // set_transient() reads 0 as "never expires", the opposite of off.
+        if ( $duration <= 0 ) {
+            return;
+        }
+
+        set_transient( self::cache_key( $etag ), $response_data, $duration );
+    }
+
+    /**
+     * The transient name a render is stored under.
+     *
+     * @param string $etag The ETag the render answers for.
+     * @return string Transient name.
+     */
+    private static function cache_key( string $etag ): string
+    {
+        return 'pikari_modal_content_' . md5( $etag );
+    }
+
+    /**
+     * How long a logged-out response may be reused, by a browser or by the
+     * server.
+     *
+     * @return int Seconds; 0 turns both off.
+     */
+    private function cache_duration(): int
+    {
         /**
-         * Filter the modal content response.
+         * Filter how long a logged-out visitor's modal content may be reused.
          *
-         * @param array $response_data The response data
-         * @param \WP_Post $post The post object
+         * Sets the response's max-age, and how long the server keeps the
+         * render to answer the next logged-out request with. A logged-in
+         * viewer's response is never stored. Return 0 to turn both off.
+         *
+         * @param int $duration Cache duration in seconds. Default 3600 (1 hour).
          */
-        $response_data = apply_filters('pikari_gutenberg_modals_content_response', $response_data, $post);
-
-        // Prepare response with cache headers
-        $response = rest_ensure_response($response_data);
-        $this->add_cache_headers($response, $etag, $last_modified);
-
-        return $response;
+        return (int) apply_filters( 'pikari_gutenberg_modals_cache_duration', HOUR_IN_SECONDS );
     }
 
     /**
@@ -562,18 +662,8 @@ class RestApi
             return $headers;
         }
 
-        /**
-         * Filter the cache duration for modal content REST API responses.
-         *
-         * Applies to logged-out visitors only; a logged-in viewer's response
-         * is never stored.
-         *
-         * @param int $duration Cache duration in seconds. Default 3600 (1 hour).
-         */
-        $cache_duration = apply_filters( 'pikari_gutenberg_modals_cache_duration', HOUR_IN_SECONDS );
-
         // Public cache, revalidate after max-age.
-        $headers['Cache-Control'] = 'public, max-age=' . $cache_duration . ', must-revalidate';
+        $headers['Cache-Control'] = 'public, max-age=' . $this->cache_duration() . ', must-revalidate';
 
         return $headers;
     }

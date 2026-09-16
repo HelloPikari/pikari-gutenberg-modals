@@ -117,7 +117,7 @@ add_filter( 'pikari_gutenberg_modals_content_response', function( $response_data
 
 #### `pikari_gutenberg_modals_cache_duration`
 
-Customize the browser cache duration for modal content REST API responses to logged-out visitors. A logged-in viewer's response is rendered for them and never cached.
+Customize how long modal content served to logged-out visitors may be reused. It sets the REST response's browser cache duration, and how long the server keeps the rendered content to answer the next logged-out request without rendering it again. The stored copy is replaced when the post itself changes; changes to anything the post pulls in, such as a template part or a Query Loop's results, show once it expires. Return `0` to turn both off. A logged-in viewer's response is rendered for them and never cached.
 
 ```php
 add_filter( 'pikari_gutenberg_modals_cache_duration', function( $duration ) {
@@ -320,6 +320,7 @@ YouTube and Vimeo page URLs refuse to be framed, so a pasted `youtube.com/watch?
 
 ### 2.3.1
 
+- Modal content for logged-out visitors is now rendered once and reused until the cache duration runs out (an hour by default), instead of on every request. Each render also runs every plugin's page-header and footer hooks. The stored copy is replaced when the post changes. Changes to what the post pulls in, such as a template part or a Query Loop's results, show once it expires, the same delay a visitor's browser cache already has. Logged-in viewers are unaffected. Set `pikari_gutenberg_modals_cache_duration` to `0` to turn it off.
 - Loading modal content no longer registers the plugin's block filters a second time. The modal-content endpoint and the editor settings each built their own copy of the block renderer, and every copy hooks the same render filters, so blocks rendered later in that request ran through the plugin twice.
 
 ### 2.3.0

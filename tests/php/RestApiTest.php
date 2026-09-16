@@ -371,4 +371,80 @@ class RestApiTest extends TestCase
             $this->assertContains( 'X-WP-Nonce', $vary );
         }
     }
+
+    /**
+     * A logged-out render depends only on what the ETag already hashes, so
+     * the render stored under that ETag can answer the next logged-out
+     * request without running the render, wp_enqueue_scripts and wp_footer
+     * again.
+     */
+    public function test_a_stored_render_answers_for_its_etag(): void
+    {
+        Functions\when( 'apply_filters' )->returnArg( 2 );
+        $render = [ 'id' => 87, 'content' => '<p>Nick</p>' ];
+
+        Functions\expect( 'get_transient' )
+            ->once()
+            ->with( 'pikari_modal_content_' . md5( '"abc"' ) )
+            ->andReturn( $render );
+
+        $this->assertSame( $render, ( new RestApi() )->get_cached_content( '"abc"' ) );
+    }
+
+    public function test_nothing_stored_means_no_cached_render(): void
+    {
+        Functions\when( 'apply_filters' )->returnArg( 2 );
+        Functions\when( 'get_transient' )->justReturn( false );
+
+        $this->assertNull( ( new RestApi() )->get_cached_content( '"abc"' ) );
+    }
+
+    /**
+     * Anything other than a stored render, say a value some other code left
+     * under the key, must not be sent as modal content.
+     */
+    public function test_a_stored_value_that_is_not_a_render_is_ignored(): void
+    {
+        Functions\when( 'apply_filters' )->returnArg( 2 );
+        Functions\when( 'get_transient' )->justReturn( 'not a render' );
+
+        $this->assertNull( ( new RestApi() )->get_cached_content( '"abc"' ) );
+    }
+
+    /**
+     * A render is kept for as long as a browser may keep it, so the server
+     * copy is never staler than the HTTP cache already allows.
+     */
+    public function test_a_render_is_stored_for_the_cache_duration(): void
+    {
+        Filters\expectApplied( 'pikari_gutenberg_modals_cache_duration' )->andReturn( 600 );
+        $render = [ 'id' => 87 ];
+
+        $stored = [];
+        Functions\when( 'set_transient' )->alias(
+            function ( ...$args ) use ( &$stored ) {
+                $stored[] = $args;
+                return true;
+            }
+        );
+
+        ( new RestApi() )->cache_content( '"abc"', $render );
+
+        $this->assertSame( [ [ 'pikari_modal_content_' . md5( '"abc"' ), $render, 600 ] ], $stored );
+    }
+
+    /**
+     * A duration of 0 turns the server copy off as well as the browser's. A
+     * transient stored with 0 would never expire, so storing must not happen.
+     */
+    public function test_a_zero_cache_duration_neither_reads_nor_stores(): void
+    {
+        Filters\expectApplied( 'pikari_gutenberg_modals_cache_duration' )->andReturn( 0 );
+        Functions\expect( 'get_transient' )->never();
+        Functions\expect( 'set_transient' )->never();
+
+        $api = new RestApi();
+        $this->assertNull( $api->get_cached_content( '"abc"' ) );
+        $api->cache_content( '"abc"', [ 'id' => 87 ] );
+    }
 }
