@@ -9,7 +9,7 @@
  * that initialised itself from one that was already on the page.
  */
 
-import { store, getContext } from '@wordpress/interactivity';
+import { store, getContext, getConfig } from '@wordpress/interactivity';
 import { loadBlockScripts } from '../../../src/frontend/block-script-loader';
 
 import '../../../src/frontend/modal-store';
@@ -84,6 +84,11 @@ describe( 'modal store remote content scripts', () => {
 		jest.clearAllMocks();
 		global.fetch = jest.fn( () => 'pending fetch' );
 		getContext.mockReturnValue( { postId: 365, modalId: 'page-365' } );
+		// Set here rather than relying on the shared mock's default, which
+		// cannot carry a plugin-specific URL.
+		getConfig.mockReturnValue( {
+			restUrl: 'https://example.com/wp-json/pikari-gutenberg-modals/v1/',
+		} );
 	} );
 
 	afterEach( () => {
