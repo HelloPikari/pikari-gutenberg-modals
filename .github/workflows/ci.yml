@@ -169,8 +169,6 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     needs: quality
-    # TODO: Remove continue-on-error once test suites have real tests
-    continue-on-error: true
 
     steps:
       - uses: actions/checkout@v6
@@ -200,14 +198,13 @@ jobs:
           npm ci
           composer install --prefer-dist --no-progress
 
-      # tests/php/BlockSupportRenderTest.php and
-      # tests/php/GroupModalTriggerSupportRenderTest.php run against the
-      # REAL WP_HTML_Tag_Processor (not Brain\Monkey) and self-skip when no
-      # WordPress core checkout is discoverable via WP_CORE_DIR. Rather than
-      # installing all of WordPress, download just the handful of
-      # wp-includes files those tests actually load — pinned to a tag known
-      # to work together (see each test's load_wp_html_api()) and cached so
-      # this only hits the network once per pin.
+      # Some PHP tests run against the REAL WP_HTML_Tag_Processor (not
+      # Brain\Monkey) and self-skip when no WordPress core checkout is
+      # discoverable via WP_CORE_DIR — e.g. modals' BlockSupportRenderTest and
+      # query-filter's BlockFiltersTest. Rather than installing all of
+      # WordPress, download just the handful of wp-includes files those tests
+      # load, pinned to a tag known to work together and cached so this only
+      # hits the network once per pin.
       - name: Cache WordPress HTML API files
         id: wp-html-api-cache
         uses: actions/cache@v6
