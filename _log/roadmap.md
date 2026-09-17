@@ -192,8 +192,12 @@ was **byte-identical over 522 renders**. PR #150.
   twice in `BlockSupport`. Two of four reviewers wanted it extracted; deferred because it
   touches three shipped handlers. The a11y attribute set is what is duplicated, and this plugin
   has already shipped a mouse-only trigger once — per-branch render tests are the mitigation.
-- **The modal-content endpoint is uncached server-side.** Session 6 built it and held it back:
-  draft PR #151. Two reviews each found request state leaking into the shared copy. Fixed:
+- **The modal-content endpoint is uncached server-side.** Parked, to revisit as the plugin gets
+  more use. Steve closed #151 on 2026-09-16, and the branch `perf/cache-modal-content-renders`
+  (c99ab31) is kept to restart from. Browser caching and hover prefetch cover today's traffic.
+  Each review found another way one request could shape everyone's copy. To ship it: key on host
+  and scheme, add `wordpress_logged_in_` to the cookie check, re-review, and move the changelog
+  entry. Session 6 built it and held it back: Two reviews each found request state leaking into the shared copy. Fixed:
   `?query-N-page` poisoning, comment and post-password cookies. Still open: the `Host` header
   and http/https scheme, and nonces from a logged-in cookie without a REST nonce. Live Kindler
   is not edge-cached (`cf-cache-status: DYNAMIC`). Original note: it runs every `wp_enqueue_scripts` and
