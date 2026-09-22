@@ -8,19 +8,19 @@
 
 Two designs were written six months apart, independently, for overlapping problems.
 
-In February a spec — *Simplify Modal Dialog Block UX* — argued that the Modal Dialog
+In February a spec — _Simplify Modal Dialog Block UX_ — argued that the Modal Dialog
 block does two jobs at once, overlay **and** dialog-box styling, and that the second
 should move to a standard `core/group` the author already knows how to style. It
 listed, as a future item:
 
-> **Dialog positioning** *(future)* — where the dialog chrome sits on screen
+> **Dialog positioning** _(future)_ — where the dialog chrome sits on screen
 > (centered, anchored to top, bottom, or sides)
 
 That work was started on `feature/simplify-modal-dialog-ux`, never finished, and
 never pushed. It survived in one working copy until 2026-09-04.
 
 In September, without knowledge of it, the same feature was designed again from the
-Kindler requirement — a slide-in panel — and reached a *different* answer: placement
+Kindler requirement — a slide-in panel — and reached a _different_ answer: placement
 on the trigger, mirroring `size`.
 
 This document reconciles them. The February direction is adopted; the September
@@ -39,19 +39,19 @@ express is being pinned to a viewport edge at full height with a slide-in
 transition. That is container-level, so it belongs to the container.
 
 The September argument — "one template part should serve both a centered video and a
-right-hand panel" — turns out weaker than it looked. Those two cases want *different
-chrome anyway*: the Kindler panel is a cream full-height column containing a form;
+right-hand panel" — turns out weaker than it looked. Those two cases want _different
+chrome anyway_: the Kindler panel is a cream full-height column containing a form;
 the video modal is a rounded box. In practice they are two template parts
 regardless, so per-part positioning costs nothing there.
 
 **Decision: placement is an attribute of the Modal Dialog block, defaulting to
 centered. The trigger keeps an optional override.**
 
-The override is retained rather than added, because the trigger *already* overrides
+The override is retained rather than added, because the trigger _already_ overrides
 `size`. Removing that would be its own breaking change with no benefit here, and
 placement being overridable while size is not would be arbitrary.
 
-```
+```text
 trigger value, if set  ->  else the Modal Dialog block's value  ->  else centered
 ```
 
@@ -61,12 +61,12 @@ not scheduled.
 
 ### What each layer owns after this work
 
-| Layer | Owns |
-| --- | --- |
-| Modal Dialog block | overlay appearance, placement, structural and a11y role |
-| `core/group.modal-chrome` | background, border, radius, padding, shadow |
-| Content area and inner blocks | the content |
-| Trigger | which modal, plus optional per-invocation overrides |
+| Layer                         | Owns                                                    |
+| ----------------------------- | ------------------------------------------------------- |
+| Modal Dialog block            | overlay appearance, placement, structural and a11y role |
+| `core/group.modal-chrome`     | background, border, radius, padding, shadow             |
+| Content area and inner blocks | the content                                             |
+| Trigger                       | which modal, plus optional per-invocation overrides     |
 
 ### The selector consequence
 
@@ -76,7 +76,7 @@ authored in the template part as block styles.
 
 This matters more than a rename: **placement CSS must not unset an author's block
 styles**, because they are inline styles from the Group's own controls. So geometry
-applies to the *container*, and the chrome Group fills it:
+applies to the _container_, and the chrome Group fills it:
 
 - `[data-placement="right"]` pins the container to the edge, full height, at the
   panel width.
@@ -140,24 +140,24 @@ fade-and-scale on 1.3.0 today.
 matching the exit animation. With animations disabled the modal stays visible for
 that 200ms. Imperceptible; not worth coupling JS to media queries.
 
-**Open, minor:** whether reduced motion means *no* transition or a plain fade. A
+**Open, minor:** whether reduced motion means _no_ transition or a plain fade. A
 full-height panel appearing instantly may feel abrupt. Defaulting to none.
 
 ## Placement detail
 
-| Placement | Slug | Size means | Options |
-| --- | --- | --- | --- |
-| Centered *(default)* | `""` | max-width | Default / Small / Large / Fullscreen |
-| Left edge | `left` | panel width, full height | Narrow / Default / Wide |
-| Right edge | `right` | panel width, full height | Narrow / Default / Wide |
+| Placement            | Slug    | Size means               | Options                              |
+| -------------------- | ------- | ------------------------ | ------------------------------------ |
+| Centered _(default)_ | `""`    | max-width                | Default / Small / Large / Fullscreen |
+| Left edge            | `left`  | panel width, full height | Narrow / Default / Wide              |
+| Right edge           | `right` | panel width, full height | Narrow / Default / Wide              |
 
 Empty string means default, so `data-placement` is omitted for a centered modal and
 existing CSS is untouched.
 
 ```css
 --modal-panel-width-narrow: 320px;
---modal-panel-width:        420px;  /* default */
---modal-panel-width-wide:   600px;
+--modal-panel-width: 420px; /* default */
+--modal-panel-width-wide: 600px;
 ```
 
 Below the panel width plus a margin a panel goes full-width, rather than leaving an
@@ -168,12 +168,12 @@ attribute; nothing needs them yet.
 
 ### Customisation surfaces
 
-The plugin separates *which options appear* from *what they measure*. Panels mirror
+The plugin separates _which options appear_ from _what they measure_. Panels mirror
 it:
 
-| Surface | Existing | New |
-| --- | --- | --- |
-| PHP filter | `..._modal_sizes` | `..._panel_widths` |
+| Surface               | Existing                            | New                                   |
+| --------------------- | ----------------------------------- | ------------------------------------- |
+| PHP filter            | `..._modal_sizes`                   | `..._panel_widths`                    |
 | CSS custom properties | `--modal-max-width{,-small,-large}` | `--modal-panel-width{,-narrow,-wide}` |
 
 A sibling filter rather than parameterising `..._modal_sizes`: the editor needs both
@@ -185,17 +185,19 @@ save a few lines of duplication.
 
 Strand 2 is breaking, and browser testing sharpened what that means. The block keeps
 its `color`, `border`, `spacing` and `shadow` supports, so nothing leaves its API and
-author-set chrome still applies. What goes is the *fallback* chrome on
+author-set chrome still applies. What goes is the _fallback_ chrome on
 `.modal-content` — a free white background, 20px radius and shadow driven by
 `--modal-content-bg`, `--modal-content-shadow` and `--modal-border-radius`.
 
 Measured on a database-saved template part carrying the old markup, which is what an
 upgraded site has:
 
-    contentPadding:      24px              author's padding survives
-    contentBackground:   rgba(0, 0, 0, 0)  was white
-    contentBorderRadius: 0px               was 20px
-    contentBoxShadow:    none              was a shadow
+```text
+contentPadding:      24px              author's padding survives
+contentBackground:   rgba(0, 0, 0, 0)  was white
+contentBorderRadius: 0px               was 20px
+contentBoxShadow:    none              was a shadow
+```
 
 That is a transparent dialog with page content showing through the text — visually
 broken rather than gracefully degraded. The modal still opens, traps focus and closes

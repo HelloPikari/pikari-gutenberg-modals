@@ -9,14 +9,14 @@ obvious from the code.
 `a:not(.is-primary-link), button, input, select, textarea, [role="button"]` so that
 nested links inside a clickable card still work as links.
 
-`render.php` adds `is-primary-link` to the *detected* primary link. Hand-written
+`render.php` adds `is-primary-link` to the _detected_ primary link. Hand-written
 markup does not get it. So a test page authored by hand, with an anchor inside the
 trigger, **navigates instead of opening the modal** — and looks exactly like a broken
 modal rather than working-as-designed.
 
 Two ways round it when testing:
 
-- click the trigger *wrapper* (the element with `role="button"`), not the inner link
+- click the trigger _wrapper_ (the element with `role="button"`), not the inner link
 - or author the content through the editor, so `is-primary-link` is applied
 
 The Kindler theme hit the sibling of this: hand-written pattern markup was rejected by
@@ -69,7 +69,7 @@ The canvas is an iframe — reach it via
 
 There is no media-emulation call exposed. Options, in order of usefulness:
 
-1. Assert the CSS *invariant* instead — see `tests/unit/frontend/reduced-motion.test.js`,
+1. Assert the CSS _invariant_ instead — see `tests/unit/frontend/reduced-motion.test.js`,
    which checks that every selector declaring an `animation` outside the media block is
    overridden inside it, **and that nothing is overridden that does not animate**. The
    second half is what caught the original bug: the override named
