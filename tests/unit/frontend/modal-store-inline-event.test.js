@@ -53,18 +53,18 @@ describe( 'modal store inline content event', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
-		global.fetch = jest.fn();
-		listener = jest.fn();
+		vi.clearAllMocks();
+		global.fetch = vi.fn();
+		listener = vi.fn();
 		document.addEventListener( 'pikari-modal:content-loaded', listener );
 	} );
 
 	afterEach( () => {
 		document.removeEventListener( 'pikari-modal:content-loaded', listener );
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 		delete global.fetch;
 	} );
 

@@ -45,14 +45,14 @@ describe( 'modal store video sizing', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	} );
 
 	afterEach( () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 	} );
 
 	describe( 'fit mode', () => {
@@ -139,10 +139,10 @@ describe( 'modal store video sizing', () => {
 
 			runOpen( actions );
 
-			jest.useFakeTimers();
+			vi.useFakeTimers();
 			actions.closeModal();
-			jest.advanceTimersByTime( 200 );
-			jest.useRealTimers();
+			vi.advanceTimersByTime( 200 );
+			vi.useRealTimers();
 
 			expect( container.hasAttribute( 'data-fit' ) ).toBe( false );
 			expect(

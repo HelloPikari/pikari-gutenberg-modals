@@ -1,9 +1,9 @@
 /**
- * Mock for @wordpress/interactivity.
+ * Mock for `@wordpress/interactivity`.
  *
  * The Interactivity API uses generator functions (function*) with yield
  * instead of async/await. This mock provides testable versions of store(),
- * getContext(), getElement(), withScope(), and withSyncEvent().
+ * getContext(), getElement(), getConfig(), withScope(), and withSyncEvent().
  *
  * Usage in tests:
  *
@@ -24,9 +24,19 @@
  *   gen.next( mockResponse );  // Resume with yielded value
  */
 
-const store = jest.fn( ( storeName, storeDefinition ) => {
-	return storeDefinition;
+const store = vi.fn( ( storeName, storeDefinition ) => {
+	return storeDefinition ?? readStore( storeName );
 } );
+
+// Stores read by namespace alone, such as store( 'core/router' ).
+const readStores = new Map();
+
+function readStore( storeName ) {
+	if ( ! readStores.has( storeName ) ) {
+		readStores.set( storeName, { state: {} } );
+	}
+	return readStores.get( storeName );
+}
 
 // Retrieve the last registered store definition.
 store.getLastStore = () => {
@@ -46,25 +56,23 @@ store.getStore = ( name ) => {
 	return call[ 1 ];
 };
 
-const getContext = jest.fn( () => ( {} ) );
+const getContext = vi.fn( () => ( {} ) );
 
-const getElement = jest.fn( () => ( {
+const getElement = vi.fn( () => ( {
 	ref: document.createElement( 'div' ),
 } ) );
 
-const getConfig = jest.fn( () => ( {
-	restUrl: 'https://example.com/wp-json/pikari-gutenberg-modals/v1/',
-} ) );
+const getConfig = vi.fn( () => ( {} ) );
 
-const withScope = jest.fn( ( callback ) => callback );
+const withScope = vi.fn( ( callback ) => callback );
 
-const withSyncEvent = jest.fn( ( handler ) => handler );
+const withSyncEvent = vi.fn( ( handler ) => handler );
 
 module.exports = {
 	store,
-	getConfig,
 	getContext,
 	getElement,
+	getConfig,
 	withScope,
 	withSyncEvent,
 };

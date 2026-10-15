@@ -284,7 +284,6 @@ const { state, actions } = store( 'pikari-modal', {
 				// Area block at all works exactly the same way.
 				state.loading = false;
 
-				// eslint-disable-next-line no-undef
 				requestAnimationFrame( () => {
 					if ( activeContainer ) {
 						focusFirstElement( activeContainer );
@@ -325,7 +324,6 @@ const { state, actions } = store( 'pikari-modal', {
 					// bound on document ready, so announce it as the REST path
 					// does. The page already has its scripts: nothing loaded.
 					modal.dispatchEvent(
-						// eslint-disable-next-line no-undef
 						new CustomEvent( 'pikari-modal:content-loaded', {
 							bubbles: true,
 							detail: { slug, postId: null, loaded: [] },
@@ -340,7 +338,6 @@ const { state, actions } = store( 'pikari-modal', {
 				state.loading = false;
 
 				// Focus first focusable element
-				// eslint-disable-next-line no-undef
 				requestAnimationFrame( () => {
 					if ( activeContainer ) {
 						focusFirstElement( activeContainer );
@@ -397,7 +394,6 @@ const { state, actions } = store( 'pikari-modal', {
 				state.loading = true;
 
 				// Focus close button after iframe is inserted
-				// eslint-disable-next-line no-undef
 				requestAnimationFrame( () => {
 					if ( activeContainer ) {
 						focusFirstElement( activeContainer );
@@ -505,7 +501,6 @@ const { state, actions } = store( 'pikari-modal', {
 					const loaded = yield loadBlockScripts( data.scripts );
 
 					modal.dispatchEvent(
-						// eslint-disable-next-line no-undef
 						new CustomEvent( 'pikari-modal:content-loaded', {
 							bubbles: true,
 							detail: { slug, postId: data.id, loaded },
@@ -524,7 +519,6 @@ const { state, actions } = store( 'pikari-modal', {
 				state.loading = false;
 
 				// Focus first focusable element after content loads
-				// eslint-disable-next-line no-undef
 				requestAnimationFrame( () => {
 					if ( activeContainer ) {
 						focusFirstElement( activeContainer );
@@ -711,7 +705,7 @@ const { state, actions } = store( 'pikari-modal', {
 					// Failed - remove from tracking so it can be retried
 					delete state.prefetchedPosts[ postId ];
 				}
-			} catch ( error ) {
+			} catch {
 				// Network error - remove from tracking so it can be retried
 				delete state.prefetchedPosts[ postId ];
 			}
@@ -773,7 +767,6 @@ const { state, actions } = store( 'pikari-modal', {
 
 // Development debug helper - exposes store to browser console
 // Access via: pikariModal.state, pikariModal.actions
-// eslint-disable-next-line no-undef
 if ( typeof window !== 'undefined' ) {
 	window.pikariModal = { state, actions };
 }

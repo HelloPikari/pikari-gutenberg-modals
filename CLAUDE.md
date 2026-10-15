@@ -26,7 +26,7 @@ Always use these agents proactively:
 2. **`pikariModalAction` on Group and Button blocks** — a modal action set directly as a block attribute, so the block keeps its own styling, alignment and layout instead of needing a wrapper block
 
    - Attribute schema (`pikariModalAction` plus `pikariModalContentSource`, `pikariModalDirectUrl`, `pikariModalPrimaryLinkId`, `pikariModalInlineAnchor`, `pikariModalSize`, `pikariModalPlacement`, `pikariModalTemplatePart`, `pikariModalAccessibleLabel`) is defined in `src/editor/trigger-blocks.js` and registered on every trigger block via a `blocks.registerBlockType` filter in `src/editor/modal-trigger-attributes.js`
-   - Which blocks qualify: `isTriggerBlock()` reads `window.pikariGutenbergModals.triggerBlocks` (localized from the `pikari_gutenberg_modals_trigger_blocks` PHP filter), falling back to the hardcoded default `['core/group', 'core/button']` when the global is absent (e.g. Jest)
+   - Which blocks qualify: `isTriggerBlock()` reads `window.pikariGutenbergModals.triggerBlocks` (localized from the `pikari_gutenberg_modals_trigger_blocks` PHP filter), falling back to the hardcoded default `['core/group', 'core/button']` when the global is absent (e.g. Vitest)
    - Editor: one "Modal" panel — `src/editor/modal-trigger-panel.js`, added via a single `editor.BlockEdit` filter; hidden in `contentOnly` editing mode
      - **Open mode** (`pikariModalAction: 'open'`) content source: Detected link (`core/group` only — finds links in inner blocks via `src/editor/find-links-in-blocks.js`; a `core/button`'s own URL is its detected link and needs no picker), Custom URL, or Inline content (anchor into a Modal Content block)
      - **Template only** (`pikariModalContentSource: 'none'`) — the modal template part is the content. No fetch, no clone; `GroupModalTriggerSupport::handle_template_only()` and `BlockSupport::filter_button_block_template_only()` render it, and the store returns before the postId guard. The dialog is named from the template part's title via `TriggerContext::template_part_title()`
@@ -37,21 +37,21 @@ Always use these agents proactively:
 
 ### PHP Classes (`includes/`)
 
-| Class                      | Lines | Purpose                                                                                       |
+| Class | Lines | Purpose |
 | -------------------------- | ----- | --------------------------------------------------------------------------------------------- | --- |
-| `BlockSupport`             | ~1105 | Core rendering, trigger transformation, containers, block support CSS                         |     |
-| `GroupModalTriggerSupport` | ~560  | Group block cards, two-phase rendering for Query Loop                                         |     |
-| `RestApi`                  | ~445  | Modal-content + search endpoints, theme per-block style collection                            |     |
-| `ModalHandler`             | ~240  | Content processing, URL validation, domain allow/block lists                                  |     |
-| `BlockStyleCollector`      | ~245  | Block detection, stylesheet URLs, theme per-block styles                                      |     |
-| `BlockScriptCollector`     | ~150  | Scripts enqueued while modal content renders, dependencies first, for the client to run       |     |
-| `Compat\WPForms`           | ~105  | WPForms settings and form binding for REST-loaded modal content                               |     |
-| `EditorIntegration`        | ~445  | Editor assets, localized config, block context restrictions                                   |     |
-| `ModalTemplatePart`        | ~310  | Template part registration (block themes), file-based fallback                                |     |
-| `TriggerContext`           | ~185  | Interactivity context shared by every open-mode trigger; derives the dialog's accessible name |
-| `TriggerMarkup`            | ~80   | Attributes every open-mode trigger element carries: store binding, dialog state, ARIA button  |
-| `FrontendRenderer`         | ~55   | Frontend script module + stylesheet registration (lazy-loaded)                                |     |
-| `ModalPatterns`            | ~110  | Starter patterns registered to the modal template part area                                   |     |
+| `BlockSupport` | ~1105 | Core rendering, trigger transformation, containers, block support CSS | |
+| `GroupModalTriggerSupport` | ~560 | Group block cards, two-phase rendering for Query Loop | |
+| `RestApi` | ~445 | Modal-content + search endpoints, theme per-block style collection | |
+| `ModalHandler` | ~240 | Content processing, URL validation, domain allow/block lists | |
+| `BlockStyleCollector` | ~245 | Block detection, stylesheet URLs, theme per-block styles | |
+| `BlockScriptCollector` | ~150 | Scripts enqueued while modal content renders, dependencies first, for the client to run | |
+| `Compat\WPForms` | ~105 | WPForms settings and form binding for REST-loaded modal content | |
+| `EditorIntegration` | ~445 | Editor assets, localized config, block context restrictions | |
+| `ModalTemplatePart` | ~310 | Template part registration (block themes), file-based fallback | |
+| `TriggerContext` | ~185 | Interactivity context shared by every open-mode trigger; derives the dialog's accessible name |
+| `TriggerMarkup` | ~80 | Attributes every open-mode trigger element carries: store binding, dialog state, ARIA button |
+| `FrontendRenderer` | ~55 | Frontend script module + stylesheet registration (lazy-loaded) | |
+| `ModalPatterns` | ~110 | Starter patterns registered to the modal template part area | |
 
 ### JavaScript Files
 
@@ -151,7 +151,7 @@ Each container's `aria-labelledby` points at a title element that doesn't exist 
 
 8. **`core/image` is excluded from trigger blocks on purpose** — Core's own lightbox ("Enlarge on click") attaches a competing click handler via `render_block_core/image` and is offered by default. Adding `core/image` to `pikari_gutenberg_modals_trigger_blocks` would put two click handlers on one element. A site that wants it anyway can add it through that filter, deliberately.
 
-9. **Editor packages are webpack externals, not devDependencies.** `@wordpress/data`, `core-data`, `components`, `block-editor`, `compose`, `html-entities`, `notices`, `url`, and `blocks` are not installed. Jest cannot resolve them. Any logic that needs unit tests must live in a module importing nothing from `@wordpress/*` except `@wordpress/i18n` — see `src/editor/modal-template-parts.js`.
+9. **Editor packages are webpack externals, not devDependencies.** `@wordpress/data`, `core-data`, `components`, `block-editor`, `compose`, `html-entities`, `notices`, `url`, and `blocks` are not installed. `vitest.config.mjs` resolves any missing `@wordpress/*` import to an empty module, so a test must `vi.mock()` each one it touches; nothing real runs. Logic that needs unit tests is still easiest in a module importing nothing from `@wordpress/*` except `@wordpress/i18n` — see `src/editor/modal-template-parts.js`.
 
 10. **The default modal part maps to an empty slug.** Triggers store `''` to mean the default. The entity list contains a part with slug `modal`; `buildPartOptions()` (`src/editor/modal-template-parts.js`) collapses the two so the select never offers "Default" twice.
 

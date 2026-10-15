@@ -36,12 +36,16 @@
 	},
 	"devDependencies": {
 		"@wordpress/env": "latest",
-		"@wordpress/escape-html": "^3.39.0",
+		"@wordpress/escape-html": "^3.57.0",
 		"@wordpress/icons": "latest",
-		"@wordpress/interactivity": "^6.46.0",
+		"@wordpress/interactivity": "^7.0.0",
 		"@wordpress/scripts": "latest",
+		"globals": "^17.13.0",
 		"husky": "latest",
-		"lint-staged": "latest"
+		"jsdom": "^26.1.0",
+		"lint-staged": "latest",
+		"vite": "^8.3.4",
+		"vitest": "^5.0.5"
 	},
 	"lint-staged": {
 		"*.php": [
@@ -60,6 +64,6 @@
 		]
 	},
 	"dependencies": {
-		"@wordpress/primitives": "^4.46.0"
+		"@wordpress/primitives": "^4.57.0"
 	}
 }
