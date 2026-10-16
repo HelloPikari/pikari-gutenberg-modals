@@ -1,6 +1,6 @@
 # Roadmap — pikari-gutenberg-modals
 
-**Last updated:** 2026-09-16 (Session 6)
+**Last updated:** 2026-10-16 (Session 7)
 
 What we've done, at a glance. Narrative lives in the session logs.
 
@@ -173,6 +173,15 @@ was **byte-identical over 522 renders**. PR #150.
 
 ~~v2.3.1 released~~ — ✅ DONE (Session 6). ZIP checksum verified, and the package index lists it.
 
+~~`@wordpress/scripts` 36, Jest → Vitest, CI Node 20 → 24~~ — ✅ DONE (Session 7). **192/192 JS
+tests** before and after the runner swap. Dependabot #85 superseded and closed. PR #162.
+
+~~Playwright e2e + visual suite~~ — ✅ DONE (Session 7). **31 tests in 5 specs**, local only, and
+macOS visual baselines. Five deliberate breakages each turned a test red. PR #163.
+
+~~Inline and Group link-card triggers never announced `aria-expanded`~~ — ✅ DONE (Session 7). Only
+the Button trigger had it. Found by the new e2e suite, fixed test-first, PHP **163/163**. PR #163.
+
 ## Open
 
 - ~~**A WPForms form inside a modal probably cannot submit** (todo #484)~~ — ✅ DONE (Session 5).
@@ -207,7 +216,7 @@ was **byte-identical over 522 renders**. PR #150.
   of prefetch hints took away the path that rendered every modal on every page view.
   (Unhooking `wp_enqueue_global_styles` was **measured at 52.6 vs 52.2ms** — rejected.)
 - **CI masks every test failure.** `.github/workflows/ci.yml` sets `continue-on-error: true`
-  on the whole `test` job. There are now **151 PHP and 192 JS tests**. Every Session 5 merge was
+  on the whole `test` job. There are now **163 PHP and 192 JS tests** (Session 7). Every Session 5 merge was
   verified by reading the Test job log, not the badge. Handed to the monorepo agent in Session 6.
   The template is fixed locally, and the modals sync PR waits on that agent.
 - **The `WP_CORE_DIR` CI fix will be reverted by the next template sync.** `ci.yml` is a
@@ -258,8 +267,13 @@ was **byte-identical over 522 renders**. PR #150.
   Session 6 review flagged it as a nit.
 - **Hybrid select-only panel:** the "Select a template for this modal." help text sits flush
   against the Accessible Label heading. Cosmetic.
-- **`@wordpress/primitives` 4.47 (#85)** — cannot merge. Peer-requires React 19 while
-  `@wordpress/scripts` pins React 18. Blocked upstream, not on us.
+- ~~**`@wordpress/primitives` 4.47 (#85)**~~ — ✅ DONE (Session 7). scripts 36 moved the dev tree
+  to React 19; #85 was closed as superseded by #162.
+- **`<InnerBlocks template>` is deprecated in Gutenberg 24.2.** `src/blocks/modal-overlay/edit.js:318`
+  passes `template={ INNER_BLOCKS_TEMPLATE }`. Seen during the scripts-36 work. Not yet checked
+  what replaces it, or from which WP version.
+- **e2e does not run in CI.** The visual baselines are macOS-only. A CI job would need Linux
+  baselines or `visual.spec.js` skipped. The behaviour specs could run there as they are.
 
 ## Conventions
 
