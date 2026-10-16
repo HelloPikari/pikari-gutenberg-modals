@@ -355,10 +355,12 @@ class GroupModalTriggerSupportRenderTest extends TestCase
 
         $this->assertSame(
             [
-                'aria-haspopup' => 'dialog',
-                'class'         => 'has-pikari-modal is-primary-link',
-                'href'          => 'https://example.com/page',
-                'id'            => 'modal-trigger-link-test',
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal is-primary-link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'href'                        => 'https://example.com/page',
+                'id'                          => 'modal-trigger-link-test',
             ],
             $this->attributes_of( $result, 2 )
         );
@@ -405,10 +407,12 @@ class GroupModalTriggerSupportRenderTest extends TestCase
 
         $this->assertSame(
             [
-                'aria-haspopup' => 'dialog',
-                'class'         => 'has-pikari-modal is-primary-link',
-                'href'          => 'https://example.com/team/nick/',
-                'id'            => 'modal-trigger-link-test',
+                'aria-expanded'               => 'false',
+                'aria-haspopup'               => 'dialog',
+                'class'                       => 'has-pikari-modal is-primary-link',
+                'data-wp-bind--aria-expanded' => 'state.isExpanded',
+                'href'                        => 'https://example.com/team/nick/',
+                'id'                          => 'modal-trigger-link-test',
             ],
             $this->attributes_of( $result, 2 )
         );

@@ -716,6 +716,8 @@ class BlockSupport
                     data-wp-context=\'%s\'
                     data-wp-on--click="actions.handleTriggerClick"
                     aria-haspopup="dialog"
+                    aria-expanded="false"
+                    data-wp-bind--aria-expanded="state.isExpanded"
                 >%s</a>',
                 esc_attr( $trigger_id ),
                 esc_attr( '#' . $content_id ),
@@ -760,6 +762,8 @@ class BlockSupport
                 data-wp-on--mouseenter="actions.handlePrefetchHover"
                 data-wp-on--mouseleave="actions.handlePrefetchLeave"
                 aria-haspopup="dialog"
+                aria-expanded="false"
+                data-wp-bind--aria-expanded="state.isExpanded"
             >%s</a>',
             esc_attr( $trigger_id ),
             esc_url( $href ),

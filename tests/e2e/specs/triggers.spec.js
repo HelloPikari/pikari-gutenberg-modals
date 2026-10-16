@@ -14,10 +14,6 @@ const {
 
 test.use( { storageState: visitor } );
 
-// Only the Button trigger carries aria-expanded today; inline and Group
-// link-card triggers have aria-haspopup alone. Reported, not fixed here.
-const ANNOUNCES_EXPANDED = [ 'button' ];
-
 /**
  * Where focus is, relative to the dialog.
  *
@@ -122,10 +118,6 @@ for ( const type of [ 'inline', 'button', 'group' ] ) {
 		} );
 
 		test( 'announces its expanded state', async ( { page } ) => {
-			test.fixme(
-				! ANNOUNCES_EXPANDED.includes( type ),
-				`the ${ type } trigger has no aria-expanded`
-			);
 			const trigger = triggers( page )[ type ];
 
 			await expect( trigger ).toHaveAttribute( 'aria-expanded', 'false' );
