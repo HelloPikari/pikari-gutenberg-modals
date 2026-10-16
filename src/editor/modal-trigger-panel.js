@@ -189,7 +189,7 @@ const withModalPanel = createHigherOrderComponent( ( BlockEdit ) => {
 						// Selected link was removed, clear the selection.
 						setAttributes( { pikariModalPrimaryLinkId: '' } );
 					}
-				} catch ( e ) {
+				} catch {
 					// Invalid JSON, clear it.
 					setAttributes( { pikariModalPrimaryLinkId: '' } );
 				}

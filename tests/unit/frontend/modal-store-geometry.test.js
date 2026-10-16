@@ -54,7 +54,7 @@ describe( 'modal store geometry', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	} );
 
 	// `previousAriaLabel` lives at module scope in modal-store.js and the
@@ -63,10 +63,10 @@ describe( 'modal store geometry', () => {
 	// every test starts from the same state rather than inheriting the last
 	// test's captured label.
 	afterEach( () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 	} );
 
 	it( 'leaves a centered dialog with no placement attribute', () => {
@@ -195,9 +195,9 @@ describe( 'modal store geometry', () => {
 		} );
 		runOpen( actions );
 
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
+		vi.advanceTimersByTime( 200 );
 
 		expect( container.getAttribute( 'aria-label' ) ).toBe( 'Modal dialog' );
 	} );

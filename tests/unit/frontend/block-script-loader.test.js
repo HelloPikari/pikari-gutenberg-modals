@@ -96,12 +96,14 @@ describe( 'block script loader', () => {
 		expect( document.getElementById( 'wpforms-js-after' ).textContent ).toBe( 'window.after = 1;' );
 	} );
 
+	// Inline scripts run in jsdom's own window, not the test's globalThis,
+	// so their effects are asserted through the document both share.
 	it( 'runs an inline-only handle without waiting for a load event', async () => {
-		await loadBlockScripts( [ entry( 'init-forms', null, { after: 'window.initRan = true;' } ) ] );
+		await loadBlockScripts( [ entry( 'init-forms', null, { after: 'document.body.dataset.initRan = "yes";' } ) ] );
 
 		expect( document.getElementById( 'init-forms-js-after' ) ).not.toBeNull();
-		expect( window.initRan ).toBe( true );
-		delete window.initRan;
+		expect( document.body.dataset.initRan ).toBe( 'yes' );
+		delete document.body.dataset.initRan;
 	} );
 
 	it( 'skips a file the page already loaded, whatever its version', async () => {
@@ -146,19 +148,19 @@ describe( 'block script loader', () => {
 	} );
 
 	it( 'carries on past a file that fails to load', async () => {
-		const warn = jest.spyOn( console, 'warn' ).mockImplementation( () => {} );
+		const warn = vi.spyOn( console, 'warn' ).mockImplementation( () => {} );
 
 		const done = loadBlockScripts( [
 			entry( 'broken', 'https://example.com/404.js' ),
-			entry( 'next', null, { after: 'window.nextRan = true;' } ),
+			entry( 'next', null, { after: 'document.body.dataset.nextRan = "yes";' } ),
 		] );
 
 		await flush();
 		fire( 'broken-js', 'error' );
 		await done;
 
-		expect( window.nextRan ).toBe( true );
-		delete window.nextRan;
+		expect( document.body.dataset.nextRan ).toBe( 'yes' );
+		delete document.body.dataset.nextRan;
 		warn.mockRestore();
 	} );
 } );

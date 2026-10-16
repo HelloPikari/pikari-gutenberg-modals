@@ -14,8 +14,8 @@ import { loadBlockScripts } from '../../../src/frontend/block-script-loader';
 
 import '../../../src/frontend/modal-store';
 
-jest.mock( '../../../src/frontend/block-script-loader', () => ( {
-	loadBlockScripts: jest.fn(),
+vi.mock( '../../../src/frontend/block-script-loader', () => ( {
+	loadBlockScripts: vi.fn(),
 } ) );
 
 const SCRIPTS = [
@@ -81,8 +81,8 @@ describe( 'modal store remote content scripts', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
-		global.fetch = jest.fn( () => 'pending fetch' );
+		vi.clearAllMocks();
+		global.fetch = vi.fn( () => 'pending fetch' );
 		getContext.mockReturnValue( { postId: 365, modalId: 'page-365' } );
 		// Set here rather than relying on the shared mock's default, which
 		// cannot carry a plugin-specific URL.
@@ -92,10 +92,10 @@ describe( 'modal store remote content scripts', () => {
 	} );
 
 	afterEach( () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 		delete global.fetch;
 	} );
 
@@ -123,7 +123,7 @@ describe( 'modal store remote content scripts', () => {
 			return Promise.resolve( [ 'wpforms' ] );
 		} );
 
-		const listener = jest.fn( () => order.push( 'event' ) );
+		const listener = vi.fn( () => order.push( 'event' ) );
 		document.addEventListener( 'pikari-modal:content-loaded', listener );
 
 		runOpen( actions, RESPONSE, [ 'wpforms' ] );

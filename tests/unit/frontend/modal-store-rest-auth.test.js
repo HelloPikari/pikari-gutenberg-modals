@@ -14,8 +14,8 @@ import { store, getConfig, getContext } from '@wordpress/interactivity';
 
 import '../../../src/frontend/modal-store';
 
-jest.mock( '../../../src/frontend/block-script-loader', () => ( {
-	loadBlockScripts: jest.fn( () => Promise.resolve( [] ) ),
+vi.mock( '../../../src/frontend/block-script-loader', () => ( {
+	loadBlockScripts: vi.fn( () => Promise.resolve( [] ) ),
 } ) );
 
 const REST_URL = 'https://example.com/wp-json/pikari-gutenberg-modals/v1/';
@@ -44,17 +44,17 @@ describe( 'modal store REST authentication', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 		setUpContainer();
-		global.fetch = jest.fn( () => 'pending fetch' );
+		global.fetch = vi.fn( () => 'pending fetch' );
 		getContext.mockReturnValue( { postId: 365, modalId: 'page-365' } );
 	} );
 
 	afterEach( () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 		delete global.fetch;
 		getConfig.mockReturnValue( { restUrl: REST_URL } );
 	} );
@@ -134,6 +134,7 @@ describe( 'modal store REST authentication', () => {
 	} );
 
 	it( 'retries only when the nonce is refused', () => {
+		const error = vi.spyOn( console, 'error' ).mockImplementation( () => {} );
 		getConfig.mockReturnValue( { restUrl: REST_URL, nonce: 'abc123', ajaxUrl: AJAX_URL } );
 
 		const generator = actions.openModal();
@@ -141,7 +142,8 @@ describe( 'modal store REST authentication', () => {
 		generator.next( { ok: false, status: 404 } );
 
 		expect( global.fetch ).toHaveBeenCalledTimes( 1 );
-		expect( console ).toHaveErrored();
+		expect( error ).toHaveBeenCalled();
+		error.mockRestore();
 	} );
 
 	it( 'does not prefetch for a logged-in viewer', () => {

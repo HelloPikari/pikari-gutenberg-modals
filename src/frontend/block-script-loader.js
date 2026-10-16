@@ -114,7 +114,6 @@ export async function loadBlockScripts( scripts ) {
 
 		if ( script.src ) {
 			// Sequential by design: the next script may depend on this one.
-			// eslint-disable-next-line no-await-in-loop
 			await appendFile( `${ script.handle }-js`, script.src );
 		}
 

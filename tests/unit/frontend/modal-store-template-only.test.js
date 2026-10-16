@@ -51,15 +51,15 @@ describe( 'modal store template-only content', () => {
 	} );
 
 	beforeEach( () => {
-		jest.clearAllMocks();
-		global.fetch = jest.fn();
+		vi.clearAllMocks();
+		global.fetch = vi.fn();
 	} );
 
 	afterEach( () => {
-		jest.useFakeTimers();
+		vi.useFakeTimers();
 		actions.closeModal();
-		jest.advanceTimersByTime( 200 );
-		jest.useRealTimers();
+		vi.advanceTimersByTime( 200 );
+		vi.useRealTimers();
 		delete global.fetch;
 	} );
 
