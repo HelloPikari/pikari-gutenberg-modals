@@ -294,6 +294,14 @@ pikari-gutenberg-modals/
 
 See the monorepo root [CLAUDE.md](../CLAUDE.md) for full TDD workflow, commands, and example patterns.
 
+### End-to-end tests (Playwright)
+
+`npm run build && npm run test:e2e` runs `tests/e2e/specs/` against the wp-env **tests** instance (port 5889); `tests/e2e/setup/fixtures.js` rebuilds its pages on every run, so it needs no seed. Specs browse as a logged-out visitor, the path a site's visitors take.
+
+- **Local only.** CI does not run e2e. The visual baselines in `tests/e2e/specs/__snapshots__/` were rendered on macOS and will not pixel-match Linux.
+- **Every Playwright bump regenerates the baselines:** `npm run test:e2e -- visual.spec.js --update-snapshots`, then open the PNGs before committing. A baseline of a blank or still-loading modal passes forever.
+- **The focus trap lets Tab leave the document.** It is `inert` on the page landmarks plus a `focusin` redirect, so Tab past the dialog's last element reaches the browser's own UI, and the next Tab returns to the dialog. Specs assert focus never lands on a page element outside the dialog, not that it never leaves the dialog.
+
 ### Plugin-Specific Test Guidance
 
 **PHP classes to prioritize for testing:**
