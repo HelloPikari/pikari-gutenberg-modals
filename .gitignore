@@ -90,3 +90,6 @@ pikari-dev-setup-*/
 
 # Superpowers SDD scratch (ledger, briefs, review packages)
 .superpowers/
+
+# Playwright artifacts (test results, storage state)
+artifacts/

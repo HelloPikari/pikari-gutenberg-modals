@@ -328,6 +328,29 @@ class BlockSupportRenderTest extends TestCase
     }
 
     /**
+     * The inline format writes its own <a>, in one template for linked
+     * content and another for inline content, and both must announce the
+     * dialog's state the way every decorated trigger does.
+     */
+    public function test_inline_format_triggers_announce_expanded_state(): void
+    {
+        $instance  = new BlockSupport();
+        $link_data = htmlspecialchars( (string) wp_json_encode( [ 'url' => 'https://example.com/page' ] ), ENT_QUOTES );
+
+        foreach ( [ 'url' => 'https://example.com/page', 'inline' => 'faq' ] as $type => $id ) {
+            $input = '<p><span class="modal-trigger" data-modal-trigger="' . $link_data . '" ' .
+                'data-modal-content-type="' . $type . '" data-modal-content-id="' . $id . '">Read more</span></p>';
+
+            $processor = new \WP_HTML_Tag_Processor( $instance->filter_block( $input, [ 'blockName' => 'core/paragraph' ] ) );
+            $this->assertTrue( $processor->next_tag( 'a' ), $type );
+
+            $this->assertSame( 'dialog', $processor->get_attribute( 'aria-haspopup' ), $type );
+            $this->assertSame( 'false', $processor->get_attribute( 'aria-expanded' ), $type );
+            $this->assertSame( 'state.isExpanded', $processor->get_attribute( 'data-wp-bind--aria-expanded' ), $type );
+        }
+    }
+
+    /**
      * A button's own link: the inner <a> takes the trigger, with prefetch.
      *
      * Pins every attribute, not a sample, so extracting the decoration

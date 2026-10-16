@@ -469,7 +469,7 @@ class GroupModalTriggerSupport
         $trigger_id = 'modal-trigger-link-' . wp_unique_id();
 
         $processor->set_attribute( 'id', $trigger_id );
-        $processor->set_attribute( 'aria-haspopup', 'dialog' );
+        TriggerMarkup::announce_dialog( $processor );
         $processor->add_class( 'is-primary-link' );
         $processor->add_class( 'has-pikari-modal' );
 
