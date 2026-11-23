@@ -35,7 +35,7 @@
 		"wp-env": "wp-env start --xdebug"
 	},
 	"devDependencies": {
-		"@playwright/test": "^1.65.0",
+		"@playwright/test": "^1.65.1",
 		"@wordpress/e2e-test-utils-playwright": "^3.3.0",
 		"@wordpress/env": "latest",
 		"@wordpress/escape-html": "^3.57.0",
